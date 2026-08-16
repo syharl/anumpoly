@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3">
+<title>Monopoli Dunia — Mabar 1 HP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12203A;
+  --ink2:#0B1626;
+  --gold:#D7A94B;
+  --gold-dim:#8a713a;
+  --teal:#2F6F62;
+  --paper:#F3EEE1;
+  --paper-dim:#e7dfc9;
+  --red:#B3402F;
+  --green-ok:#3FA34D;
+  --text:#1B1B1B;
+  --brown:#8B5A2B;
+  --lightblue:#6FB9DA;
+  --pink:#E27AB0;
+  --orange:#EE9B3E;
+  --redgrp:#DD4B3E;
+  --yellow:#EFC93B;
+  --greengrp:#379155;
+  --darkblue:#2451A6;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:'Inter',sans-serif;
+  background:radial-gradient(circle at 30% 0%, #1a2c4a 0%, var(--ink) 45%, var(--ink2) 100%);
+  color:var(--paper);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+h1,h2,h3,.display{font-family:'Playfair Display',serif;}
+.mono{font-family:'Space Mono',monospace;}
+button{font-family:'Inter',sans-serif;cursor:pointer;}
+::-webkit-scrollbar{height:8px;width:8px;}
+::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:4px;}
+
+.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;}
+.screen.active{display:flex;}
+
+/* ---------- MENU ---------- */
+#screen-menu{justify-content:center;padding:24px 16px;text-align:center;position:relative;}
+.stamp{
+  width:150px;height:150px;border-radius:50%;
+  border:3px dashed var(--gold);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  transform:rotate(-8deg);
+  margin:0 auto 18px;
+  box-shadow:0 0 0 6px rgba(215,169,75,0.08);
+}
+.stamp span{display:block;}
+.stamp .top{font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700;}
+.stamp .mid{font-family:'Playfair Display',serif;font-size:30px;font-weight:800;color:var(--gold);line-height:1;margin:4px 0;}
+.stamp .bot{font-size:10px;letter-spacing:2px;color:var(--gold-dim);text-transform:uppercase;}
+#screen-menu h1{font-size:38px;margin:6px 0 4px;letter-spacing:0.5px;}
+#screen-menu .tag{color:var(--paper-dim);font-size:14px;margin-bottom:34px;letter-spacing:0.5px;}
+.menu-btn{
+  width:min(320px,80vw);
+  padding:16px 20px;margin:8px 0;border-radius:999px;border:2px solid var(--gold);
+  background:transparent;color:var(--gold);font-weight:700;font-size:16px;letter-spacing:1px;
+  transition:all .15s ease;
+}
+.menu-btn.primary{background:var(--gold);color:var(--ink2);}
+.menu-btn:active{transform:scale(0.97);}
+.menu-footer{margin-top:40px;font-size:11px;color:var(--gold-dim);letter-spacing:1px;}
+.howto{max-width:420px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.3);border-radius:var(--radius);padding:16px 18px;margin-top:18px;font-size:13px;line-height:1.6;color:var(--paper-dim);display:none;}
+.howto.show{display:block;}
+.howto b{color:var(--gold);}
+
+/* ---------- SETUP ---------- */
+#screen-setup{padding:20px 16px 90px;width:100%;max-width:520px;align-items:stretch;}
+.setup-header{text-align:center;margin-bottom:18px;}
+.setup-header h2{margin:0 0 4px;font-size:24px;color:var(--gold);}
+.setup-header p{margin:0;color:var(--paper-dim);font-size:13px;}
+.card{background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.card h3{margin:0 0 10px;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;}
+.pill{
+  border:2px solid rgba(215,169,75,0.4);background:transparent;color:var(--paper);
+  border-radius:999px;padding:8px 16px;font-size:14px;font-weight:600;
+}
+.pill.active{background:var(--gold);border-color:var(--gold);color:var(--ink2);}
+.player-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.token-dot{width:30px;height:30px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,0.4);}
+.player-row input{
+  flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(215,169,75,0.3);
+  color:var(--paper);border-radius:8px;padding:10px 12px;font-size:14px;
+}
+.rule-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+.rule-row:last-child{border-bottom:none;}
+.rule-label{font-size:13px;color:var(--paper);}
+.rule-label small{display:block;color:var(--paper-dim);font-size:11px;margin-top:2px;}
+select.rule-select{background:rgba(255,255,255,0.08);color:var(--paper);border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:6px 8px;font-size:13px;}
+.switch{position:relative;width:44px;height:24px;flex:none;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:rgba(255,255,255,0.15);border-radius:999px;transition:.2s;cursor:pointer;}
+.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--paper);border-radius:50%;transition:.2s;}
+input:checked + .slider{background:var(--teal);}
+input:checked + .slider:before{transform:translateX(20px);background:var(--gold);}
+.sticky-bottom{position:fixed;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(0deg, var(--ink2) 60%, transparent);display:flex;justify-content:center;gap:10px;}
+.btn-big{padding:14px 26px;border-radius:999px;border:none;background:var(--gold);color:var(--ink2);font-weight:800;font-size:15px;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(0,0,0,0.35);}
+.btn-ghost{padding:14px 20px;border-radius:999px;border:2px solid rgba(215,169,75,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:14px;}
+
+/* ---------- GAME ---------- */
+#screen-game{width:100%;padding:10px 10px 12px;align-items:center;}
+.topbar{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;padding:4px 6px 10px;}
+.topbar .title{font-size:14px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:700;}
+.icon-btn{background:transparent;border:1px solid rgba(215,169,75,0.4);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:12px;}
+
+.board-wrap{
+  width:100%;max-width:440px;margin:0 auto;overflow:hidden;border-radius:12px;
+  border:2px solid var(--gold-dim);box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+.board{
+  width:100%;aspect-ratio:1/1;display:grid;
+  grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);
+  background:var(--teal);
+  position:relative;
+}
+.tile{
+  position:relative;background:var(--paper);color:var(--text);
+  border:1px solid rgba(0,0,0,0.15);
+  display:flex;flex-direction:column;overflow:hidden;
+  line-height:1.05;
+}
+.tile .grp{height:clamp(6px,2.1vw,13px);flex:none;}
+.tile .body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1px;text-align:center;gap:1px;}
+.tile .nm{font-weight:800;font-size:clamp(4px,1.4vw,6.5px);text-transform:uppercase;letter-spacing:-0.1px;line-height:1.05;word-break:break-word;}
+.tile .pr{font-family:'Space Mono',monospace;font-size:clamp(4px,1.3vw,6px);color:var(--teal);font-weight:700;}
+.tile.corner .body{font-size:clamp(5.5px,1.9vw,9px);}
+.tile.corner{align-items:center;justify-content:center;}
+.tile.corner .nm{font-size:clamp(5px,1.8vw,8.5px);}
+.tile .icon{font-size:clamp(9px,3vw,16px);}
+.tile.owned{box-shadow:inset 0 0 0 2px var(--owner-clr, var(--gold));}
+.tile .owner-mark{position:absolute;top:1px;left:1px;width:clamp(4px,1.3vw,7px);height:clamp(4px,1.3vw,7px);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,0.55);display:none;z-index:2;}
+.tile .houses{position:absolute;bottom:1px;left:0;right:0;display:flex;justify-content:center;gap:1px;}
+.house-mark{width:clamp(3px,1vw,5px);height:clamp(3px,1vw,5px);background:var(--green-ok);border-radius:1px;}
+.hotel-mark{width:clamp(6px,1.8vw,9px);height:clamp(4px,1.2vw,6px);background:var(--red);border-radius:1px;}
+.tile .tokens{position:absolute;top:1px;right:1px;display:flex;flex-wrap:wrap;gap:1px;max-width:26px;justify-content:flex-end;}
+.token{
+  width:clamp(11px,3.4vw,17px);height:clamp(11px,3.4vw,17px);border-radius:50%;
+  border:1.5px solid rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;
+  font-size:clamp(7px,2.3vw,12px);line-height:1;background:var(--paper);
+  box-shadow:0 1px 3px rgba(0,0,0,0.5);
+}
+.token.walking{animation:tokenHop .28s ease;}
+@keyframes tokenHop{0%{transform:translateY(0) scale(1);}40%{transform:translateY(-35%) scale(1.15);}100%{transform:translateY(0) scale(1);}}
+
+.center-area{
+  grid-column:2 / span 9;grid-row:2 / span 9;position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  background:radial-gradient(circle, #386f61 0%, var(--teal) 70%);
+  border:2px dashed rgba(215,169,75,0.4);margin:6px;border-radius:8px;
+}
+.center-area h1{color:var(--gold);font-size:clamp(14px,4.6vw,24px);margin:0;letter-spacing:1px;text-align:center;line-height:1.15;}
+.center-area .sub{color:rgba(255,255,255,0.75);font-size:clamp(7px,1.9vw,10px);letter-spacing:1.5px;text-transform:uppercase;text-align:center;padding:0 4px;}
+.dice-box{display:flex;gap:clamp(5px,2vw,10px);margin-top:4px;}
+.die{
+  width:clamp(24px,7.5vw,40px);height:clamp(24px,7.5vw,40px);background:var(--paper);border-radius:6px;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:clamp(3px,1vw,5px);gap:2px;
+  box-shadow:0 3px 8px rgba(0,0,0,0.4);
+}
+.die .dot{width:100%;height:100%;border-radius:50%;background:transparent;}
+.die .dot.on{background:var(--ink);}
+
+.panel{width:100%;max-width:700px;margin-top:12px;}
+.turn-banner{
+  display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);
+  border:1px solid rgba(215,169,75,0.3);border-radius:12px;padding:10px 14px;margin-bottom:10px;
+}
+.turn-banner .dot-big{width:26px;height:26px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,0.5);}
+.turn-banner .info{flex:1;}
+.turn-banner .info .nm{font-weight:800;font-size:15px;}
+.turn-banner .info .mn{font-family:'Space Mono',monospace;color:var(--gold);font-size:13px;}
+.timer-badge{
+  flex:none;min-width:52px;text-align:center;font-family:'Space Mono',monospace;font-weight:700;font-size:15px;
+  color:var(--gold);border:2px solid rgba(215,169,75,0.5);border-radius:999px;padding:6px 10px;
+  transition:color .2s,border-color .2s,transform .15s;
+}
+.timer-badge.low{color:#fff;border-color:var(--red);background:var(--red);animation:timerPulse .6s infinite;}
+.timer-badge.hidden{visibility:hidden;}
+@keyframes timerPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+
+.buy-bar{
+  display:none;align-items:center;gap:10px;background:rgba(215,169,75,0.1);
+  border:2px solid var(--gold);border-radius:12px;padding:10px 12px;margin-bottom:10px;
+  animation:buyBarIn .25s ease;
+}
+@keyframes buyBarIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.buy-bar .buy-info{flex:1;min-width:0;}
+.buy-bar .buy-name{font-weight:800;font-size:13px;color:var(--gold);}
+.buy-bar .buy-price{font-family:'Space Mono',monospace;font-size:12px;color:var(--paper-dim);margin-top:2px;}
+.buy-bar .buy-actions{display:flex;gap:6px;flex:none;}
+.buy-bar .buy-actions button{padding:10px 14px;border-radius:8px;border:none;font-weight:800;font-size:12px;}
+.buy-bar .buy-yes{background:var(--gold);color:var(--ink2);}
+.buy-bar .buy-yes:disabled{opacity:0.35;}
+.buy-bar .buy-no{background:transparent;border:2px solid rgba(255,255,255,0.3)!important;color:var(--paper);}
+.buy-bar.house-bar{border-color:var(--green-ok);background:rgba(63,163,77,0.12);}
+.buy-bar.house-bar .buy-name{color:var(--green-ok);}
+
+.actions-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.actions-row button{
+  flex:1;min-width:110px;padding:12px 10px;border-radius:10px;border:none;
+  background:var(--gold);color:var(--ink2);font-weight:800;font-size:13px;
+}
+.actions-row button.secondary{background:transparent;border:2px solid rgba(215,169,75,0.5);color:var(--gold);}
+.actions-row button:disabled{opacity:0.35;pointer-events:none;}
+
+.players-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;}
+.player-chip{
+  flex:none;min-width:120px;background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.25);
+  border-radius:10px;padding:8px 10px;
+}
+.player-chip.current{border-color:var(--gold);background:rgba(215,169,75,0.12);}
+.player-chip.bankrupt{opacity:0.35;text-decoration:line-through;}
+.player-chip .row1{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;}
+.player-chip .row2{font-family:'Space Mono',monospace;font-size:12px;color:var(--gold);margin-top:2px;}
+
+.board-log{
+  position:absolute;left:6%;right:6%;bottom:5%;z-index:5;
+  display:flex;flex-direction:column;gap:3px;align-items:stretch;
+  pointer-events:none;max-height:46%;overflow:hidden;
+}
+.toast{
+  background:rgba(11,22,38,0.62);border:1px solid rgba(215,169,75,0.35);color:var(--paper);
+  padding:4px 8px;border-radius:6px;font-size:clamp(7px,1.9vw,10.5px);line-height:1.3;text-align:center;
+  opacity:0;transform:translateY(-6px);
+  transition:opacity .25s ease, transform .25s ease;
+  overflow-wrap:break-word;
+}
+.toast.show{opacity:1;transform:translateY(0);}
+.hl{color:var(--gold);font-weight:700;}
+
+/* modal */
+.overlay{
+  position:fixed;inset:0;background:rgba(6,10,20,0.82);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;z-index:50;padding:16px;
+}
+.overlay.show{display:flex;}
+#modalOverlay{z-index:60;}
+.modal{
+  background:var(--ink2);border:1px solid rgba(215,169,75,0.4);border-radius:16px;
+  width:100%;max-width:420px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.6);
+  max-height:85vh;overflow-y:auto;
+}
+.modal h3{margin:0 0 6px;color:var(--gold);font-size:19px;}
+.modal .desc{color:var(--paper-dim);font-size:13px;margin-bottom:14px;line-height:1.5;}
+.modal .price-tag{font-family:'Space Mono',monospace;font-size:22px;color:var(--gold);font-weight:700;margin-bottom:14px;}
+.modal-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.modal-actions button{flex:1;min-width:110px;padding:13px;border-radius:10px;border:none;font-weight:800;font-size:14px;}
+.btn-yes{background:var(--gold);color:var(--ink2);}
+.btn-no{background:transparent;border:2px solid rgba(215,169,75,0.4)!important;color:var(--paper);}
+.btn-danger{background:var(--red);color:#fff;}
+
+.deed-list{max-height:340px;overflow-y:auto;margin-top:6px;}
+.deed-item{
+  display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.04);border-radius:8px;
+  padding:8px 10px;margin-bottom:6px;font-size:12px;
+}
+.deed-item .di-top{display:flex;align-items:center;gap:10px;}
+.deed-swatch{width:10px;height:26px;border-radius:3px;flex:none;}
+.deed-item .di-name{flex:1;font-weight:700;}
+.deed-item .di-info{color:var(--paper-dim);font-size:11px;}
+.deed-item .di-btns{display:flex;gap:4px;flex-wrap:wrap;}
+.deed-item button{padding:6px 8px;font-size:11px;border-radius:6px;border:none;background:var(--teal);color:#fff;font-weight:700;}
+.deed-item button.mort{background:rgba(255,255,255,0.15);}
+.deed-item button:disabled{opacity:0.3;}
+.deed-details{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:3px 12px;
+  background:rgba(0,0,0,0.18);border-radius:6px;padding:8px 10px;
+}
+.deed-details .dd-row{display:flex;justify-content:space-between;gap:6px;font-size:10.5px;color:var(--paper-dim);}
+.deed-details .dd-row b{color:var(--paper);font-weight:700;}
+.deed-details .dd-row.dd-current{color:var(--gold);}
+.deed-details .dd-row.dd-current b{color:var(--gold);}
+
+.card-draw-stage{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px;}
+.card-draw-label{color:var(--gold);font-weight:800;letter-spacing:1px;margin-bottom:16px;font-size:14px;}
+.card-deck-wrap{position:relative;width:96px;height:136px;margin-bottom:14px;}
+.card-deck-back{
+  position:absolute;inset:0;border-radius:10px;
+  background:repeating-linear-gradient(135deg, var(--teal), var(--teal) 6px, #24564c 6px, #24564c 12px);
+  border:2px solid var(--gold-dim);
+}
+.card-deck-back.c3{transform:translate(5px,5px) rotate(4deg);}
+.card-deck-back.c2{transform:translate(2px,2px) rotate(-3deg);}
+.card-drawn{
+  position:absolute;inset:0;border-radius:10px;background:var(--ink2);border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+  opacity:0.001;transform:translateY(26px) rotate(-10deg) scale(0.8);
+  box-shadow:0 10px 26px rgba(0,0,0,0.5);
+}
+.card-drawn.drawing{animation:cardPop .75s cubic-bezier(.22,.85,.25,1) forwards;}
+@keyframes cardPop{
+  0%{transform:translateY(26px) rotate(-10deg) scale(0.8);opacity:0.001;}
+  60%{transform:translateY(-16px) rotate(7deg) scale(1.08);opacity:1;}
+  100%{transform:translateY(-6px) rotate(0deg) scale(1);opacity:1;}
+}
+.card-draw-hint{color:var(--paper-dim);font-size:11.5px;letter-spacing:0.5px;}
+
+.pass-turn-btn{
+  flex:1 1 100%!important;min-width:100%!important;padding:14px 10px!important;
+  background:var(--gold)!important;color:var(--ink2)!important;font-weight:800!important;
+  font-size:14px!important;letter-spacing:0.5px;animation:passPulse 1.4s ease-in-out infinite;
+}
+@keyframes passPulse{0%,100%{box-shadow:0 0 0 0 rgba(215,169,75,0.45);}50%{box-shadow:0 0 0 8px rgba(215,169,75,0);}}
+
+.winner-overlay{position:fixed;inset:0;background:rgba(6,10,20,0.95);z-index:90;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;}
+.winner-overlay.show{display:flex;flex-direction:column;}
+.winner-overlay .stamp{width:170px;height:170px;}
+
+.room-badge{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:2px;border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:3px 8px;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<!-- ================= MENU ================= -->
+<div id="screen-menu" class="screen active">
+  <div class="stamp">
+    <span class="top">Est. Hari Ini</span>
+    <span class="mid">MONOPOLI</span>
+    <span class="bot">Dunia Edition</span>
+  </div>
+  <h1>Monopoli Dunia</h1>
+  <div class="tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
+  <button class="menu-btn primary" onclick="goToModeSelect()">▶ Main</button>
+  <button class="menu-btn" onclick="toggleHowTo()">Cara Bermain</button>
+  <div class="howto" id="howto">
+    <p><b>Format:</b> Semua pemain main bergiliran di HP yang sama (seperti catur mabar offline). Setiap giliran akan ada layar "Serahkan HP" sebelum pemain berikutnya main.</p>
+    <p><b>Tujuan:</b> Jadi satu-satunya pemain yang belum bangkrut. Kumpulkan properti, bangun rumah/hotel, dan buat lawan kehabisan uang.</p>
+    <p><b>Dasar:</b> Lempar dadu → jalan → beli properti kosong atau bayar sewa ke pemiliknya → ikuti kartu Kesempatan/Dana Umum → kelola properti (bangun/gadai) kapan saja di giliranmu.</p>
+  </div>
+  <div class="menu-footer">Aturan bisa disesuaikan di layar berikutnya</div>
+</div>
+
+<!-- ================= MODE SELECT ================= -->
+<div id="screen-mode" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
+  <div class="setup-header">
+    <h2>Pilih Mode Main</h2>
+    <p>Gantian di 1 HP, atau tiap pemain pegang HP sendiri?</p>
+  </div>
+  <div class="card" style="cursor:pointer" onclick="goToSetup()">
+    <h3>📱 1 HP — Gantian</h3>
+    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Semua pemain main bergantian di HP yang sama, seperti catur mabar offline. Tidak perlu internet.</p>
+  </div>
+  <div class="card" style="cursor:pointer" onclick="goToOnline()">
+    <h3>🌐 Banyak HP — Online</h3>
+    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pakai HP masing-masing, tersambung lewat kode Room. Butuh internet, dan semua pemain buka halaman ini lewat link yang sama (link Publish/Share dari Claude).</p>
+  </div>
+  <div style="height:70px"></div>
+  <div class="sticky-bottom"><button class="btn-ghost" onclick="goToMenu()">Kembali</button></div>
+</div>
+
+<!-- ================= ONLINE (BUAT/GABUNG + LOBBY) ================= -->
+<div id="screen-online" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
+  <div class="setup-header">
+    <h2>Main Online</h2>
+    <p id="onlineSubText">Bagikan link halaman ini ke pemain lain, lalu buat atau gabung Room.</p>
+  </div>
+
+  <div id="onlineChooseView">
+    <div class="card">
+      <h3>Buat Room Baru</h3>
+      <div class="player-row"><input id="createNameInput" placeholder="Nama kamu" maxlength="14"></div>
+      <button class="btn-big" style="width:100%;margin-top:8px;" onclick="createRoomFlow()">Buat Room</button>
+    </div>
+    <div class="card">
+      <h3>Gabung Room</h3>
+      <div class="player-row"><input id="joinCodeInput" placeholder="Kode Room (4 huruf/angka)" maxlength="4" style="text-transform:uppercase;"></div>
+      <div class="player-row"><input id="joinNameInput" placeholder="Nama kamu" maxlength="14"></div>
+      <button class="btn-big" style="width:100%;margin-top:8px;" onclick="joinRoomFlow()">Gabung</button>
+    </div>
+  </div>
+
+  <div id="onlineLobbyView" style="display:none;">
+    <div class="card" style="text-align:center;">
+      <h3>Kode Room</h3>
+      <div style="font-family:'Space Mono',monospace;font-size:34px;letter-spacing:8px;color:var(--gold);font-weight:700;" id="lobbyCodeDisplay">----</div>
+      <p style="font-size:12px;color:var(--paper-dim);margin:6px 0 0;">Bagikan kode ini ke pemain lain (mereka buka link halaman ini juga)</p>
+    </div>
+    <div class="card">
+      <h3>Pemain Bergabung</h3>
+      <div id="lobbyPlayerList"></div>
+    </div>
+    <div class="card" id="lobbyRulesCard">
+      <h3>Aturan (diatur host)</h3>
+      <div class="rule-row"><div class="rule-label">Uang awal</div>
+        <select class="rule-select" id="lobbyStartMoney"><option value="1000">$1.000</option><option value="1500" selected>$1.500</option><option value="2000">$2.000</option><option value="2500">$2.500</option></select></div>
+      <div class="rule-row"><div class="rule-label">Gaji lewat Mulai</div>
+        <select class="rule-select" id="lobbyGoSalary"><option value="100">$100</option><option value="150">$150</option><option value="200" selected>$200</option><option value="300">$300</option></select></div>
+      <div class="rule-row"><div class="rule-label">3× Dobel = Penjara</div><label class="switch"><input type="checkbox" id="lobbyDoublesJail" checked><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Dana Parkir Bebas</div><label class="switch"><input type="checkbox" id="lobbyFreeParking"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div><label class="switch"><input type="checkbox" id="lobbyHouseFreeBuild"><span class="slider"></span></label></div>
+    </div>
+    <div id="lobbyWaitingNote" style="text-align:center;color:var(--paper-dim);font-size:13px;margin-top:6px;"></div>
+    <button class="btn-big" style="width:100%;margin-top:12px;" id="lobbyStartBtn" onclick="hostStartOnline()">Mulai Permainan</button>
+  </div>
+
+  <div style="height:70px"></div>
+  <div class="sticky-bottom"><button class="btn-ghost" onclick="leaveOnline()">Kembali</button></div>
+</div>
+
+<!-- ================= SETUP ================= -->
+<div id="screen-setup" class="screen">
+  <div class="setup-header">
+    <h2>Pengaturan Permainan</h2>
+    <p>Atur pemain lalu sesuaikan aturan bila perlu</p>
+  </div>
+
+  <div class="card">
+    <h3>Jumlah Pemain</h3>
+    <div class="pill-row" id="playerCountRow"></div>
+  </div>
+
+  <div class="card">
+    <h3>Nama &amp; Bidak Pemain</h3>
+    <div id="playerInputs"></div>
+  </div>
+
+  <div class="card">
+    <h3>Aturan Permainan</h3>
+    <div class="rule-row">
+      <div class="rule-label">Uang awal<small>Modal setiap pemain di awal permainan</small></div>
+      <select class="rule-select" id="ruleStartMoney">
+        <option value="1000">$1.000</option>
+        <option value="1500" selected>$1.500</option>
+        <option value="2000">$2.000</option>
+        <option value="2500">$2.500</option>
+      </select>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">Gaji lewat Mulai<small>Uang saat melewati/mendarat di petak Mulai</small></div>
+      <select class="rule-select" id="ruleGoSalary">
+        <option value="100">$100</option>
+        <option value="150">$150</option>
+        <option value="200" selected>$200</option>
+        <option value="300">$300</option>
+      </select>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">3× Dobel = Penjara<small>Aturan resmi standar</small></div>
+      <label class="switch"><input type="checkbox" id="ruleDoublesJail" checked><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">Dana Parkir Bebas<small>Pajak &amp; denda terkumpul, diambil siapa saja yang mendarat di Parkir Bebas (house rule populer)</small></div>
+      <label class="switch"><input type="checkbox" id="ruleFreeParking"><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">Sewa properti kosong tanpa rumah<small>2× sewa dasar jika satu pemain kuasai satu set warna penuh</small></div>
+      <label class="switch"><input type="checkbox" id="ruleMonopolyRent" checked><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div>
+      <label class="switch"><input type="checkbox" id="ruleHouseFreeBuild"><span class="slider"></span></label>
+    </div>
+  </div>
+
+  <div style="height:70px"></div>
+  <div class="sticky-bottom">
+    <button class="btn-ghost" onclick="goToMenu()">Kembali</button>
+    <button class="btn-big" onclick="startGame()">Mulai Permainan</button>
+  </div>
+</div>
+
+<!-- ================= GAME ================= -->
+<div id="screen-game" class="screen">
+  <div class="topbar">
+    <div class="title" id="topTitle">Monopoli Dunia</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="room-badge" id="roomBadge" style="display:none;"></div>
+      <button class="icon-btn" id="btnMute" onclick="toggleMute()">🔊</button>
+      <button class="icon-btn" onclick="confirmQuit()">Akhiri Game</button>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="panel">
+    <div class="turn-banner">
+      <div class="dot-big" id="tbDot"></div>
+      <div class="info">
+        <div class="nm" id="tbName">-</div>
+        <div class="mn" id="tbMoney">$0</div>
+      </div>
+      <div id="tbJail" style="font-size:11px;color:var(--red);font-weight:700;"></div>
+      <div class="timer-badge hidden" id="turnTimerBadge">60s</div>
+    </div>
+
+    <div class="buy-bar" id="buyBar"></div>
+    <div class="buy-bar house-bar" id="houseBar"></div>
+
+    <div class="actions-row">
+      <button id="btnPassTurn" class="pass-turn-btn" style="display:none;" onclick="confirmPass()">▶️ Lanjutkan Giliran</button>
+      <button id="btnRoll" onclick="onRoll()">🎲 Lempar Dadu</button>
+      <button id="btnManage" class="secondary" onclick="openManage()">Kelola Properti</button>
+      <button id="btnEndTurn" class="secondary" onclick="endTurn()" disabled>Selesai Giliran</button>
+    </div>
+    <div class="actions-row">
+      <button id="btnFriendProps" class="secondary" onclick="openFriendProps()">👀 Properti Teman</button>
+      <button id="btnOffer" class="secondary" onclick="openTradeOffer()">🤝 Tawar Properti</button>
+    </div>
+
+    <div class="players-strip" id="playersStrip"></div>
+  </div>
+</div>
+
+
+<!-- Generic action modal -->
+<div class="overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<!-- Manage properties modal -->
+<div class="overlay" id="manageOverlay">
+  <div class="modal">
+    <h3>Kelola Properti</h3>
+    <div class="desc">Bangun rumah/hotel, jual, atau gadai propertimu.</div>
+    <div class="deed-list" id="deedList"></div>
+    <div class="modal-actions">
+      <button class="btn-no" onclick="closeManage()">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- Winner overlay -->
+<div class="winner-overlay" id="winnerOverlay">
+  <div class="stamp"><span class="top">Selamat</span><span class="mid" style="font-size:22px;">MENANG</span><span class="bot">Game Over</span></div>
+  <h2 id="winnerName" style="color:var(--gold);margin:14px 0 6px;">-</h2>
+  <p style="color:var(--paper-dim);max-width:280px;" id="winnerSub"></p>
+  <button class="btn-big" style="margin-top:20px;" onclick="location.reload()">Main Lagi</button>
+</div>
+
+<script>
+/* ============================================================
+   SUPABASE STORAGE (menggantikan window.storage bawaan Claude)
+   ============================================================ */
+const SUPABASE_URL = 'https://axutxkzpmvgmdkdlhrvx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_sHryt3OGcPwmgp7IrPYj8g_Dtk7Yvuc';
+const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+window.storage = {
+  async get(key, shared){
+    const { data, error } = await sbClient.from('kv_store').select('value').eq('key', key).maybeSingle();
+    if(error) throw error;
+    if(!data) return null;
+    return { key, value: data.value, shared: !!shared };
+  },
+  async set(key, value, shared){
+    const { error } = await sbClient.from('kv_store').upsert({ key, value, updated_at: new Date().toISOString() });
+    if(error) throw error;
+    return { key, value, shared: !!shared };
+  },
+  async delete(key, shared){
+    const { error } = await sbClient.from('kv_store').delete().eq('key', key);
+    if(error) throw error;
+    return { key, deleted:true, shared: !!shared };
+  },
+  async list(prefix, shared){
+    let q = sbClient.from('kv_store').select('key');
+    if(prefix) q = q.like('key', prefix+'%');
+    const { data, error } = await q;
+    if(error) throw error;
+    return { keys: (data||[]).map(r=>r.key), prefix, shared: !!shared };
+  }
+};
+
+/* ============================================================
+   DATA PAPAN
+   ============================================================ */
+const GROUP_COLORS = {
+  brown:'var(--brown)', lightblue:'var(--lightblue)', pink:'var(--pink)',
+  orange:'var(--orange)', red:'var(--redgrp)', yellow:'var(--yellow)',
+  green:'var(--greengrp)', darkblue:'var(--darkblue)'
+};
+const HOUSE_COST = { brown:50, lightblue:50, pink:100, orange:100, red:150, yellow:150, green:200, darkblue:200 };
+
+function P(name, group, price, rent){ return {type:'property', name, group, price, rent, mortgage:Math.round(price/2)}; }
+function R(name, price){ return {type:'railroad', name, price, mortgage:Math.round(price/2), rent:[25,50,100,200]}; }
+function U(name, price){ return {type:'utility', name, price, mortgage:Math.round(price/2)}; }
+
+const BOARD = [
+  {type:'go', name:'MULAI'},
+  P('Indonesia','brown',60,[2,10,30,90,160,250]),
+  {type:'chest', name:'Dana Umum'},
+  P('Malaysia','brown',60,[4,20,60,180,320,450]),
+  {type:'tax', name:'Pajak Penghasilan', amount:200},
+  R('Stasiun Jakarta',200),
+  P('Vietnam','lightblue',100,[6,30,90,270,400,550]),
+  {type:'chance', name:'Kesempatan'},
+  P('Thailand','lightblue',100,[6,30,90,270,400,550]),
+  P('Filipina','lightblue',120,[8,40,100,300,450,600]),
+  {type:'jail', name:'Penjara / Hanya Lewat'},
+  P('Mesir','pink',140,[10,50,150,450,625,750]),
+  U('Perusahaan Listrik',150),
+  P('Maroko','pink',140,[10,50,150,450,625,750]),
+  P('Afrika Selatan','pink',160,[12,60,180,500,700,900]),
+  R('Stasiun Singapura',200),
+  P('India','orange',180,[14,70,200,550,750,950]),
+  {type:'chest', name:'Dana Umum'},
+  P('Turki','orange',180,[14,70,200,550,750,950]),
+  P('Yunani','orange',200,[16,80,220,600,800,1000]),
+  {type:'freeparking', name:'Parkir Bebas'},
+  P('Jerman','red',220,[18,90,250,700,875,1050]),
+  {type:'chance', name:'Kesempatan'},
+  P('Prancis','red',220,[18,90,250,700,875,1050]),
+  P('Italia','red',240,[20,100,300,750,925,1100]),
+  R('Stasiun Tokyo',200),
+  P('Spanyol','yellow',260,[22,110,330,800,975,1150]),
+  P('Belanda','yellow',260,[22,110,330,800,975,1150]),
+  U('Perusahaan Air',150),
+  P('Inggris','yellow',280,[24,120,360,850,1025,1200]),
+  {type:'gotojail', name:'Masuk Penjara'},
+  P('Kanada','green',300,[26,130,390,900,1100,1275]),
+  P('Brasil','green',300,[26,130,390,900,1100,1275]),
+  {type:'chest', name:'Dana Umum'},
+  P('Argentina','green',320,[28,150,450,1000,1200,1400]),
+  R('Stasiun London',200),
+  {type:'chance', name:'Kesempatan'},
+  P('Jepang','darkblue',350,[35,175,500,1100,1300,1500]),
+  {type:'tax', name:'Pajak Mewah', amount:100},
+  P('Amerika Serikat','darkblue',400,[50,200,600,1400,1700,2000]),
+];
+
+const CHANCE_CARDS = [
+  {text:'Maju ke petak MULAI. Kumpulkan gajimu.', fn:p=>advanceTo(p,0,true)},
+  {text:'Bank memberi dividen $50 untukmu.', fn:p=>pay(p,-50,'bank')},
+  {text:'Kamu terpilih jadi ketua RT. Bayar $40.', fn:p=>pay(p,40,'bank')},
+  {text:'Maju ke Stasiun terdekat. Bayar sewa 2× lipat.', fn:p=>advanceToNearest(p,'railroad',true)},
+  {text:'Mundur 3 petak.', fn:p=>advanceBack(p,3)},
+  {text:'Kartu Bebas dari Penjara. Simpan sampai dipakai.', fn:p=>{p.jailCards++; log(`${p.name} mendapat kartu bebas penjara.`);}},
+  {text:'Kena tilang, langsung masuk Penjara.', fn:p=>goToJail(p)},
+  {text:'Lakukan perbaikan rumah: bayar $25/rumah dan $100/hotel.', fn:p=>payRepairs(p,25,100)},
+  {text:'Kamu menang lomba puisi, hadiah $20.', fn:p=>pay(p,-20,'bank')},
+  {text:'Maju ke Jepang. Jika lewat MULAI, kumpulkan gaji.', fn:p=>advanceTo(p, BOARD.findIndex(t=>t.name==='Jepang'), true)},
+  {text:'Bayar biaya sekolah $150.', fn:p=>pay(p,150,'bank')},
+  {text:'Maju ke Perusahaan Listrik terdekat.', fn:p=>advanceToNearest(p,'utility',true)},
+  {text:'Kamu ditunjuk jadi juara RT, kumpulkan $100.', fn:p=>pay(p,-100,'bank')},
+  {text:'Maju 3 petak ke depan.', fn:p=>advanceTo(p, mod(p.pos+3,40), true)},
+  {text:'Bayar pajak jalan $15.', fn:p=>pay(p,15,'bank')},
+  {text:'Maju ke Stasiun Jakarta.', fn:p=>advanceTo(p, BOARD.findIndex(t=>t.name==='Stasiun Jakarta'), true)},
+];
+const CHEST_CARDS = [
+  {text:'Kesalahan bank, kamu menerima $200.', fn:p=>pay(p,-200,'bank')},
+  {text:'Biaya dokter, bayar $50.', fn:p=>pay(p,50,'bank')},
+  {text:'Warisan keluarga, kumpulkan $100.', fn:p=>pay(p,-100,'bank')},
+  {text:'Jual saham, kumpulkan $45.', fn:p=>pay(p,-45,'bank')},
+  {text:'Bayar uang sekolah $100.', fn:p=>pay(p,100,'bank')},
+  {text:'Menang hadiah kecantikan, kumpulkan $10.', fn:p=>pay(p,-10,'bank')},
+  {text:'Maju ke petak MULAI. Kumpulkan gajimu.', fn:p=>advanceTo(p,0,true)},
+  {text:'Kartu Bebas dari Penjara. Simpan sampai dipakai.', fn:p=>{p.jailCards++; log(`${p.name} mendapat kartu bebas penjara.`);}},
+  {text:'Langsung masuk Penjara.', fn:p=>goToJail(p)},
+  {text:'Bayar pajak penghasilan $75.', fn:p=>pay(p,75,'bank')},
+  {text:'Dana asuransi cair, kumpulkan $25.', fn:p=>pay(p,-25,'bank')},
+  {text:'Perbaikan rumah: bayar $40/rumah dan $115/hotel.', fn:p=>payRepairs(p,40,115)},
+  {text:'Ulang tahun! Setiap pemain lain memberimu $10.', fn:p=>collectFromAll(p,10)},
+  {text:'Kamu memenangkan undian, kumpulkan $150.', fn:p=>pay(p,-150,'bank')},
+  {text:'Bayar denda rumah sakit $100.', fn:p=>pay(p,100,'bank')},
+  {text:'Terima bunga deposito $25.', fn:p=>pay(p,-25,'bank')},
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const TOKEN_COLORS = ['#D7A94B','#6FB9DA','#E27AB0','#3FA34D'];
+const TOKEN_NAMES = ['Perahu','Topi','Kucing','Mobil'];
+const TOKEN_ICONS = ['⛵','🎩','🐱','🚗'];
+
+let state = null;
+let myOnlineSlot = null;
+let lobby = null;
+let lobbyPollTimer = null;
+let gamePollTimer = null;
+
+function shuffle(arr){ arr=[...arr]; for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+function mod(n,m){ return ((n%m)+m)%m; }
+function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+/* ============================================================
+   SOUND ENGINE (Web Audio, no external files)
+   ============================================================ */
+let audioCtx = null;
+let soundMuted = false;
+function ensureAudio(){
+  if(audioCtx) return audioCtx;
+  try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  return audioCtx;
+}
+function toggleMute(){
+  soundMuted = !soundMuted;
+  document.getElementById('btnMute').textContent = soundMuted ? '🔇' : '🔊';
+}
+function beep(freq, dur, type, vol, delay){
+  if(soundMuted) return;
+  const ctx = ensureAudio();
+  if(!ctx) return;
+  if(ctx.state==='suspended'){ ctx.resume(); }
+  const t0 = ctx.currentTime + (delay||0);
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type||'sine';
+  osc.frequency.setValueAtTime(freq, t0);
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(vol||0.12, t0+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t0); osc.stop(t0+dur+0.02);
+}
+function playSound(kind){
+  if(soundMuted) return;
+  switch(kind){
+    case 'roll':
+      for(let i=0;i<4;i++) beep(300+Math.random()*250, 0.06, 'square', 0.08, i*0.06);
+      break;
+    case 'step':
+      beep(520, 0.05, 'triangle', 0.06);
+      break;
+    case 'buy':
+      beep(523,0.09,'sine',0.13); beep(659,0.09,'sine',0.13,0.09); beep(784,0.16,'sine',0.14,0.18);
+      break;
+    case 'cash':
+      beep(880,0.07,'sine',0.11); beep(1046,0.1,'sine',0.11,0.07);
+      break;
+    case 'pay':
+      beep(220,0.14,'sawtooth',0.1); beep(160,0.18,'sawtooth',0.1,0.1);
+      break;
+    case 'card':
+      beep(440,0.08,'triangle',0.1); beep(660,0.1,'triangle',0.1,0.08);
+      break;
+    case 'jail':
+      beep(150,0.22,'square',0.12); beep(110,0.28,'square',0.12,0.15);
+      break;
+    case 'turn':
+      beep(660,0.09,'sine',0.1); beep(880,0.13,'sine',0.11,0.09);
+      break;
+    case 'timeup':
+      beep(200,0.3,'sawtooth',0.14); beep(150,0.4,'sawtooth',0.14,0.22);
+      break;
+    case 'tick':
+      beep(700,0.04,'square',0.05);
+      break;
+    case 'error':
+      beep(180,0.15,'sawtooth',0.1);
+      break;
+    case 'win':
+      [523,659,784,1046].forEach((f,i)=>beep(f,0.22,'sine',0.14,i*0.15));
+      break;
+  }
+}
+document.addEventListener('click', ()=>{ ensureAudio(); }, {once:true});
+
+/* ============================================================
+   TURN TIMER (60 detik per giliran)
+   ============================================================ */
+const TURN_TIME_LIMIT = 60;
+let turnTimerInterval = null;
+let turnTimerRemaining = TURN_TIME_LIMIT;
+function beginPlayerTurn(){
+  stopTurnTimer();
+  turnTimerRemaining = TURN_TIME_LIMIT;
+  updateTimerDisplay();
+  if(!state || currentPlayer().bankrupt) return;
+  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
+  if(notMyTurn) return;
+  turnTimerInterval = setInterval(()=>{
+    turnTimerRemaining = Math.max(0, turnTimerRemaining-1);
+    updateTimerDisplay();
+    if(turnTimerRemaining<=3 && turnTimerRemaining>0) playSound('tick');
+    if(turnTimerRemaining<=0){
+      const modalOpen = document.getElementById('modalOverlay').classList.contains('show')
+        || document.getElementById('manageOverlay').classList.contains('show')
+        || !!state.pendingDebt;
+      if(!modalOpen) handleTurnTimeout();
+    }
+  }, 1000);
+}
+function stopTurnTimer(){
+  if(turnTimerInterval){ clearInterval(turnTimerInterval); turnTimerInterval=null; }
+}
+function updateTimerDisplay(){
+  const el = document.getElementById('turnTimerBadge');
+  if(!el || !state) return;
+  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
+  el.classList.toggle('hidden', notMyTurn);
+  el.textContent = turnTimerRemaining+'s';
+  el.classList.toggle('low', turnTimerRemaining<=10);
+}
+function handleTurnTimeout(){
+  stopTurnTimer();
+  if(!state || currentPlayer().bankrupt) return;
+  playSound('timeup');
+  log(`⏱️ Waktu ${currentPlayer().name} habis, giliran otomatis berpindah.`);
+  if(state.pendingBuy){ decideBuy(false); }
+  forceEndTurn();
+}
+function forceEndTurn(){
+  if(!state) return;
+  const p = currentPlayer();
+  p.doublesCount = 0;
+  let next = state.currentIndex;
+  do{ next = mod(next+1, state.players.length); } while(state.players[next].bankrupt && next!==state.currentIndex);
+  state.currentIndex = next;
+  state.turnPhase = 'canRoll';
+  state.pendingBuy = null;
+  commit();
+  playSound('turn');
+  if(state.mode==='hotseat') showPassOverlay(); else beginPlayerTurn();
+}
+
+/* ============================================================
+   MENU / SETUP NAV
+   ============================================================ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function toggleHowTo(){ document.getElementById('howto').classList.toggle('show'); }
+function goToMenu(){ showScreen('screen-menu'); }
+function goToModeSelect(){ showScreen('screen-mode'); }
+
+/* ---------- ONLINE MODE ---------- */
+function ensureStorage(){
+  if(typeof window.storage === 'undefined'){
+    alertModal('Mode online butuh fitur penyimpanan artifact Claude. Pastikan halaman ini dibuka lewat link yang di-Publish/Share dari Claude (bukan file HTML yang diunduh langsung), dan semua HP terhubung internet.');
+    return false;
+  }
+  return true;
+}
+function alertModal(msg){
+  showModal({ title:'Pemberitahuan', desc:msg, buttons:[{label:'Oke', cls:'btn-yes', onClick:closeModal}] });
+}
+function goToOnline(){
+  if(!ensureStorage()) return;
+  showScreen('screen-online');
+  document.getElementById('onlineChooseView').style.display='block';
+  document.getElementById('onlineLobbyView').style.display='none';
+}
+function leaveOnline(){
+  clearInterval(lobbyPollTimer); clearInterval(gamePollTimer);
+  lobby=null; myOnlineSlot=null;
+  showScreen('screen-mode');
+}
+async function saveLobby(){
+  try{ await window.storage.set('mproom_'+lobby.code, JSON.stringify(lobby), true); return true; }
+  catch(e){ alertModal('Gagal menyimpan data room. Coba lagi.'); return false; }
+}
+function randomRoomCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s=''; for(let i=0;i<4;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+async function createRoomFlow(){
+  if(!ensureStorage()) return;
+  const name = (document.getElementById('createNameInput').value||'').trim() || 'Pemain 1';
+  const code = randomRoomCode();
+  lobby = { code, players:[{slot:0,name}], started:false, hostSlot:0 };
+  myOnlineSlot = 0;
+  const ok = await saveLobby();
+  if(!ok) return;
+  enterLobbyScreen();
+  startLobbyPolling();
+}
+async function joinRoomFlow(){
+  if(!ensureStorage()) return;
+  const code = (document.getElementById('joinCodeInput').value||'').trim().toUpperCase();
+  const name = (document.getElementById('joinNameInput').value||'').trim() || 'Pemain';
+  if(!code){ alertModal('Masukkan kode room dulu.'); return; }
+  let remote;
+  try{ const res = await window.storage.get('mproom_'+code, true); if(!res) throw 'no'; remote = JSON.parse(res.value); }
+  catch(e){ alertModal('Room tidak ditemukan. Cek kode lagi.'); return; }
+  if(remote.started){ alertModal('Permainan di room ini sudah dimulai.'); return; }
+  if(remote.players.length>=4){ alertModal('Room sudah penuh (4 pemain).'); return; }
+  lobby = remote;
+  const used = lobby.players.map(p=>p.slot);
+  let slot=0; while(used.includes(slot)) slot++;
+  lobby.players.push({slot,name});
+  myOnlineSlot = slot;
+  const ok = await saveLobby();
+  if(!ok) return;
+  enterLobbyScreen();
+  startLobbyPolling();
+}
+function enterLobbyScreen(){
+  showScreen('screen-online');
+  document.getElementById('onlineChooseView').style.display='none';
+  document.getElementById('onlineLobbyView').style.display='block';
+  renderLobby();
+}
+function renderLobby(){
+  document.getElementById('lobbyCodeDisplay').textContent = lobby.code;
+  const list = document.getElementById('lobbyPlayerList');
+  list.innerHTML='';
+  lobby.players.slice().sort((a,b)=>a.slot-b.slot).forEach(pl=>{
+    const row=document.createElement('div');
+    row.className='player-row';
+    row.innerHTML = `<div class="token-dot" style="background:${TOKEN_COLORS[pl.slot]}"></div><div style="flex:1;font-size:14px;">${pl.name}${pl.slot===lobby.hostSlot?' (Host)':''}${pl.slot===myOnlineSlot?' — kamu':''}</div>`;
+    list.appendChild(row);
+  });
+  const isHost = myOnlineSlot===lobby.hostSlot;
+  document.getElementById('lobbyRulesCard').style.display = isHost?'block':'none';
+  document.getElementById('lobbyStartBtn').style.display = isHost?'block':'none';
+  document.getElementById('lobbyStartBtn').disabled = lobby.players.length<2;
+  document.getElementById('lobbyWaitingNote').textContent = isHost
+    ? (lobby.players.length<2?'Butuh minimal 2 pemain untuk mulai.':'')
+    : 'Menunggu host memulai permainan...';
+}
+function startLobbyPolling(){
+  clearInterval(lobbyPollTimer);
+  lobbyPollTimer = setInterval(pollLobby, 1800);
+}
+async function pollLobby(){
+  if(!lobby) return;
+  try{
+    const res = await window.storage.get('mproom_'+lobby.code, true);
+    if(!res) return;
+    lobby = JSON.parse(res.value);
+    if(document.getElementById('onlineLobbyView').style.display!=='none') renderLobby();
+    if(lobby.started){
+      clearInterval(lobbyPollTimer);
+      beginOnlineGameFromLobby();
+    }
+  }catch(e){}
+}
+async function hostStartOnline(){
+  if(myOnlineSlot!==lobby.hostSlot) return;
+  if(lobby.players.length<2) return;
+  const rules = {
+    startMoney: parseInt(document.getElementById('lobbyStartMoney').value),
+    goSalary: parseInt(document.getElementById('lobbyGoSalary').value),
+    doublesToJail: document.getElementById('lobbyDoublesJail').checked,
+    freeParkingPot: document.getElementById('lobbyFreeParking').checked,
+    monopolyDoubleRent: true,
+    houseFreeBuild: document.getElementById('lobbyHouseFreeBuild').checked,
+  };
+  const players = lobby.players.slice().sort((a,b)=>a.slot-b.slot).map(pl=>({
+    id: pl.slot, name: pl.name, color: TOKEN_COLORS[pl.slot], token: TOKEN_NAMES[pl.slot],
+    money: rules.startMoney, pos:0, inJail:false, jailTurns:0, jailCards:0,
+    bankrupt:false, doublesCount:0, properties:[]
+  }));
+  const propStates = {};
+  BOARD.forEach((t,i)=>{ if(t.type==='property'||t.type==='railroad'||t.type==='utility'){ propStates[i]={owner:null,houses:0,mortgaged:false}; } });
+  state = {
+    mode:'online', roomCode: lobby.code, rules, players, currentIndex:0, freeParkingPot:0,
+    log:[`Room ${lobby.code} dimulai dengan ${players.length} pemain online. Uang awal ${fmt(rules.startMoney)}.`],
+    turnPhase:'canRoll', lastRoll:[1,1], propStates,
+    chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
+    chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
+    rev:0, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null
+  };
+  lobby.started = true;
+  clearInterval(lobbyPollTimer);
+  const ok = await saveLobby();
+  if(!ok) return;
+  await syncPush();
+  buildBoardDOM();
+  showScreen('screen-game');
+  renderAll();
+  startGamePolling();
+  beginPlayerTurn();
+}
+async function beginOnlineGameFromLobby(){
+  try{
+    const res = await window.storage.get('mpstate_'+lobby.code, true);
+    if(!res){ setTimeout(beginOnlineGameFromLobby, 1200); return; }
+    const payload = JSON.parse(res.value);
+    state = {
+      mode:'online', roomCode:lobby.code, rules:payload.rules, players:payload.players,
+      currentIndex:payload.currentIndex, freeParkingPot:payload.freeParkingPot, log:payload.log,
+      turnPhase:payload.turnPhase, propStates:payload.propStates, lastRoll:payload.lastRoll,
+      chanceDeckIds:payload.chanceDeckIds, chestDeckIds:payload.chestDeckIds, rev:payload.rev,
+      pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:payload.pendingTradeOffer||null
+    };
+    buildBoardDOM();
+    showScreen('screen-game');
+    renderAll();
+    startGamePolling();
+    beginPlayerTurn();
+  }catch(e){ setTimeout(beginOnlineGameFromLobby, 1200); }
+}
+function startGamePolling(){
+  clearInterval(gamePollTimer);
+  gamePollTimer = setInterval(pollGameState, 1800);
+}
+async function pollGameState(){
+  if(!state || state.mode!=='online') return;
+  try{
+    const res = await window.storage.get('mpstate_'+state.roomCode, true);
+    if(!res) return;
+    const payload = JSON.parse(res.value);
+    if(!payload.rev || payload.rev<=state.rev) return;
+    applyRemoteState(payload);
+  }catch(e){}
+}
+function applyRemoteState(payload){
+  const prevOffer = state.pendingTradeOffer;
+  state.rev = payload.rev;
+  state.rules = payload.rules;
+  state.players = payload.players;
+  state.currentIndex = payload.currentIndex;
+  state.freeParkingPot = payload.freeParkingPot;
+  state.log = payload.log;
+  state.turnPhase = payload.turnPhase;
+  state.propStates = payload.propStates;
+  state.lastRoll = payload.lastRoll;
+  state.chanceDeckIds = payload.chanceDeckIds;
+  state.chestDeckIds = payload.chestDeckIds;
+  state.pendingTradeOffer = payload.pendingTradeOffer||null;
+  renderAll();
+  beginPlayerTurn();
+  if(!document.getElementById('winnerOverlay').classList.contains('show')) checkGameOver();
+  const offer = state.pendingTradeOffer;
+  if(offer && (!prevOffer || prevOffer.idx!==offer.idx || prevOffer.amount!==offer.amount || prevOffer.fromId!==offer.fromId) && myOnlineSlot===offer.toId){
+    showTradeOfferReceived();
+  }
+}
+function serializeState(){
+  return {
+    rev: (state.rev||0)+1,
+    rules: state.rules,
+    players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,doublesCount:p.doublesCount,properties:p.properties||[]})),
+    currentIndex: state.currentIndex,
+    freeParkingPot: state.freeParkingPot,
+    log: state.log.slice(-60),
+    turnPhase: state.turnPhase,
+    propStates: state.propStates,
+    lastRoll: state.lastRoll,
+    chanceDeckIds: state.chanceDeckIds,
+    chestDeckIds: state.chestDeckIds,
+    pendingTradeOffer: state.pendingTradeOffer||null,
+  };
+}
+async function syncPush(){
+  try{
+    const payload = serializeState();
+    state.rev = payload.rev;
+    await window.storage.set('mpstate_'+state.roomCode, JSON.stringify(payload), true);
+  }catch(e){ console.error('sync push failed', e); }
+}
+function commit(){
+  renderAll();
+  if(state.mode==='online') syncPush();
+}
+function myTurnOK(){
+  return !(state && state.mode==='online' && myOnlineSlot!==state.currentIndex);
+}
+
+let setupPlayerCount = 4;
+function goToSetup(){
+  showScreen('screen-setup');
+  renderPlayerCountPicker();
+  renderPlayerInputs();
+}
+function renderPlayerCountPicker(){
+  const row = document.getElementById('playerCountRow');
+  row.innerHTML='';
+  [2,3,4].forEach(n=>{
+    const b=document.createElement('button');
+    b.className='pill'+(n===setupPlayerCount?' active':'');
+    b.textContent=n+' Pemain';
+    b.onclick=()=>{ setupPlayerCount=n; renderPlayerCountPicker(); renderPlayerInputs(); };
+    row.appendChild(b);
+  });
+}
+function renderPlayerInputs(){
+  const wrap = document.getElementById('playerInputs');
+  const prev = wrap.querySelectorAll('input');
+  const prevVals = Array.from(prev).map(i=>i.value);
+  wrap.innerHTML='';
+  for(let i=0;i<setupPlayerCount;i++){
+    const row=document.createElement('div');
+    row.className='player-row';
+    const dot=document.createElement('div');
+    dot.className='token-dot';
+    dot.style.background=TOKEN_COLORS[i];
+    const input=document.createElement('input');
+    input.placeholder='Nama Pemain '+(i+1)+' ('+TOKEN_NAMES[i]+')';
+    input.maxLength=14;
+    input.value = prevVals[i] || '';
+    input.id='playerName'+i;
+    row.appendChild(dot); row.appendChild(input);
+    wrap.appendChild(row);
+  }
+}
+
+function startGame(){
+  const rules = {
+    startMoney: parseInt(document.getElementById('ruleStartMoney').value),
+    goSalary: parseInt(document.getElementById('ruleGoSalary').value),
+    doublesToJail: document.getElementById('ruleDoublesJail').checked,
+    freeParkingPot: document.getElementById('ruleFreeParking').checked,
+    monopolyDoubleRent: document.getElementById('ruleMonopolyRent').checked,
+    houseFreeBuild: document.getElementById('ruleHouseFreeBuild').checked,
+  };
+  const players = [];
+  for(let i=0;i<setupPlayerCount;i++){
+    const nameInput = document.getElementById('playerName'+i);
+    const name = (nameInput.value||'').trim() || ('Pemain '+(i+1));
+    players.push({
+      id:i, name, color:TOKEN_COLORS[i], token:TOKEN_NAMES[i],
+      money:rules.startMoney, pos:0, inJail:false, jailTurns:0, jailCards:0,
+      bankrupt:false, doublesCount:0, properties:[]
+    });
+  }
+  const propStates = {};
+  BOARD.forEach((t,i)=>{ if(t.type==='property'||t.type==='railroad'||t.type==='utility'){ propStates[i]={owner:null,houses:0,mortgaged:false}; } });
+  state = {
+    mode:'hotseat', roomCode:null, rev:0,
+    rules, players, currentIndex:0, freeParkingPot:0,
+    log:[], turnPhase:'canRoll', pendingDebt:null, lastRoll:[1,1],
+    pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, propStates,
+    chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
+    chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
+  };
+  buildBoardDOM();
+  renderAll();
+  showScreen('screen-game');
+  log(`Permainan dimulai dengan ${players.length} pemain. Uang awal ${fmt(rules.startMoney)}.`);
+  updateTurnBanner();
+  beginPlayerTurn();
+}
+
+function confirmQuit(){
+  showModal({
+    title:'Akhiri Permainan?',
+    desc:'Progres permainan ini tidak disimpan.',
+    buttons:[
+      {label:'Batal', cls:'btn-no', onClick:closeModal},
+      {label:'Ya, Akhiri', cls:'btn-danger', onClick:()=>{ closeModal(); location.reload(); }}
+    ]
+  });
+}
+
+/* ============================================================
+   BOARD RENDER
+   ============================================================ */
+function tilePos(i){
+  if(i===0) return {col:11,row:11};
+  if(i>=1&&i<=9) return {col:11-i, row:11};
+  if(i===10) return {col:1,row:11};
+  if(i>=11&&i<=19) return {col:1, row:21-i};
+  if(i===20) return {col:1,row:1};
+  if(i>=21&&i<=29) return {col:i-19, row:1};
+  if(i===30) return {col:11,row:1};
+  if(i>=31&&i<=39) return {col:11, row:i-29};
+}
+const TILE_ICON = {go:'➡', chance:'❓', chest:'💰', tax:'💵', jail:'🔒', freeparking:'🅿', gotojail:'👮', railroad:'🚂', utility:'💡'};
+
+function buildBoardDOM(){
+  const board = document.getElementById('board');
+  board.innerHTML='';
+  const center = document.createElement('div');
+  center.className='center-area';
+  center.innerHTML = `<div class="sub">Bidak &amp; Sewa • Gantian di 1 HP</div>
+    <h1>MONOPOLI<br>DUNIA</h1>
+    <div class="dice-box" id="diceBox">${diceHTML(1)}${diceHTML(1)}</div>
+    <div class="board-log" id="toastStack"></div>`;
+  board.appendChild(center);
+
+  BOARD.forEach((t,i)=>{
+    const pos = tilePos(i);
+    const el = document.createElement('div');
+    el.className='tile'+(i%10===0?' corner':'');
+    el.id='tile'+i;
+    el.style.gridColumn = pos.col+' / span 1';
+    el.style.gridRow = pos.row+' / span 1';
+    el.onclick=()=>showTileInfo(i);
+
+    let grpBar='';
+    if(t.type==='property'){
+      grpBar = `<div class="grp" style="background:${GROUP_COLORS[t.group]}"></div>`;
+    }
+    let bodyHTML='';
+    if(t.type==='go'){ bodyHTML = `<div class="icon">➡</div><div class="nm">MULAI</div>`; }
+    else if(t.type==='jail'){ bodyHTML = `<div class="icon">🔒</div><div class="nm">PENJARA</div>`; }
+    else if(t.type==='freeparking'){ bodyHTML = `<div class="icon">🅿</div><div class="nm">PARKIR BEBAS</div>`; }
+    else if(t.type==='gotojail'){ bodyHTML = `<div class="icon">👮</div><div class="nm">MASUK PENJARA</div>`; }
+    else if(t.type==='chance'){ bodyHTML = `<div class="icon">❓</div><div class="nm">${t.name}</div>`; }
+    else if(t.type==='chest'){ bodyHTML = `<div class="icon">💰</div><div class="nm">${t.name}</div>`; }
+    else if(t.type==='tax'){ bodyHTML = `<div class="icon">💵</div><div class="nm">${t.name}</div><div class="pr">${fmt(t.amount)}</div>`; }
+    else if(t.type==='railroad'){ bodyHTML = `<div class="icon">🚂</div><div class="nm">${t.name}</div><div class="pr">${fmt(t.price)}</div>`; }
+    else if(t.type==='utility'){ bodyHTML = `<div class="icon">💡</div><div class="nm">${t.name}</div><div class="pr">${fmt(t.price)}</div>`; }
+    else { bodyHTML = `<div class="nm">${t.name}</div><div class="pr">${fmt(t.price)}</div>`; }
+
+    el.innerHTML = grpBar + `<div class="body">${bodyHTML}</div><div class="owner-mark" id="ownerMark${i}"></div><div class="houses" id="houses${i}"></div><div class="tokens" id="tokens${i}"></div>`;
+    board.appendChild(el);
+  });
+}
+function diceHTML(v){
+  const patterns = {
+    1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8]
+  };
+  const on = patterns[v]||[4];
+  let html='<div class="die">';
+  for(let i=0;i<9;i++){ html+=`<div class="dot${on.includes(i)?' on':''}"></div>`; }
+  html+='</div>';
+  return html;
+}
+
+/* ============================================================
+   RENDER STATE
+   ============================================================ */
+function ownerOf(i){ return state.players.find(p=>p.properties && p.properties.includes(i)); }
+function propState(i){ return state.propStates[i]; }
+
+function renderAll(){
+  if(!state.propStates){
+    state.propStates = {};
+    BOARD.forEach((t,i)=>{ if(t.type==='property'||t.type==='railroad'||t.type==='utility'){ state.propStates[i]={owner:null, houses:0, mortgaged:false}; } });
+  }
+  renderTokensAndHouses();
+  renderPlayersStrip();
+  updateTurnBanner();
+  renderBuyBar();
+  renderHouseBar();
+}
+function renderTokensAndHouses(animatePlayerId){
+  BOARD.forEach((t,i)=>{
+    const tokEl = document.getElementById('tokens'+i);
+    if(tokEl){
+      tokEl.innerHTML='';
+      state.players.forEach(p=>{
+        if(!p.bankrupt && p.pos===i){
+          const d=document.createElement('div');
+          d.className='token'+(p.id===animatePlayerId?' walking':'');
+          d.style.borderColor=p.color;
+          d.style.boxShadow='0 1px 3px rgba(0,0,0,0.5), 0 0 0 2px '+p.color+'55';
+          d.textContent = TOKEN_ICONS[p.id % TOKEN_ICONS.length] || '●';
+          tokEl.appendChild(d);
+        }
+      });
+    }
+    const houseEl = document.getElementById('houses'+i);
+    if(houseEl && state.propStates && state.propStates[i]){
+      houseEl.innerHTML='';
+      const ps = state.propStates[i];
+      if(ps.houses===5){ const h=document.createElement('div'); h.className='hotel-mark'; houseEl.appendChild(h); }
+      else { for(let k=0;k<ps.houses;k++){ const h=document.createElement('div'); h.className='house-mark'; houseEl.appendChild(h); } }
+      const tileEl = document.getElementById('tile'+i);
+      const ownerMarkEl = document.getElementById('ownerMark'+i);
+      const owner = ps.owner!=null ? state.players.find(pl=>pl.id===ps.owner) : null;
+      if(tileEl){
+        tileEl.classList.toggle('owned', !!owner);
+        tileEl.style.setProperty('--owner-clr', owner ? owner.color : '');
+      }
+      if(ownerMarkEl){
+        if(owner){ ownerMarkEl.style.display='block'; ownerMarkEl.style.background=owner.color; }
+        else { ownerMarkEl.style.display='none'; }
+      }
+    }
+  });
+}
+function renderPlayersStrip(){
+  const strip = document.getElementById('playersStrip');
+  strip.innerHTML='';
+  state.players.forEach(p=>{
+    const chip=document.createElement('div');
+    chip.className='player-chip'+(p.id===state.currentIndex?' current':'')+(p.bankrupt?' bankrupt':'');
+    chip.innerHTML = `<div class="row1"><span class="token" style="background:${p.color};position:static;display:inline-block;">&nbsp;</span> ${p.name}</div>
+      <div class="row2">${p.bankrupt?'Bangkrut':fmt(p.money)}</div>`;
+    strip.appendChild(chip);
+  });
+}
+function log(msg){
+  state.log.push(msg);
+  showToast(msg);
+}
+function showToast(msg){
+  const stack = document.getElementById('toastStack');
+  if(!stack) return;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = msg;
+  stack.prepend(el);
+  while(stack.children.length>3){ stack.removeChild(stack.lastChild); }
+  requestAnimationFrame(()=>el.classList.add('show'));
+}
+function updateTurnBanner(){
+  const p = currentPlayer();
+  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
+  document.getElementById('tbDot').style.background = p.color;
+  document.getElementById('tbName').textContent = p.name+"'s turn";
+  document.getElementById('tbMoney').textContent = fmt(p.money);
+  document.getElementById('tbJail').textContent = p.inJail ? 'DI PENJARA' : (notMyTurn ? 'Menunggu giliran...' : '');
+  document.getElementById('btnRoll').disabled = state.turnPhase!=='canRoll' || notMyTurn || !!state.pendingDebt;
+  document.getElementById('btnEndTurn').disabled = state.turnPhase!=='canEndTurn' || notMyTurn || !!state.pendingDebt;
+  document.getElementById('btnManage').disabled = notMyTurn;
+  const btnPass = document.getElementById('btnPassTurn');
+  const btnRollEl = document.getElementById('btnRoll');
+  const btnManageEl = document.getElementById('btnManage');
+  const btnEndTurnEl = document.getElementById('btnEndTurn');
+  const btnFriendPropsEl = document.getElementById('btnFriendProps');
+  const btnOfferEl = document.getElementById('btnOffer');
+  if(awaitingPass){
+    btnPass.style.display='';
+    btnPass.textContent = `▶️ Lanjutkan Giliran ${p.name}`;
+    btnRollEl.style.display='none';
+    btnManageEl.style.display='none';
+    btnEndTurnEl.style.display='none';
+    if(btnFriendPropsEl) btnFriendPropsEl.disabled = true;
+    if(btnOfferEl) btnOfferEl.disabled = true;
+  } else {
+    btnPass.style.display='none';
+    btnRollEl.style.display='';
+    btnManageEl.style.display='';
+    btnEndTurnEl.style.display='';
+    if(btnFriendPropsEl) btnFriendPropsEl.disabled = false;
+    if(btnOfferEl) btnOfferEl.disabled = false;
+  }
+  const badge = document.getElementById('roomBadge');
+  const topTitle = document.getElementById('topTitle');
+  if(state.mode==='online'){
+    badge.style.display='inline-block';
+    badge.textContent = 'Room '+state.roomCode+(myOnlineSlot!=null?' • Kamu: '+state.players[myOnlineSlot].name:'');
+    topTitle.textContent = 'Monopoli Dunia';
+  } else {
+    badge.style.display='none';
+    topTitle.textContent = 'Monopoli Dunia';
+  }
+  updateTimerDisplay();
+}
+function renderBuyBar(){
+  const bar = document.getElementById('buyBar');
+  if(!bar) return;
+  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
+  if(state.pendingBuy && !notMyTurn){
+    const idx = state.pendingBuy.idx;
+    const t = BOARD[idx];
+    const p = currentPlayer();
+    const canAfford = p.money >= t.price;
+    bar.style.display='flex';
+    bar.innerHTML = `
+      <div class="buy-info">
+        <div class="buy-name">🏷️ ${t.name} — belum ada pemilik</div>
+        <div class="buy-price">Harga ${fmt(t.price)}${t.type==='property' ? ' • Sewa dasar '+fmt(t.rent[0]) : ''}. Kelola properti dulu kalau perlu, lalu putuskan.</div>
+      </div>
+      <div class="buy-actions">
+        <button class="buy-yes" ${canAfford?'':'disabled'} onclick="decideBuy(true)">Beli</button>
+        <button class="buy-no" onclick="decideBuy(false)">Lewati</button>
+      </div>`;
+  } else {
+    bar.style.display='none';
+  }
+}
+function renderHouseBar(){
+  const bar = document.getElementById('houseBar');
+  if(!bar) return;
+  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
+  if(state.pendingHouseBuild!=null && !notMyTurn){
+    const idx = state.pendingHouseBuild;
+    const t = BOARD[idx];
+    const ps = state.propStates[idx];
+    const p = currentPlayer();
+    if(!t || t.type!=='property' || ps.owner!==p.id || ps.mortgaged || ps.houses>=5){
+      state.pendingHouseBuild = null;
+      bar.style.display='none';
+      return;
+    }
+    const cost = HOUSE_COST[t.group];
+    const canAfford = p.money >= cost;
+    const label = ps.houses===4 ? 'Hotel' : ('Rumah ke-'+(ps.houses+1));
+    bar.style.display='flex';
+    bar.innerHTML = `
+      <div class="buy-info">
+        <div class="buy-name">🏠 Bangun di ${t.name}?</div>
+        <div class="buy-price">${label} — biaya ${fmt(cost)}</div>
+      </div>
+      <div class="buy-actions">
+        <button class="buy-yes" ${canAfford?'':'disabled'} onclick="decideHouseBuild(true)">Bangun</button>
+        <button class="buy-no" onclick="decideHouseBuild(false)">Lewati</button>
+      </div>`;
+  } else {
+    bar.style.display='none';
+  }
+}
+function decideHouseBuild(build){
+  if(!myTurnOK()) return;
+  const idx = state.pendingHouseBuild;
+  if(idx==null) return;
+  const t = BOARD[idx];
+  state.pendingHouseBuild = null;
+  if(build){
+    buildHouse(idx);
+  } else {
+    log(`${currentPlayer().name} memilih tidak membangun di ${t.name} sekarang.`);
+  }
+  commit();
+}
+function currentPlayer(){ return state.players[state.currentIndex]; }
+
+/* ============================================================
+   TURN FLOW
+   ============================================================ */
+function onRoll(){
+  if(!myTurnOK()) return;
+  if(state.turnPhase!=='canRoll') return;
+  const p = currentPlayer();
+  state.pendingHouseBuild = null;
+  if(p.inJail){ handleJailRoll(p); return; }
+  const d1 = 1+Math.floor(Math.random()*6);
+  const d2 = 1+Math.floor(Math.random()*6);
+  state.lastRoll=[d1,d2];
+  document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
+  playSound('roll');
+  const isDouble = d1===d2;
+  if(isDouble){ p.doublesCount++; } else { p.doublesCount=0; }
+  log(`${p.name} melempar dadu: <span class="hl">${d1} + ${d2}</span>${isDouble?' (Dobel!)':''}`);
+
+  if(isDouble && p.doublesCount>=3 && state.rules.doublesToJail){
+    log(`${p.name} dobel 3× berturut-turut. Langsung masuk penjara!`);
+    goToJail(p);
+    p.doublesCount=0;
+    state.turnPhase='canEndTurn';
+    commit();
+    return;
+  }
+  document.getElementById('btnRoll').disabled = true;
+  moveSteps(p, d1+d2, isDouble);
+}
+/* Animate a token walking forward `steps` tiles, one tile at a time. */
+function animateWalk(p, steps, paySalary, callback){
+  let left = steps;
+  function tick(){
+    if(left<=0){ callback(); return; }
+    p.pos = mod(p.pos+1,40);
+    if(paySalary && p.pos===0){
+      p.money += state.rules.goSalary;
+      log(`${p.name} melewati MULAI, kumpulkan ${fmt(state.rules.goSalary)}.`);
+      renderPlayersStrip();
+    }
+    renderTokensAndHouses(p.id);
+    playSound('step');
+    left--;
+    setTimeout(tick, 150);
+  }
+  tick();
+}
+/* Animate a token walking backward `steps` tiles (no salary). */
+function animateWalkBack(p, steps, callback){
+  let left = steps;
+  function tick(){
+    if(left<=0){ callback(); return; }
+    p.pos = mod(p.pos-1,40);
+    renderTokensAndHouses(p.id);
+    playSound('step');
+    left--;
+    setTimeout(tick, 150);
+  }
+  tick();
+}
+function moveSteps(p, steps, wasDouble){
+  animateWalk(p, steps, true, ()=>{
+    state._wasDouble = wasDouble;
+    landOnTile(p, wasDouble);
+  });
+}
+function advanceTo(p, idx, paySalaryIfPass){
+  let steps = mod(idx-p.pos,40);
+  if(steps===0 && paySalaryIfPass) steps=40;
+  animateWalk(p, steps, paySalaryIfPass, ()=>{
+    landOnTile(p, false, true);
+  });
+}
+function advanceBack(p, n){
+  animateWalkBack(p, n, ()=>{
+    landOnTile(p, false, true);
+  });
+}
+function advanceToNearest(p, type, doubleRent){
+  let idx = p.pos;
+  for(let step=1;step<=40;step++){
+    const cand = mod(p.pos+step,40);
+    if(BOARD[cand].type===type){ idx=cand; break; }
+  }
+  const steps = mod(idx-p.pos,40);
+  animateWalk(p, steps, true, ()=>{
+    landOnTile(p, false, true, doubleRent);
+  });
+}
+
+function landOnTile(p, wasDouble, fromCard, forceDoubleRent){
+  const idx = p.pos;
+  const t = BOARD[idx];
+  log(`${p.name} mendarat di <b>${t.name}</b>.`);
+
+  if(t.type==='go'){ finishLanding(p, wasDouble); return; }
+  if(t.type==='jail'){ finishLanding(p, wasDouble); return; }
+  if(t.type==='freeparking'){
+    if(state.rules.freeParkingPot && state.freeParkingPot>0){
+      p.money += state.freeParkingPot;
+      log(`${p.name} mengambil Dana Parkir Bebas sebesar ${fmt(state.freeParkingPot)}!`);
+      state.freeParkingPot=0;
+    }
+    finishLanding(p, wasDouble); return;
+  }
+  if(t.type==='gotojail'){ goToJail(p); state.turnPhase='canEndTurn'; commit(); return; }
+  if(t.type==='tax'){
+    playSound('pay');
+    chargePlayer(p, t.amount, 'bank', ()=>finishLanding(p, wasDouble));
+    return;
+  }
+  if(t.type==='chance' || t.type==='chest'){
+    playSound('card');
+    drawCard(p, t.type==='chance'?'chance':'chest', wasDouble);
+    return;
+  }
+  if(t.type==='property' || t.type==='railroad' || t.type==='utility'){
+    const ps = state.propStates[idx];
+    if(ps.owner==null){
+      state.pendingBuy = {idx, wasDouble};
+      state.turnPhase = 'canDecideBuy';
+      log(`${t.name} belum ada pemilik. Kelola properti dulu kalau perlu, lalu putuskan beli atau lewati.`);
+      commit();
+      return;
+    } else if(ps.owner===p.id){
+      if(state.rules.houseFreeBuild && t.type==='property' && !ps.mortgaged && ps.houses<5){
+        state.pendingHouseBuild = idx;
+        log(`${p.name} boleh membangun di ${t.name} sekarang.`);
+      }
+      finishLanding(p, wasDouble); return;
+    } else if(ps.mortgaged){
+      log(`Properti ini sedang digadai, tidak ada sewa.`);
+      finishLanding(p, wasDouble); return;
+    } else {
+      const owner = state.players.find(pl=>pl.id===ps.owner);
+      const rentAmt = computeRent(idx, forceDoubleRent);
+      log(`${p.name} harus bayar sewa ${fmt(rentAmt)} ke ${owner.name}.`);
+      playSound('pay');
+      chargePlayer(p, rentAmt, owner.id, ()=>finishLanding(p, wasDouble));
+      return;
+    }
+  }
+  finishLanding(p, wasDouble);
+}
+
+function finishLanding(p, wasDouble){
+  if(p.bankrupt){ return; }
+  if(wasDouble && !p.inJail){
+    state.turnPhase='canRoll';
+    log(`${p.name} dapat lempar dadu lagi (dobel).`);
+  } else {
+    state.turnPhase='canEndTurn';
+  }
+  commit();
+}
+
+function computeRent(idx, forceDoubleRent){
+  const t = BOARD[idx];
+  const ps = state.propStates[idx];
+  const owner = state.players.find(pl=>pl.id===ps.owner);
+  if(t.type==='railroad'){
+    const count = owner.properties.filter(i=>BOARD[i].type==='railroad').length;
+    return t.rent[count-1];
+  }
+  if(t.type==='utility'){
+    const count = owner.properties.filter(i=>BOARD[i].type==='utility').length;
+    const diceSum = state.lastRoll[0]+state.lastRoll[1];
+    return diceSum * (count>=2 ? 10 : 4);
+  }
+  // property
+  if(ps.houses>0){ return t.rent[ps.houses]; }
+  const base = t.rent[0];
+  if(state.rules.monopolyDoubleRent && ownsFullGroup(owner, t.group)){ return base*2; }
+  return base;
+}
+function ownsFullGroup(player, group){
+  const groupTiles = BOARD.map((t,i)=>({t,i})).filter(x=>x.t.type==='property' && x.t.group===group).map(x=>x.i);
+  return groupTiles.every(i=>state.propStates[i].owner===player.id);
+}
+
+/* ============================================================
+   PAYMENTS / DEBT
+   ============================================================ */
+function pay(p, amount, toId){
+  // amount>0 => player pays; amount<0 => player receives
+  if(amount<=0){ p.money += -amount; log(`${p.name} menerima ${fmt(-amount)}.`); renderAll(); return; }
+  chargePlayer(p, amount, toId, ()=>{ state.turnPhase='canEndTurn'; renderAll(); });
+}
+function chargePlayer(p, amount, toId, onDone){
+  if(p.money >= amount){
+    p.money -= amount;
+    if(toId==='bank'){
+      if(state.rules.freeParkingPot){ state.freeParkingPot += amount; }
+    } else {
+      const to = state.players.find(pl=>pl.id===toId);
+      if(to){ to.money += amount; }
+    }
+    renderAll();
+    onDone && onDone();
+  } else {
+    state.pendingDebt = {player:p, amount, toId, onDone};
+    renderAll();
+    openDebtModal();
+  }
+}
+function collectFromAll(p, amt){
+  state.players.forEach(other=>{
+    if(other.id!==p.id && !other.bankrupt){
+      const pay = Math.min(amt, other.money);
+      other.money -= pay; p.money += pay;
+    }
+  });
+  log(`${p.name} menerima ${fmt(amt)} dari setiap pemain lain (ulang tahun).`);
+  renderAll();
+}
+function payRepairs(p, perHouse, perHotel){
+  let houses=0, hotels=0;
+  (p.properties||[]).forEach(i=>{
+    const ps = state.propStates[i];
+    if(ps.houses===5) hotels++; else houses += ps.houses;
+  });
+  const total = houses*perHouse + hotels*perHotel;
+  if(total===0){ log(`${p.name} tidak punya rumah/hotel, tidak ada biaya perbaikan.`); renderAll(); return; }
+  chargePlayer(p, total, 'bank', ()=>renderAll());
+}
+
+function openDebtModal(){
+  const {player, amount, toId} = state.pendingDebt;
+  const toName = toId==='bank' ? 'Bank' : state.players.find(pl=>pl.id===toId).name;
+  showModal({
+    title:'Uang Tidak Cukup!',
+    desc:`${player.name} harus membayar ${fmt(amount)} ke ${toName} tapi hanya punya ${fmt(player.money)}. Gadai atau jual rumah/hotel dari menu "Kelola Properti", lalu bayar. Atau nyatakan bangkrut.`,
+    priceTag: fmt(amount)+' dibutuhkan',
+    buttons:[
+      {label:'Kelola Properti', cls:'btn-no', onClick:()=>{ closeModal(); openManage(); }},
+      {label:'Bayar Sekarang', cls:'btn-yes', onClick:tryPayDebt},
+      {label:'Nyatakan Bangkrut', cls:'btn-danger', onClick:declareBankrupt},
+    ]
+  });
+}
+function tryPayDebt(){
+  if(!myTurnOK()) return;
+  const debt = state.pendingDebt;
+  if(!debt) return;
+  if(debt.player.money < debt.amount){
+    log(`${debt.player.name} masih kekurangan uang (${fmt(debt.player.money)}/${fmt(debt.amount)}).`);
+    return;
+  }
+  debt.player.money -= debt.amount;
+  if(debt.toId==='bank'){ if(state.rules.freeParkingPot){ state.freeParkingPot += debt.amount; } }
+  else { const to = state.players.find(pl=>pl.id===debt.toId); if(to) to.money += debt.amount; }
+  log(`${debt.player.name} melunasi ${fmt(debt.amount)}.`);
+  const onDone = debt.onDone;
+  state.pendingDebt = null;
+  closeModal();
+  commit();
+  onDone && onDone();
+}
+function declareBankrupt(){
+  if(!myTurnOK()) return;
+  const debt = state.pendingDebt;
+  const p = debt ? debt.player : currentPlayer();
+  p.bankrupt = true;
+  log(`${p.name} dinyatakan BANGKRUT.`);
+  (p.properties||[]).forEach(i=>{
+    const ps = state.propStates[i];
+    ps.houses = 0;
+    if(debt && debt.toId!=='bank'){
+      ps.owner = debt.toId;
+      const creditor = state.players.find(pl=>pl.id===debt.toId);
+      creditor.properties = creditor.properties||[];
+      creditor.properties.push(i);
+    } else {
+      ps.owner = null;
+      ps.mortgaged = false;
+    }
+  });
+  if(debt && debt.toId!=='bank'){
+    const creditor = state.players.find(pl=>pl.id===debt.toId);
+    creditor.money += p.money;
+  }
+  p.money = 0;
+  p.properties = [];
+  state.pendingDebt = null;
+  closeModal();
+  closeManage();
+  checkGameOver();
+  state.turnPhase='canEndTurn';
+  commit();
+}
+function checkGameOver(){
+  const alive = state.players.filter(p=>!p.bankrupt);
+  if(alive.length<=1){
+    const winner = alive[0];
+    document.getElementById('winnerName').textContent = winner ? winner.name+' MENANG!' : 'Permainan Selesai';
+    document.getElementById('winnerSub').textContent = winner ? `${winner.name} adalah satu-satunya pemain yang tidak bangkrut.` : '';
+    document.getElementById('winnerOverlay').classList.add('show');
+    stopTurnTimer();
+    playSound('win');
+  }
+}
+
+/* ============================================================
+   BUY / CARDS / JAIL
+   ============================================================ */
+function decideBuy(buy){
+  if(!myTurnOK()) return;
+  const info = state.pendingBuy;
+  if(!info) return;
+  const idx = info.idx;
+  const t = BOARD[idx];
+  const p = currentPlayer();
+  if(buy){
+    if(state.propStates[idx].owner!=null){
+      // pengaman: properti ini ternyata sudah ada pemiliknya, batalkan pembelian dobel
+      log(`${t.name} sudah dimiliki, pembelian dibatalkan.`);
+      state.pendingBuy = null;
+      finishLanding(p, info.wasDouble);
+      return;
+    }
+    if(p.money < t.price){ log(`${p.name} tidak cukup uang untuk membeli ${t.name}.`); playSound('error'); return; }
+    p.money -= t.price;
+    state.propStates[idx].owner = p.id;
+    p.properties = p.properties||[];
+    if(!p.properties.includes(idx)) p.properties.push(idx);
+    log(`${p.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
+    playSound('buy');
+  } else {
+    log(`${p.name} memilih tidak membeli ${t.name}.`);
+  }
+  state.pendingBuy = null;
+  finishLanding(p, info.wasDouble);
+}
+
+function drawCard(p, type, wasDouble){
+  const idsKey = type==='chance' ? 'chanceDeckIds' : 'chestDeckIds';
+  const staticArr = type==='chance' ? CHANCE_CARDS : CHEST_CARDS;
+  const id = state[idsKey].shift();
+  state[idsKey].push(id);
+  const card = staticArr[id];
+  playCardDrawAnimation(type, ()=>{
+    showModal({
+      title: type==='chance' ? '❓ Kesempatan' : '💰 Dana Umum',
+      desc: card.text,
+      buttons:[
+        {label:'Oke', cls:'btn-yes', onClick:()=>{ closeModal(); card.fn(p); setTimeout(()=>{ if(!state.pendingDebt) finishLanding(p, wasDouble); },50); }},
+      ]
+    });
+  });
+}
+function playCardDrawAnimation(type, onDone){
+  playSound('card');
+  const overlay = document.getElementById('modalOverlay');
+  const box = document.getElementById('modalBox');
+  const label = type==='chance' ? '❓ Kesempatan' : '💰 Dana Umum';
+  const symbol = type==='chance' ? '❓' : '💰';
+  box.innerHTML = `
+    <div class="card-draw-stage">
+      <div class="card-draw-label">${label}</div>
+      <div class="card-deck-wrap">
+        <div class="card-deck-back c3"></div>
+        <div class="card-deck-back c2"></div>
+        <div class="card-drawn" id="cardDrawnFace"><span>${symbol}</span></div>
+      </div>
+      <div class="card-draw-hint">Mengocok &amp; mengambil kartu…</div>
+    </div>`;
+  overlay.classList.add('show');
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const drawn = document.getElementById('cardDrawnFace');
+      if(drawn) drawn.classList.add('drawing');
+    });
+  });
+  setTimeout(()=>{ onDone(); }, 850);
+}
+
+function goToJail(p){
+  p.pos = 10;
+  p.inJail = true;
+  p.jailTurns = 0;
+  renderTokensAndHouses();
+  log(`${p.name} dikirim ke Penjara.`);
+}
+function handleJailRoll(p){
+  showModal({
+    title:'Kamu di Penjara',
+    desc:`Giliran ke-${p.jailTurns+1} di penjara. Pilih cara keluar.`,
+    buttons:[
+      {label:'Lempar Dobel', cls:'btn-yes', onClick:()=>{ closeModal(); jailTryDouble(p); }},
+      {label:'Bayar $50', cls:'btn-no', onClick:()=>{ closeModal(); jailPayBail(p); }},
+      ...(p.jailCards>0 ? [{label:`Pakai Kartu Bebas (${p.jailCards})`, cls:'btn-no', onClick:()=>{ closeModal(); jailUseCard(p); }}] : [])
+    ]
+  });
+}
+function jailTryDouble(p){
+  const d1=1+Math.floor(Math.random()*6), d2=1+Math.floor(Math.random()*6);
+  state.lastRoll=[d1,d2];
+  document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
+  log(`${p.name} melempar dadu di penjara: ${d1} + ${d2}.`);
+  if(d1===d2){
+    p.inJail=false; p.jailTurns=0;
+    log(`${p.name} dobel! Bebas dari penjara.`);
+    moveSteps(p, d1+d2, false);
+  } else {
+    p.jailTurns++;
+    if(p.jailTurns>=3){
+      log(`${p.name} sudah 3× gagal, wajib bayar $50 dan keluar.`);
+      chargePlayer(p, 50, 'bank', ()=>{
+        p.inJail=false; p.jailTurns=0;
+        moveSteps(p, d1+d2, false);
+      });
+    } else {
+      log(`${p.name} tidak dobel, tetap di penjara.`);
+      state.turnPhase='canEndTurn';
+      commit();
+    }
+  }
+}
+function jailPayBail(p){
+  chargePlayer(p, 50, 'bank', ()=>{
+    p.inJail=false; p.jailTurns=0;
+    log(`${p.name} membayar $50 dan bebas dari penjara.`);
+    state.turnPhase='canRoll';
+    commit();
+  });
+}
+function jailUseCard(p){
+  p.jailCards--;
+  p.inJail=false; p.jailTurns=0;
+  log(`${p.name} memakai kartu bebas penjara.`);
+  state.turnPhase='canRoll';
+  commit();
+}
+
+function endTurn(){
+  if(!myTurnOK()) return;
+  if(state.turnPhase!=='canEndTurn') return;
+  stopTurnTimer();
+  state.pendingHouseBuild = null;
+  currentPlayer().doublesCount=0;
+  let next = state.currentIndex;
+  do{ next = mod(next+1, state.players.length); } while(state.players[next].bankrupt && next!==state.currentIndex);
+  state.currentIndex = next;
+  state.turnPhase='canRoll';
+  commit();
+  playSound('turn');
+  if(state.mode==='hotseat') showPassOverlay(); else beginPlayerTurn();
+}
+
+/* ============================================================
+   PASS DEVICE (tombol lanjutkan giliran, sebelum lempar dadu)
+   ============================================================ */
+let awaitingPass = false;
+function showPassOverlay(){
+  awaitingPass = true;
+  updateTurnBanner();
+}
+function confirmPass(){
+  awaitingPass = false;
+  updateTurnBanner();
+  beginPlayerTurn();
+}
+
+/* ============================================================
+   GENERIC MODAL
+   ============================================================ */
+function showModal({title, desc, priceTag, buttons}){
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `<h3>${title}</h3><div class="desc">${desc||''}</div>${priceTag?`<div class="price-tag">${priceTag}</div>`:''}<div class="modal-actions" id="modalBtns"></div>`;
+  const btnWrap = document.getElementById('modalBtns');
+  buttons.forEach(b=>{
+    const el=document.createElement('button');
+    el.textContent=b.label;
+    el.className=b.cls;
+    if(b.disabled) el.disabled=true;
+    el.onclick=b.onClick;
+    btnWrap.appendChild(el);
+  });
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+
+function showTileInfo(idx){
+  const t = BOARD[idx];
+  if(t.type!=='property' && t.type!=='railroad' && t.type!=='utility') return;
+  const ps = state.propStates[idx];
+  const owner = ps.owner!=null ? state.players.find(p=>p.id===ps.owner) : null;
+  let desc = '';
+  if(t.type==='property'){
+    desc = `Set: ${t.group}<br>Harga: ${fmt(t.price)}<br>Sewa dasar: ${fmt(t.rent[0])} • 1 Rumah: ${fmt(t.rent[1])} • 2 Rumah: ${fmt(t.rent[2])} • 3 Rumah: ${fmt(t.rent[3])} • 4 Rumah: ${fmt(t.rent[4])} • Hotel: ${fmt(t.rent[5])}<br>Biaya rumah: ${fmt(HOUSE_COST[t.group])}`;
+  } else if(t.type==='railroad'){
+    desc = `Harga: ${fmt(t.price)}<br>Sewa: 1 stasiun ${fmt(t.rent[0])}, 2 stasiun ${fmt(t.rent[1])}, 3 stasiun ${fmt(t.rent[2])}, 4 stasiun ${fmt(t.rent[3])}`;
+  } else {
+    desc = `Harga: ${fmt(t.price)}<br>Sewa: 4× hasil dadu (1 perusahaan), 10× hasil dadu (2 perusahaan)`;
+  }
+  desc += `<br><br>Status: ${owner ? ('Dimiliki '+owner.name+(ps.mortgaged?' (Digadai)':'')) : 'Belum dimiliki'}`;
+  showModal({ title: t.name, desc, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
+}
+
+/* ============================================================
+   MANAGE PROPERTIES
+   ============================================================ */
+function openManage(){
+  if(!myTurnOK()) return;
+  renderDeedList();
+  document.getElementById('manageOverlay').classList.add('show');
+}
+function closeManage(){
+  document.getElementById('manageOverlay').classList.remove('show');
+  if(state.pendingDebt){ openDebtModal(); }
+}
+function propertyDetailsHTML(t, ps){
+  const rowLevels = ['Tanah kosong','1 rumah','2 rumah','3 rumah','4 rumah','Hotel'];
+  if(t.type==='property'){
+    const hc = HOUSE_COST[t.group];
+    const rentRows = t.rent.map((r,lvl)=>{
+      const isCurrent = ps && ps.houses===lvl;
+      return `<div class="dd-row${isCurrent?' dd-current':''}"><span>Sewa ${rowLevels[lvl]}</span><b>${fmt(r)}</b></div>`;
+    }).join('');
+    return `<div class="deed-details">
+      ${rentRows}
+      <div class="dd-row"><span>Harga beli 1 rumah</span><b>${fmt(hc)}</b></div>
+      <div class="dd-row"><span>Harga beli hotel</span><b>${fmt(hc)}</b></div>
+      <div class="dd-row"><span>Harga gadai</span><b>${fmt(t.mortgage)}</b></div>
+    </div>`;
+  }
+  if(t.type==='railroad'){
+    const labels=['1 stasiun','2 stasiun','3 stasiun','4 stasiun'];
+    const rentRows = t.rent.map((r,lvl)=>`<div class="dd-row"><span>Sewa ${labels[lvl]}</span><b>${fmt(r)}</b></div>`).join('');
+    return `<div class="deed-details">
+      ${rentRows}
+      <div class="dd-row"><span>Harga gadai</span><b>${fmt(t.mortgage)}</b></div>
+    </div>`;
+  }
+  if(t.type==='utility'){
+    return `<div class="deed-details">
+      <div class="dd-row"><span>Sewa (1 aset)</span><b>4× dadu</b></div>
+      <div class="dd-row"><span>Sewa (2 aset)</span><b>10× dadu</b></div>
+      <div class="dd-row"><span>Harga gadai</span><b>${fmt(t.mortgage)}</b></div>
+    </div>`;
+  }
+  return '';
+}
+function renderDeedList(){
+  const p = currentPlayer();
+  const list = document.getElementById('deedList');
+  list.innerHTML='';
+  const props = Array.from(new Set(p.properties||[])).sort((a,b)=>a-b);
+  if(props.length===0){ list.innerHTML = '<div style="color:var(--paper-dim);font-size:13px;">Belum punya properti.</div>'; return; }
+  props.forEach(i=>{
+    const t = BOARD[i]; const ps = state.propStates[i];
+    const row = document.createElement('div');
+    row.className='deed-item';
+    const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
+    let info = t.type==='property' ? (ps.houses===5?'Hotel':(ps.houses+' rumah')) : (ps.mortgaged?'Digadai':'Aktif');
+    const freeBuildWaiting = state.rules.houseFreeBuild && t.type==='property' && !ps.mortgaged && ps.houses<5 && state.pendingHouseBuild!==i;
+    if(freeBuildWaiting) info += ' • mendarat di sini dulu untuk bangun';
+    const canBuild = t.type==='property' && !ps.mortgaged && ps.houses<5 &&
+      (state.rules.houseFreeBuild ? state.pendingHouseBuild===i : ownsFullGroup(p, t.group));
+    const canSellHouse = t.type==='property' && ps.houses>0;
+    const canMortgage = !ps.mortgaged && ps.houses===0;
+    const canUnmortgage = ps.mortgaged;
+    row.innerHTML = `
+      <div class="di-top">
+        <div class="deed-swatch" style="background:${swatchColor}"></div>
+        <div style="flex:1;">
+          <div class="di-name">${t.name}</div>
+          <div class="di-info">${info}${ps.mortgaged?' • Digadai':''}</div>
+        </div>
+        <div class="di-btns">
+          ${t.type==='property' ? `<button ${canBuild?'':'disabled'} onclick="buildHouse(${i})">+ ${fmt(HOUSE_COST[t.group])}</button>` : ''}
+          ${t.type==='property' ? `<button ${canSellHouse?'':'disabled'} onclick="confirmSellHouse(${i})">- Rumah</button>` : ''}
+          <button class="mort" ${canMortgage?'':'disabled'} onclick="confirmMortgage(${i})">Gadai</button>
+          <button class="mort" ${canUnmortgage?'':'disabled'} onclick="confirmUnmortgage(${i})">Tebus</button>
+        </div>
+      </div>
+      ${propertyDetailsHTML(t, ps)}`;
+    list.appendChild(row);
+  });
+}
+function confirmSellHouse(i){
+  if(!myTurnOK()) return;
+  const t = BOARD[i]; const cost = HOUSE_COST[t.group];
+  showModal({
+    title:'Yakin Jual Rumah?',
+    desc:`Kamu akan menjual 1 rumah di ${t.name} dan mendapat ${fmt(Math.round(cost/2))}.`,
+    buttons:[
+      {label:'Batal', cls:'btn-no', onClick:closeModal},
+      {label:'Ya, Jual', cls:'btn-yes', onClick:()=>{ closeModal(); sellHouse(i); }},
+    ]
+  });
+}
+function confirmMortgage(i){
+  if(!myTurnOK()) return;
+  const t = BOARD[i];
+  showModal({
+    title:'Yakin Gadai Properti?',
+    desc:`Kamu akan menggadaikan ${t.name} dan mendapat ${fmt(t.mortgage)}. Properti ini tidak akan menghasilkan sewa sampai ditebus.`,
+    buttons:[
+      {label:'Batal', cls:'btn-no', onClick:closeModal},
+      {label:'Ya, Gadai', cls:'btn-yes', onClick:()=>{ closeModal(); mortgageProp(i); }},
+    ]
+  });
+}
+function confirmUnmortgage(i){
+  if(!myTurnOK()) return;
+  const t = BOARD[i];
+  const cost = Math.round(t.mortgage*1.1);
+  showModal({
+    title:'Yakin Tebus Properti?',
+    desc:`Kamu akan menebus ${t.name} seharga ${fmt(cost)}.`,
+    buttons:[
+      {label:'Batal', cls:'btn-no', onClick:closeModal},
+      {label:'Ya, Tebus', cls:'btn-yes', onClick:()=>{ closeModal(); unmortgageProp(i); }},
+    ]
+  });
+}
+function buildHouse(i){
+  if(!myTurnOK()) return;
+  const p = currentPlayer();
+  const t = BOARD[i]; const ps = state.propStates[i];
+  const cost = HOUSE_COST[t.group];
+  if(p.money < cost){ log(`${p.name} tidak cukup uang untuk membangun.`); return; }
+  p.money -= cost;
+  ps.houses += 1;
+  log(`${p.name} membangun ${ps.houses===5?'Hotel':'rumah ke-'+ps.houses} di ${t.name}.`);
+  commit(); renderDeedList();
+}
+function sellHouse(i){
+  if(!myTurnOK()) return;
+  const p = currentPlayer();
+  const t = BOARD[i]; const ps = state.propStates[i];
+  const cost = HOUSE_COST[t.group];
+  ps.houses -= 1;
+  p.money += Math.round(cost/2);
+  log(`${p.name} menjual rumah di ${t.name}, dapat ${fmt(Math.round(cost/2))}.`);
+  commit(); renderDeedList();
+}
+function mortgageProp(i){
+  if(!myTurnOK()) return;
+  const p = currentPlayer();
+  const t = BOARD[i]; const ps = state.propStates[i];
+  ps.mortgaged = true;
+  p.money += t.mortgage;
+  log(`${p.name} menggadaikan ${t.name}, dapat ${fmt(t.mortgage)}.`);
+  commit(); renderDeedList();
+}
+function unmortgageProp(i){
+  if(!myTurnOK()) return;
+  const p = currentPlayer();
+  const t = BOARD[i]; const ps = state.propStates[i];
+  const cost = Math.round(t.mortgage*1.1);
+  if(p.money < cost){ log(`${p.name} tidak cukup uang untuk menebus.`); return; }
+  p.money -= cost;
+  ps.mortgaged = false;
+  log(`${p.name} menebus ${t.name} seharga ${fmt(cost)}.`);
+  commit(); renderDeedList();
+}
+function checkAutoResolveDebtButton(){ /* handled via modal Bayar Sekarang button, no-op */ }
+
+/* ============================================================
+   LIHAT PROPERTI TEMAN
+   ============================================================ */
+function openFriendProps(){
+  const me = currentPlayer();
+  const others = state.players.filter(p=>p.id!==me.id && !p.bankrupt);
+  if(others.length===0){
+    showModal({title:'👀 Properti Teman', desc:'Tidak ada pemain lain untuk dilihat.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]});
+    return;
+  }
+  let html = '';
+  others.forEach(pl=>{
+    const props = Array.from(new Set(pl.properties||[])).sort((a,b)=>a-b);
+    html += `<div style="margin-bottom:12px;">
+      <div style="color:var(--gold);font-weight:800;font-size:13px;margin-bottom:4px;">${pl.name} — ${fmt(pl.money)}</div>`;
+    if(props.length===0){
+      html += `<div style="color:var(--paper-dim);font-size:12px;">Belum punya properti.</div>`;
+    } else {
+      html += `<div class="deed-list" style="max-height:160px;">`;
+      props.forEach(i=>{
+        const t = BOARD[i]; const ps = state.propStates[i];
+        const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
+        const info = t.type==='property' ? (ps.houses===5?'Hotel':(ps.houses>0?ps.houses+' rumah':'Tanpa rumah')) : 'Aktif';
+        html += `<div class="deed-item">
+          <div class="deed-swatch" style="background:${swatchColor}"></div>
+          <div style="flex:1;">
+            <div class="di-name">${t.name}</div>
+            <div class="di-info">${info}${ps.mortgaged?' • Digadai':''}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+  showModal({title:'👀 Properti Teman', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]});
+}
+
+/* ============================================================
+   TAWAR PROPERTI TEMAN
+   ============================================================ */
+function openTradeOffer(){
+  const ownedProps = [];
+  BOARD.forEach((t,i)=>{
+    if(t.type==='property'||t.type==='railroad'||t.type==='utility'){
+      const ps = state.propStates[i];
+      if(ps.owner!=null){
+        const owner = state.players.find(pl=>pl.id===ps.owner);
+        if(owner && !owner.bankrupt) ownedProps.push({idx:i, name:t.name, ownerId:owner.id, ownerName:owner.name});
+      }
+    }
+  });
+  if(ownedProps.length===0){
+    showModal({title:'🤝 Tawar Properti', desc:'Belum ada properti milik pemain manapun yang bisa ditawar.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]});
+    return;
+  }
+  const activePlayers = state.players.filter(p=>!p.bankrupt);
+  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(215,169,75,0.4);background:var(--ink2);color:var(--paper);font-size:13px;';
+  const playerOpts = activePlayers.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  const propOpts = ownedProps.map(pp=>`<option value="${pp.idx}">${pp.name} — milik ${pp.ownerName}</option>`).join('');
+  const html = `
+    <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
+      <label style="font-size:12px;color:var(--paper-dim);">Penawar (yang menawar)
+        <select id="offerFrom" style="${fieldStyle}">${playerOpts}</select>
+      </label>
+      <label style="font-size:12px;color:var(--paper-dim);">Properti yang ditawar
+        <select id="offerProp" style="${fieldStyle}">${propOpts}</select>
+      </label>
+      <label style="font-size:12px;color:var(--paper-dim);">Jumlah tawaran ($)
+        <input id="offerAmount" type="number" min="1" step="1" placeholder="Contoh: 250" style="${fieldStyle}">
+      </label>
+    </div>`;
+  showModal({
+    title:'🤝 Tawar Properti Teman',
+    desc: html,
+    buttons:[
+      {label:'Kirim Tawaran', cls:'btn-yes', onClick: submitTradeOffer},
+      {label:'Batal', cls:'btn-no', onClick: closeModal},
+    ]
+  });
+}
+function submitTradeOffer(){
+  const fromId = Number(document.getElementById('offerFrom').value);
+  const idx = Number(document.getElementById('offerProp').value);
+  const amountRaw = Number(document.getElementById('offerAmount').value);
+  const amount = Math.round(amountRaw);
+  const ps = state.propStates[idx];
+  const t = BOARD[idx];
+  if(!ps || ps.owner==null){ closeModal(); log('Properti tersebut sudah tidak berpemilik.'); return; }
+  if(ps.owner===fromId){ playSound('error'); log('Tidak bisa menawar propertimu sendiri.'); return; }
+  if(!amountRaw || amount<=0){ playSound('error'); log('Masukkan jumlah tawaran yang valid.'); return; }
+  const fromPlayer = state.players.find(p=>p.id===fromId);
+  const toPlayer = state.players.find(p=>p.id===ps.owner);
+  closeModal();
+  state.pendingTradeOffer = {fromId, toId: toPlayer.id, idx, amount};
+  log(`${fromPlayer.name} menawarkan ${fmt(amount)} untuk <b>${t.name}</b> milik ${toPlayer.name}.`);
+  commit();
+  showTradeOfferReceived();
+}
+function showTradeOfferReceived(){
+  const offer = state.pendingTradeOffer;
+  if(!offer) return;
+  const t = BOARD[offer.idx];
+  const fromPlayer = state.players.find(p=>p.id===offer.fromId);
+  const toPlayer = state.players.find(p=>p.id===offer.toId);
+  if(!fromPlayer || !toPlayer){ state.pendingTradeOffer=null; return; }
+  showModal({
+    title:'📩 Tawaran Masuk',
+    desc: `${fromPlayer.name} menawar <span class="hl">${fmt(offer.amount)}</span> untuk <b>${t.name}</b> milik ${toPlayer.name}.<br><br>Terima tawaran ini?`,
+    buttons:[
+      {label:'Terima', cls:'btn-yes', onClick: ()=>respondTradeOffer(true)},
+      {label:'Tolak', cls:'btn-no', onClick: ()=>respondTradeOffer(false)},
+    ]
+  });
+}
+function respondTradeOffer(accept){
+  const offer = state.pendingTradeOffer;
+  if(!offer){ closeModal(); return; }
+  const t = BOARD[offer.idx];
+  const ps = state.propStates[offer.idx];
+  const fromPlayer = state.players.find(p=>p.id===offer.fromId);
+  const toPlayer = state.players.find(p=>p.id===offer.toId);
+  if(accept){
+    if(!ps || ps.owner!==offer.toId){
+      log(`Tawaran dibatalkan, kepemilikan ${t.name} sudah berubah.`);
+    } else if(!fromPlayer || fromPlayer.money < offer.amount){
+      log(`${fromPlayer?fromPlayer.name:'Penawar'} tidak cukup uang untuk membayar tawarannya.`);
+    } else {
+      fromPlayer.money -= offer.amount;
+      toPlayer.money += offer.amount;
+      ps.owner = fromPlayer.id;
+      toPlayer.properties = (toPlayer.properties||[]).filter(x=>x!==offer.idx);
+      fromPlayer.properties = fromPlayer.properties||[];
+      if(!fromPlayer.properties.includes(offer.idx)) fromPlayer.properties.push(offer.idx);
+      log(`${toPlayer.name} menerima tawaran, <b>${t.name}</b> berpindah ke ${fromPlayer.name} seharga ${fmt(offer.amount)}.`);
+      playSound('buy');
+    }
+  } else {
+    log(`${toPlayer?toPlayer.name:'Pemilik'} menolak tawaran ${fmt(offer.amount)} untuk ${t.name}.`);
+  }
+  state.pendingTradeOffer = null;
+  closeModal();
+  commit();
+}
+</script>
+</body>
+</html>
