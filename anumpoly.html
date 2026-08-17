@@ -156,7 +156,8 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
 
 .center-area{
   grid-column:2 / span 9;grid-row:2 / span 9;position:relative;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;
+  padding-top:9%;
   background:radial-gradient(circle, #386f61 0%, var(--teal) 70%);
   border:2px dashed rgba(215,169,75,0.4);margin:6px;border-radius:8px;
 }
@@ -170,6 +171,8 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
 }
 .die .dot{width:100%;height:100%;border-radius:50%;background:transparent;}
 .die .dot.on{background:var(--ink);}
+.dice-box.rolling .die{animation:diceShake .16s ease-in-out infinite;}
+@keyframes diceShake{0%,100%{transform:rotate(0deg) scale(1);}25%{transform:rotate(-10deg) scale(1.05);}75%{transform:rotate(10deg) scale(1.05);}}
 
 .panel{width:100%;max-width:700px;margin-top:12px;}
 .turn-banner{
@@ -217,21 +220,35 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
 .players-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;}
 .player-chip{
   flex:none;min-width:120px;background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.25);
-  border-radius:10px;padding:8px 10px;
+  border-radius:10px;padding:8px 10px;position:relative;overflow:visible;
 }
 .player-chip.current{border-color:var(--gold);background:rgba(215,169,75,0.12);}
 .player-chip.bankrupt{opacity:0.35;text-decoration:line-through;}
 .player-chip .row1{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;}
-.player-chip .row2{font-family:'Space Mono',monospace;font-size:12px;color:var(--gold);margin-top:2px;}
+.player-chip .row2{font-family:'Space Mono',monospace;font-size:12px;color:var(--gold);margin-top:2px;position:relative;overflow:visible;}
+.bot-tag{font-size:9px;color:var(--gold-dim);border:1px solid rgba(215,169,75,0.4);border-radius:5px;padding:0 4px;font-weight:700;letter-spacing:0.5px;flex:none;}
+.money-fx{
+  position:absolute;right:0;top:-1px;font-family:'Space Mono',monospace;font-weight:800;font-size:12px;
+  pointer-events:none;z-index:9;white-space:nowrap;animation:moneyFxSlide 3s ease forwards;
+  text-shadow:0 1px 4px rgba(0,0,0,0.75);
+}
+.money-fx.pos{color:var(--green-ok);}
+.money-fx.neg{color:var(--red);}
+@keyframes moneyFxSlide{
+  0%{opacity:0;transform:translateX(12px);}
+  8%{opacity:1;transform:translateX(0);}
+  78%{opacity:1;transform:translateX(-8px);}
+  100%{opacity:0;transform:translateX(-18px);}
+}
 
 .board-log{
-  position:absolute;left:6%;right:6%;bottom:5%;z-index:5;
+  position:absolute;left:6%;right:6%;bottom:3%;z-index:5;
   display:flex;flex-direction:column;gap:3px;align-items:stretch;
-  pointer-events:none;max-height:46%;overflow:hidden;
+  pointer-events:none;max-height:34%;overflow:hidden;
 }
 .toast{
   background:rgba(11,22,38,0.62);border:1px solid rgba(215,169,75,0.35);color:var(--paper);
-  padding:4px 8px;border-radius:6px;font-size:clamp(7px,1.9vw,10.5px);line-height:1.3;text-align:center;
+  padding:3px 7px;border-radius:6px;font-size:clamp(6px,1.5vw,8.5px);line-height:1.25;text-align:center;
   opacity:0;transform:translateY(-6px);
   transition:opacity .25s ease, transform .25s ease;
   overflow-wrap:break-word;
@@ -318,6 +335,33 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
 .winner-overlay .stamp{width:170px;height:170px;}
 
 .room-badge{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:2px;border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:3px 8px;}
+
+/* ---------- BOT TOGGLES & LOBBY EXTRAS ---------- */
+.bot-toggle-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--paper-dim);flex:none;}
+.mini-x{width:22px;height:22px;border-radius:50%;border:1px solid rgba(215,169,75,0.4);background:transparent;color:var(--paper-dim);font-size:12px;line-height:1;flex:none;padding:0;}
+.mini-x:active{background:rgba(179,64,47,0.3);}
+.btn-add-bot{width:100%;margin-top:8px;padding:11px;border-radius:10px;border:2px dashed rgba(215,169,75,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:13px;}
+
+/* ---------- MENU EXTRAS: reference + changelog ---------- */
+.menu-btn.secondary-link{border-style:dashed;font-size:13px;padding:12px 18px;}
+.ref-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;position:sticky;top:0;background:var(--ink2);padding:4px 0 8px;z-index:2;}
+.ref-tab{border:2px solid rgba(215,169,75,0.4);background:transparent;color:var(--paper);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;}
+.ref-tab.active{background:var(--gold);border-color:var(--gold);color:var(--ink2);}
+.ref-item{background:rgba(255,255,255,0.04);border-radius:8px;padding:9px 11px;margin-bottom:6px;font-size:12px;}
+.ref-item .ri-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.ref-item .ri-swatch{width:10px;height:22px;border-radius:3px;flex:none;}
+.ref-item .ri-name{font-weight:800;flex:1;}
+.ref-item .ri-price{font-family:'Space Mono',monospace;color:var(--gold);font-size:11.5px;}
+.ref-item .ri-detail{color:var(--paper-dim);font-size:11px;line-height:1.5;}
+.ref-item .ri-detail b{color:var(--paper);}
+.changelog-entry{background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.25);border-radius:10px;padding:12px 14px;margin-bottom:10px;text-align:left;}
+.changelog-entry .cl-date{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:6px;}
+.changelog-entry ul{margin:4px 0 0;padding-left:18px;}
+.changelog-entry li{font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:2px;}
+.changelog-entry li.fix{color:#cdb98a;}
+.changelog-entry .cl-tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;border-radius:4px;padding:1px 5px;margin-right:6px;}
+.changelog-entry .cl-tag.new{background:rgba(63,163,77,0.25);color:var(--green-ok);}
+.changelog-entry .cl-tag.fix{background:rgba(179,64,47,0.25);color:#e08b7a;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -332,13 +376,11 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
   </div>
   <h1>Monopoli Dunia</h1>
   <div class="tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
+  <button class="menu-btn primary" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
   <button class="menu-btn primary" onclick="goToModeSelect()">▶ Main</button>
-  <button class="menu-btn" onclick="toggleHowTo()">Cara Bermain</button>
-  <div class="howto" id="howto">
-    <p><b>Format:</b> Semua pemain main bergiliran di HP yang sama (seperti catur mabar offline). Setiap giliran akan ada layar "Serahkan HP" sebelum pemain berikutnya main.</p>
-    <p><b>Tujuan:</b> Jadi satu-satunya pemain yang belum bangkrut. Kumpulkan properti, bangun rumah/hotel, dan buat lawan kehabisan uang.</p>
-    <p><b>Dasar:</b> Lempar dadu → jalan → beli properti kosong atau bayar sewa ke pemiliknya → ikuti kartu Kesempatan/Dana Umum → kelola properti (bangun/gadai) kapan saja di giliranmu.</p>
-  </div>
+  <button class="menu-btn" onclick="openHowToModal()">Cara Bermain</button>
+  <button class="menu-btn secondary-link" onclick="openReferenceModal()">📖 Daftar Properti &amp; Kartu</button>
+  <button class="menu-btn secondary-link" onclick="openWhatsNewModal()">🆕 Apa yang Baru</button>
   <div class="menu-footer">Aturan bisa disesuaikan di layar berikutnya</div>
 </div>
 
@@ -349,12 +391,12 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     <p>Gantian di 1 HP, atau tiap pemain pegang HP sendiri?</p>
   </div>
   <div class="card" style="cursor:pointer" onclick="goToSetup()">
-    <h3>📱 1 HP — Gantian</h3>
-    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Semua pemain main bergantian di HP yang sama, seperti catur mabar offline. Tidak perlu internet.</p>
+    <h3>📱 Offline — Bergantian di 1 HP</h3>
+    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Semua pemain main bergantian di HP yang sama, seperti catur mabar offline. Tidak perlu internet. Bisa tambah pemain bot 🤖 kalau pemain kurang.</p>
   </div>
   <div class="card" style="cursor:pointer" onclick="goToOnline()">
-    <h3>🌐 Banyak HP — Online</h3>
-    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pakai HP masing-masing, tersambung lewat kode Room. Butuh internet, dan semua pemain buka halaman ini lewat link yang sama (link Publish/Share dari Claude).</p>
+    <h3>🌐 Online — Multiplayer antar HP</h3>
+    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing, main di waktu bersamaan lewat kode Room. Butuh internet, dan semua pemain buka halaman ini lewat link yang sama (link Publish/Share dari Claude). Host bisa tambah bot 🤖 juga.</p>
   </div>
   <div style="height:70px"></div>
   <div class="sticky-bottom"><button class="btn-ghost" onclick="goToMenu()">Kembali</button></div>
@@ -390,16 +432,32 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     <div class="card">
       <h3>Pemain Bergabung</h3>
       <div id="lobbyPlayerList"></div>
+      <button class="btn-add-bot" id="lobbyAddBotBtn" style="display:none;" onclick="lobbyAddBot()">🤖 + Tambah Bot</button>
     </div>
     <div class="card" id="lobbyRulesCard">
+      <h3>Mode Permainan (diatur host)</h3>
+      <div class="pill-row" id="modePresetRow-lobby">
+        <button type="button" class="pill mode-pill active" data-preset="classic" onclick="selectModePreset('classic','lobby')">🏠 Classic</button>
+        <button type="button" class="pill mode-pill" data-preset="quick" onclick="selectModePreset('quick','lobby')">⚡ Quick Match</button>
+        <button type="button" class="pill mode-pill" data-preset="timeattack" onclick="selectModePreset('timeattack','lobby')">⏱️ Time Attack</button>
+        <button type="button" class="pill mode-pill" data-preset="auction" onclick="selectModePreset('auction','lobby')">🔨 Auction Only</button>
+      </div>
+      <p id="modePresetDesc-lobby" style="font-size:12px;color:var(--paper-dim);margin:10px 0 0;line-height:1.5;">Mode default, paling dekat dengan Monopoly tradisional. Pemain terakhir yang tidak bangkrut menang.</p>
+    </div>
+    <div class="card" id="lobbyRulesCard2">
       <h3>Aturan (diatur host)</h3>
       <div class="rule-row"><div class="rule-label">Uang awal</div>
-        <select class="rule-select" id="lobbyStartMoney"><option value="1000">$1.000</option><option value="1500" selected>$1.500</option><option value="2000">$2.000</option><option value="2500">$2.500</option></select></div>
+        <select class="rule-select" id="lobbyStartMoney" onchange="markModeCustom('lobby')"><option value="1000">$1.000</option><option value="1500" selected>$1.500</option><option value="2000">$2.000</option><option value="2500">$2.500</option></select></div>
       <div class="rule-row"><div class="rule-label">Gaji lewat Mulai</div>
-        <select class="rule-select" id="lobbyGoSalary"><option value="100">$100</option><option value="150">$150</option><option value="200" selected>$200</option><option value="300">$300</option></select></div>
-      <div class="rule-row"><div class="rule-label">3× Dobel = Penjara</div><label class="switch"><input type="checkbox" id="lobbyDoublesJail" checked><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Dana Parkir Bebas</div><label class="switch"><input type="checkbox" id="lobbyFreeParking"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div><label class="switch"><input type="checkbox" id="lobbyHouseFreeBuild"><span class="slider"></span></label></div>
+        <select class="rule-select" id="lobbyGoSalary" onchange="markModeCustom('lobby')"><option value="100">$100</option><option value="150">$150</option><option value="200" selected>$200</option><option value="300">$300</option></select></div>
+      <div class="rule-row"><div class="rule-label">3× Dobel = Penjara</div><label class="switch"><input type="checkbox" id="lobbyDoublesJail" checked onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Dana Parkir Bebas</div><label class="switch"><input type="checkbox" id="lobbyFreeParking" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div><label class="switch"><input type="checkbox" id="lobbyHouseFreeBuild" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Sewa properti ×1,5<small>Dipakai Quick Match</small></div><label class="switch"><input type="checkbox" id="lobbyRentBoost" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Harga rumah lebih murah<small>Dipakai Quick Match</small></div><label class="switch"><input type="checkbox" id="lobbyCheapHouses" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">🔨 Lelang Saja (wajib lelang)<small>Tanah kosong selalu dilelang, tidak bisa dibeli langsung</small></div><label class="switch"><input type="checkbox" id="lobbyAuctionOnly" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">⏱️ Time Attack<small>Menang berdasar Net Worth saat waktu habis</small></div>
+        <select class="rule-select" id="lobbyTimeAttack" onchange="markModeCustom('lobby')"><option value="0" selected>Nonaktif</option><option value="15">15 menit</option><option value="30">30 menit</option><option value="45">45 menit</option><option value="60">60 menit</option></select></div>
     </div>
     <div id="lobbyWaitingNote" style="text-align:center;color:var(--paper-dim);font-size:13px;margin-top:6px;"></div>
     <button class="btn-big" style="width:100%;margin-top:12px;" id="lobbyStartBtn" onclick="hostStartOnline()">Mulai Permainan</button>
@@ -417,6 +475,18 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
   </div>
 
   <div class="card">
+    <h3>🎮 Mode Permainan</h3>
+    <div class="pill-row" id="modePresetRow-setup">
+      <button type="button" class="pill mode-pill active" data-preset="classic" onclick="selectModePreset('classic','setup')">🏠 Classic</button>
+      <button type="button" class="pill mode-pill" data-preset="quick" onclick="selectModePreset('quick','setup')">⚡ Quick Match</button>
+      <button type="button" class="pill mode-pill" data-preset="timeattack" onclick="selectModePreset('timeattack','setup')">⏱️ Time Attack</button>
+      <button type="button" class="pill mode-pill" data-preset="auction" onclick="selectModePreset('auction','setup')">🔨 Auction Only</button>
+    </div>
+    <p id="modePresetDesc-setup" style="font-size:12px;color:var(--paper-dim);margin:10px 0 0;line-height:1.5;">Mode default, paling dekat dengan Monopoly tradisional. Pemain terakhir yang tidak bangkrut menang.</p>
+    <p style="font-size:11px;color:var(--gold-dim);margin:8px 0 0;">Pilih mode untuk mengisi aturan otomatis — semua modifikasi di bawah tetap bisa kamu ubah satu per satu.</p>
+  </div>
+
+  <div class="card">
     <h3>Jumlah Pemain</h3>
     <div class="pill-row" id="playerCountRow"></div>
   </div>
@@ -430,7 +500,7 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     <h3>Aturan Permainan</h3>
     <div class="rule-row">
       <div class="rule-label">Uang awal<small>Modal setiap pemain di awal permainan</small></div>
-      <select class="rule-select" id="ruleStartMoney">
+      <select class="rule-select" id="ruleStartMoney" onchange="markModeCustom('setup')">
         <option value="1000">$1.000</option>
         <option value="1500" selected>$1.500</option>
         <option value="2000">$2.000</option>
@@ -439,7 +509,7 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     </div>
     <div class="rule-row">
       <div class="rule-label">Gaji lewat Mulai<small>Uang saat melewati/mendarat di petak Mulai</small></div>
-      <select class="rule-select" id="ruleGoSalary">
+      <select class="rule-select" id="ruleGoSalary" onchange="markModeCustom('setup')">
         <option value="100">$100</option>
         <option value="150">$150</option>
         <option value="200" selected>$200</option>
@@ -448,19 +518,41 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     </div>
     <div class="rule-row">
       <div class="rule-label">3× Dobel = Penjara<small>Aturan resmi standar</small></div>
-      <label class="switch"><input type="checkbox" id="ruleDoublesJail" checked><span class="slider"></span></label>
+      <label class="switch"><input type="checkbox" id="ruleDoublesJail" checked onchange="markModeCustom('setup')"><span class="slider"></span></label>
     </div>
     <div class="rule-row">
       <div class="rule-label">Dana Parkir Bebas<small>Pajak &amp; denda terkumpul, diambil siapa saja yang mendarat di Parkir Bebas (house rule populer)</small></div>
-      <label class="switch"><input type="checkbox" id="ruleFreeParking"><span class="slider"></span></label>
+      <label class="switch"><input type="checkbox" id="ruleFreeParking" onchange="markModeCustom('setup')"><span class="slider"></span></label>
     </div>
     <div class="rule-row">
       <div class="rule-label">Sewa properti kosong tanpa rumah<small>2× sewa dasar jika satu pemain kuasai satu set warna penuh</small></div>
-      <label class="switch"><input type="checkbox" id="ruleMonopolyRent" checked><span class="slider"></span></label>
+      <label class="switch"><input type="checkbox" id="ruleMonopolyRent" checked onchange="markModeCustom('setup')"><span class="slider"></span></label>
     </div>
     <div class="rule-row">
       <div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div>
-      <label class="switch"><input type="checkbox" id="ruleHouseFreeBuild"><span class="slider"></span></label>
+      <label class="switch"><input type="checkbox" id="ruleHouseFreeBuild" onchange="markModeCustom('setup')"><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">Sewa properti ×1,5<small>Semua sewa properti/stasiun/perusahaan naik 1,5× — bikin ekonomi berputar lebih cepat (dipakai Quick Match)</small></div>
+      <label class="switch"><input type="checkbox" id="ruleRentBoost" onchange="markModeCustom('setup')"><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">Harga rumah lebih murah<small>Biaya bangun rumah/hotel dipotong ±30% (dipakai Quick Match)</small></div>
+      <label class="switch"><input type="checkbox" id="ruleCheapHouses" onchange="markModeCustom('setup')"><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">🔨 Lelang Saja (wajib lelang)<small>Tanah kosong tidak bisa dibeli langsung — selalu dilelang ke semua pemain</small></div>
+      <label class="switch"><input type="checkbox" id="ruleAuctionOnly" onchange="markModeCustom('setup')"><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
+      <div class="rule-label">⏱️ Time Attack<small>Permainan otomatis berhenti setelah waktu habis, menang berdasar Net Worth tertinggi</small></div>
+      <select class="rule-select" id="ruleTimeAttack" onchange="markModeCustom('setup')">
+        <option value="0" selected>Nonaktif</option>
+        <option value="15">15 menit</option>
+        <option value="30">30 menit</option>
+        <option value="45">45 menit</option>
+        <option value="60">60 menit</option>
+      </select>
     </div>
   </div>
 
@@ -477,8 +569,9 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     <div class="title" id="topTitle">Monopoli Dunia</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="room-badge" id="roomBadge" style="display:none;"></div>
+      <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
       <button class="icon-btn" id="btnMute" onclick="toggleMute()">🔊</button>
-      <button class="icon-btn" onclick="confirmQuit()">Akhiri Game</button>
+      <button class="icon-btn" onclick="openSettingsMenu()">☰ Menu</button>
     </div>
   </div>
 
@@ -494,7 +587,7 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
         <div class="mn" id="tbMoney">$0</div>
       </div>
       <div id="tbJail" style="font-size:11px;color:var(--red);font-weight:700;"></div>
-      <div class="timer-badge hidden" id="turnTimerBadge">60s</div>
+      <div class="timer-badge hidden" id="turnTimerBadge">3:00</div>
     </div>
 
     <div class="buy-bar" id="buyBar"></div>
@@ -509,6 +602,7 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     <div class="actions-row">
       <button id="btnFriendProps" class="secondary" onclick="openFriendProps()">👀 Properti Teman</button>
       <button id="btnOffer" class="secondary" onclick="openTradeOffer()">🤝 Tawar Properti</button>
+      <button id="btnHistory" class="secondary" onclick="openHistory()">📜 Riwayat</button>
     </div>
 
     <div class="players-strip" id="playersStrip"></div>
@@ -538,7 +632,8 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
   <div class="stamp"><span class="top">Selamat</span><span class="mid" style="font-size:22px;">MENANG</span><span class="bot">Game Over</span></div>
   <h2 id="winnerName" style="color:var(--gold);margin:14px 0 6px;">-</h2>
   <p style="color:var(--paper-dim);max-width:280px;" id="winnerSub"></p>
-  <button class="btn-big" style="margin-top:20px;" onclick="location.reload()">Main Lagi</button>
+  <div id="winnerStats" style="margin-top:14px;width:100%;max-width:340px;text-align:left;"></div>
+  <button class="btn-big" style="margin-top:20px;" onclick="clearSavedGame();location.reload()">Main Lagi</button>
 </div>
 
 <script>
@@ -575,6 +670,11 @@ window.storage = {
   }
 };
 
+/* ID unik per-perangkat, dipakai supaya setiap baris log punya id unik
+   yang bisa digabung (merge) antar HP alih-alih saling menimpa. */
+const CLIENT_ID = Math.random().toString(36).slice(2,9);
+let logSeq = 0;
+
 /* ============================================================
    DATA PAPAN
    ============================================================ */
@@ -583,7 +683,14 @@ const GROUP_COLORS = {
   orange:'var(--orange)', red:'var(--redgrp)', yellow:'var(--yellow)',
   green:'var(--greengrp)', darkblue:'var(--darkblue)'
 };
-const HOUSE_COST = { brown:50, lightblue:50, pink:100, orange:100, red:150, yellow:150, green:200, darkblue:200 };
+const BASE_HOUSE_COST = { brown:50, lightblue:50, pink:100, orange:100, red:150, yellow:150, green:200, darkblue:200 };
+/* Harga rumah efektif — mengikuti pengganda "Harga Rumah Lebih Murah" dari
+   aturan aktif (dipakai mode Quick Match). Tetap balik ke harga normal
+   kalau tidak ada game berjalan atau modifikasi ini nonaktif. */
+function HC(group){
+  const mult = (typeof state!=='undefined' && state && state.rules && state.rules.houseCostMultiplier) || 1;
+  return Math.round(BASE_HOUSE_COST[group]*mult);
+}
 
 function P(name, group, price, rent){ return {type:'property', name, group, price, rent, mortgage:Math.round(price/2)}; }
 function R(name, price){ return {type:'railroad', name, price, mortgage:Math.round(price/2), rent:[25,50,100,200]}; }
@@ -716,53 +823,181 @@ function beep(freq, dur, type, vol, delay){
   osc.connect(gain); gain.connect(ctx.destination);
   osc.start(t0); osc.stop(t0+dur+0.02);
 }
+const VIBRATION_PATTERNS = {
+  roll:15, buy:[10,30,15], pay:[20,40,20], jail:[30,60,30],
+  turn:12, timeup:200, error:25, win:[40,40,40,40]
+};
 function playSound(kind){
-  if(soundMuted) return;
-  switch(kind){
-    case 'roll':
-      for(let i=0;i<4;i++) beep(300+Math.random()*250, 0.06, 'square', 0.08, i*0.06);
-      break;
-    case 'step':
-      beep(520, 0.05, 'triangle', 0.06);
-      break;
-    case 'buy':
-      beep(523,0.09,'sine',0.13); beep(659,0.09,'sine',0.13,0.09); beep(784,0.16,'sine',0.14,0.18);
-      break;
-    case 'cash':
-      beep(880,0.07,'sine',0.11); beep(1046,0.1,'sine',0.11,0.07);
-      break;
-    case 'pay':
-      beep(220,0.14,'sawtooth',0.1); beep(160,0.18,'sawtooth',0.1,0.1);
-      break;
-    case 'card':
-      beep(440,0.08,'triangle',0.1); beep(660,0.1,'triangle',0.1,0.08);
-      break;
-    case 'jail':
-      beep(150,0.22,'square',0.12); beep(110,0.28,'square',0.12,0.15);
-      break;
-    case 'turn':
-      beep(660,0.09,'sine',0.1); beep(880,0.13,'sine',0.11,0.09);
-      break;
-    case 'timeup':
-      beep(200,0.3,'sawtooth',0.14); beep(150,0.4,'sawtooth',0.14,0.22);
-      break;
-    case 'tick':
-      beep(700,0.04,'square',0.05);
-      break;
-    case 'error':
-      beep(180,0.15,'sawtooth',0.1);
-      break;
-    case 'win':
-      [523,659,784,1046].forEach((f,i)=>beep(f,0.22,'sine',0.14,i*0.15));
-      break;
+  if(!soundMuted){
+    switch(kind){
+      case 'roll':
+        for(let i=0;i<4;i++) beep(300+Math.random()*250, 0.06, 'square', 0.08, i*0.06);
+        break;
+      case 'step':
+        beep(520, 0.05, 'triangle', 0.06);
+        break;
+      case 'buy':
+        beep(523,0.09,'sine',0.13); beep(659,0.09,'sine',0.13,0.09); beep(784,0.16,'sine',0.14,0.18);
+        break;
+      case 'cash':
+        beep(880,0.07,'sine',0.11); beep(1046,0.1,'sine',0.11,0.07);
+        break;
+      case 'pay':
+        beep(220,0.14,'sawtooth',0.1); beep(160,0.18,'sawtooth',0.1,0.1);
+        break;
+      case 'card':
+        beep(440,0.08,'triangle',0.1); beep(660,0.1,'triangle',0.1,0.08);
+        break;
+      case 'jail':
+        beep(150,0.22,'square',0.12); beep(110,0.28,'square',0.12,0.15);
+        break;
+      case 'turn':
+        beep(660,0.09,'sine',0.1); beep(880,0.13,'sine',0.11,0.09);
+        break;
+      case 'timeup':
+        beep(200,0.3,'sawtooth',0.14); beep(150,0.4,'sawtooth',0.14,0.22);
+        break;
+      case 'tick':
+        beep(700,0.04,'square',0.05);
+        break;
+      case 'error':
+        beep(180,0.15,'sawtooth',0.1);
+        break;
+      case 'win':
+        [523,659,784,1046].forEach((f,i)=>beep(f,0.22,'sine',0.14,i*0.15));
+        break;
+    }
   }
+  if(VIBRATION_PATTERNS[kind]) vibrate(VIBRATION_PATTERNS[kind]);
 }
 document.addEventListener('click', ()=>{ ensureAudio(); }, {once:true});
 
 /* ============================================================
-   TURN TIMER (60 detik per giliran)
+   PENGATURAN (SUARA / GETAR / GRAFIK) + SAVE-RESUME LOKAL
    ============================================================ */
-const TURN_TIME_LIMIT = 60;
+let appSettings = { vibration:true, reducedMotion:false };
+(function loadSettings(){
+  try{
+    const raw = localStorage.getItem('anumpoly_settings');
+    if(raw){
+      const s = JSON.parse(raw);
+      if(typeof s.vibration==='boolean') appSettings.vibration = s.vibration;
+      if(typeof s.reducedMotion==='boolean') appSettings.reducedMotion = s.reducedMotion;
+      if(typeof s.sound==='boolean') soundMuted = !s.sound;
+    }
+  }catch(e){}
+})();
+function saveSettings(){
+  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion })); }catch(e){}
+}
+function vibrate(pattern){
+  if(!appSettings.vibration) return;
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+function onToggleSound(checked){
+  soundMuted = !checked;
+  const btn = document.getElementById('btnMute');
+  if(btn) btn.textContent = soundMuted ? '🔇' : '🔊';
+  saveSettings();
+}
+function onToggleVibration(checked){ appSettings.vibration = checked; saveSettings(); }
+function onToggleReducedMotion(checked){ appSettings.reducedMotion = checked; saveSettings(); }
+
+function saveGameLocal(){
+  if(!state || state.mode!=='hotseat') return;
+  try{ localStorage.setItem('anumpoly_save', JSON.stringify(state)); }catch(e){}
+}
+function clearSavedGame(){
+  try{ localStorage.removeItem('anumpoly_save'); }catch(e){}
+  refreshResumeButton();
+}
+function hasSavedGame(){
+  try{ return !!localStorage.getItem('anumpoly_save'); }catch(e){ return false; }
+}
+function refreshResumeButton(){
+  const btn = document.getElementById('btnResumeSaved');
+  if(btn) btn.style.display = hasSavedGame() ? 'block' : 'none';
+}
+function resumeSavedGame(){
+  try{
+    const raw = localStorage.getItem('anumpoly_save');
+    if(!raw){ refreshResumeButton(); return; }
+    state = JSON.parse(raw);
+    buildBoardDOM();
+    renderAll();
+    showScreen('screen-game');
+    log('Melanjutkan permainan yang tersimpan.');
+    beginPlayerTurn();
+  }catch(e){ alertModal('Gagal memuat permainan tersimpan, mungkin datanya rusak.'); }
+}
+
+/* ============================================================
+   MENU (☰) — pengaturan, riwayat, menyerah, keluar
+   ============================================================ */
+function openSettingsMenu(){
+  const html = `
+    <div style="display:flex;flex-direction:column;text-align:left;">
+      <div class="rule-row"><div class="rule-label">Suara</div>
+        <label class="switch"><input type="checkbox" id="setSound" ${soundMuted?'':'checked'} onchange="onToggleSound(this.checked)"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Getar (vibration)<small>Getar singkat saat lempar dadu, bayar, dll (HP saja)</small></div>
+        <label class="switch"><input type="checkbox" id="setVibration" ${appSettings.vibration?'checked':''} onchange="onToggleVibration(this.checked)"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Animasi ringan<small>Bidak langsung pindah tanpa animasi jalan, lebih ringan di HP lawas</small></div>
+        <label class="switch"><input type="checkbox" id="setReduced" ${appSettings.reducedMotion?'checked':''} onchange="onToggleReducedMotion(this.checked)"><span class="slider"></span></label></div>
+    </div>`;
+  showModal({
+    title:'☰ Menu Permainan',
+    desc: html,
+    buttons:[
+      {label:'📜 Riwayat', cls:'btn-no', onClick:()=>{ closeModal(); openHistory(); }},
+      {label:'▶️ Lanjut Game', cls:'btn-yes', onClick:closeModal},
+      {label:'🏳️ Menyerah', cls:'btn-danger', onClick:confirmSurrender},
+      {label:'🚪 Keluar ke Menu', cls:'btn-no', onClick:confirmQuit},
+    ]
+  });
+}
+function confirmSurrender(){
+  if(!state) { closeModal(); return; }
+  const p = currentPlayer();
+  showModal({
+    title:'Yakin Menyerah?',
+    desc:`${p.name} akan dinyatakan bangkrut dan keluar dari permainan ini. Properti miliknya kembali ke bank.`,
+    buttons:[
+      {label:'Batal', cls:'btn-no', onClick:closeModal},
+      {label:'Ya, Menyerah', cls:'btn-danger', onClick:surrenderPlayer},
+    ]
+  });
+}
+function surrenderPlayer(){
+  if(!state) { closeModal(); return; }
+  const p = currentPlayer();
+  p.bankrupt = true;
+  log(`${p.name} menyerah dan dinyatakan bangkrut.`);
+  (p.properties||[]).forEach(i=>{
+    const ps = state.propStates[i];
+    ps.houses = 0;
+    ps.owner = null;
+    ps.mortgaged = false;
+  });
+  p.money = 0;
+  p.properties = [];
+  closeModal();
+  checkGameOver();
+  if(!document.getElementById('winnerOverlay').classList.contains('show')){
+    forceEndTurn();
+  } else {
+    commit();
+  }
+}
+
+/* ============================================================
+   TURN TIMER (3 menit per giliran)
+   Catatan: timer ini SELALU berhenti total saat pemain sedang
+   menyelesaikan utang/gadai (state.pendingDebt) sehingga tidak
+   akan pernah memicu bangkrut otomatis di tengah proses gadai
+   properti / cari uang. Timer baru berjalan lagi begitu utang
+   selesai atau giliran baru dimulai.
+   ============================================================ */
+const TURN_TIME_LIMIT = 180;
 let turnTimerInterval = null;
 let turnTimerRemaining = TURN_TIME_LIMIT;
 function beginPlayerTurn(){
@@ -770,9 +1005,13 @@ function beginPlayerTurn(){
   turnTimerRemaining = TURN_TIME_LIMIT;
   updateTimerDisplay();
   if(!state || currentPlayer().bankrupt) return;
+  currentPlayer()._turnBuilds = 0;
+  handleBotAutomation();
   const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
   if(notMyTurn) return;
+  if(state.pendingDebt) return; // jangan mulai timer selama masih ada utang tertunda
   turnTimerInterval = setInterval(()=>{
+    if(state.pendingDebt){ stopTurnTimer(); updateTimerDisplay(); return; }
     turnTimerRemaining = Math.max(0, turnTimerRemaining-1);
     updateTimerDisplay();
     if(turnTimerRemaining<=3 && turnTimerRemaining>0) playSound('tick');
@@ -791,13 +1030,15 @@ function updateTimerDisplay(){
   const el = document.getElementById('turnTimerBadge');
   if(!el || !state) return;
   const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
-  el.classList.toggle('hidden', notMyTurn);
-  el.textContent = turnTimerRemaining+'s';
+  el.classList.toggle('hidden', notMyTurn || !!state.pendingDebt);
+  const m = Math.floor(turnTimerRemaining/60);
+  const s = turnTimerRemaining%60;
+  el.textContent = m+':'+(s<10?'0':'')+s;
   el.classList.toggle('low', turnTimerRemaining<=10);
 }
 function handleTurnTimeout(){
   stopTurnTimer();
-  if(!state || currentPlayer().bankrupt) return;
+  if(!state || currentPlayer().bankrupt || state.pendingDebt) return;
   playSound('timeup');
   log(`⏱️ Waktu ${currentPlayer().name} habis, giliran otomatis berpindah.`);
   if(state.pendingBuy){ decideBuy(false); }
@@ -814,7 +1055,7 @@ function forceEndTurn(){
   state.pendingBuy = null;
   commit();
   playSound('turn');
-  if(state.mode==='hotseat') showPassOverlay(); else beginPlayerTurn();
+  if(state.mode==='hotseat' && !state.players[next].isBot) showPassOverlay(); else beginPlayerTurn();
 }
 
 /* ============================================================
@@ -824,7 +1065,125 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function toggleHowTo(){ document.getElementById('howto').classList.toggle('show'); }
+function openHowToModal(){
+  const html = `
+    <p><b>Format:</b> Ada 2 mode — <b>Offline (Bergantian di 1 HP)</b>: semua pemain main bergiliran di HP yang sama, layar "Serahkan HP" muncul tiap ganti giliran. <b>Online (Multiplayer antar HP)</b>: tiap pemain pegang HP sendiri, tersambung lewat kode Room lewat internet.</p>
+    <p><b>Tujuan:</b> Jadi satu-satunya pemain yang belum bangkrut. Kumpulkan properti satu warna penuh, bangun rumah/hotel di atasnya, lalu buat lawan kehabisan uang lewat sewa.</p>
+    <p><b>Giliran:</b> Lempar dadu (🎲) → bidak jalan sejumlah mata dadu → ikuti apa yang terjadi di petak tempat mendarat:</p>
+    <p>• <b>Properti/Stasiun/Perusahaan kosong</b> → boleh dibeli dari bank, atau dilewati (lalu dilelang ke semua pemain lain).<br>
+    • <b>Milik pemain lain</b> → wajib bayar sewa sesuai jumlah rumah/hotel di atasnya (kalau digadai, tidak bayar apa-apa).<br>
+    • <b>Kesempatan / Dana Umum</b> → ambil kartu teratas, ikuti instruksinya (dapat/bayar uang, pindah petak, dsb).<br>
+    • <b>Pajak</b> → bayar sejumlah nominal ke bank.<br>
+    • <b>Masuk Penjara</b> → bidak langsung dipindah ke Penjara, giliran berakhir.<br>
+    • <b>Penjara / Hanya Lewat</b> → aman, tidak terjadi apa-apa kalau cuma mampir.<br>
+    • <b>Parkir Bebas</b> → kalau aturan "Dana Parkir Bebas" aktif, ambil semua uang yang terkumpul dari pajak/denda pemain lain.<br>
+    • <b>Mulai</b> → tiap kali lewat atau mendarat tepat di petak ini, dapat gaji sesuai aturan room.</p>
+    <p><b>Dadu dobel:</b> Kalau dua dadu sama, lempar lagi setelah giliranmu selesai. Tapi kalau dobel 3× berturut-turut (dan aturan itu aktif), langsung masuk penjara tanpa jalan.</p>
+    <p><b>Di penjara:</b> Tiap giliran pilih salah satu — coba lempar dobel untuk bebas, bayar $50 untuk bebas langsung, atau pakai kartu "Bebas dari Penjara" kalau punya. Gagal dobel 3× berturut-turut = wajib bayar $50 dan keluar.</p>
+    <p><b>Membangun:</b> Rumah/hotel hanya bisa dibangun kalau kamu kuasai satu set warna penuh (kecuali aturan "Bangun bebas set warna" aktif). Hotel = level rumah ke-5, menggantikan 4 rumah sebelumnya.</p>
+    <p><b>Gadai (mortgage):</b> Butuh uang cepat? Gadai properti untuk dapat setengah harga belinya; properti itu berhenti menghasilkan sewa sampai ditebus (bayar 110% dari nilai gadai).</p>
+    <p><b>Kalau uang tidak cukup bayar:</b> Gadai/jual rumah lewat "Kelola Properti", tawarkan properti ke pemain lain, atau nyatakan bangkrut (semua propertimu jatuh ke kreditor atau kembali ke bank).</p>
+    <p><b>Tawar-menawar:</b> Kapan saja (bukan cuma giliranmu) kamu bisa menawar beli properti pemain lain, atau menawarkan jual propertimu ke pemain tertentu lewat tombol "🤝 Tawar Properti".</p>
+    <p><b>Bot 🤖:</b> Kalau pemain kurang, tambahkan bot untuk menemani main (di layar Pengaturan untuk mode Offline, atau di Lobby untuk mode Online). Tiap bot dapat nama dan gaya main acak — ada yang gemar menabung, ada yang santai asal saldo di atas $250/$500, dan ada yang nekat — lalu otomatis melempar dadu, beli properti, membangun rumah, menjawab lelang, dan menimbang tawaran tawar-menawar sendiri.</p>`;
+  showModal({ title:'📘 Cara Bermain', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
+}
+
+/* ============================================================
+   REFERENSI PROPERTI & KARTU (dibuka dari menu utama)
+   ============================================================ */
+let refTab = 'property';
+function openReferenceModal(){ refTab = 'property'; renderReferenceModal(); }
+function setRefTab(id){ refTab = id; renderReferenceModal(); }
+function renderReferenceModal(){
+  const tabs = [
+    {id:'property', label:'🏠 Properti'},
+    {id:'station', label:'🚉 Stasiun & Perusahaan'},
+    {id:'chest', label:'💰 Dana Umum'},
+    {id:'chance', label:'❓ Kesempatan'},
+  ];
+  const tabsHTML = `<div class="ref-tabs">${tabs.map(t=>`<button class="ref-tab${refTab===t.id?' active':''}" onclick="setRefTab('${t.id}')">${t.label}</button>`).join('')}</div>`;
+  let listHTML = '';
+  if(refTab==='property'){
+    BOARD.forEach(t=>{
+      if(t.type!=='property') return;
+      listHTML += `<div class="ref-item">
+        <div class="ri-top"><div class="ri-swatch" style="background:${GROUP_COLORS[t.group]}"></div><div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
+        <div class="ri-detail">Sewa dasar <b>${fmt(t.rent[0])}</b> · dengan set warna penuh (tanpa rumah) <b>${fmt(t.rent[0]*2)}</b><br>
+        1 rumah <b>${fmt(t.rent[1])}</b> · 2 rumah <b>${fmt(t.rent[2])}</b> · 3 rumah <b>${fmt(t.rent[3])}</b> · 4 rumah <b>${fmt(t.rent[4])}</b> · Hotel <b>${fmt(t.rent[5])}</b><br>
+        Harga bangun rumah/hotel <b>${fmt(HC(t.group))}</b> · Nilai gadai <b>${fmt(t.mortgage)}</b></div>
+      </div>`;
+    });
+  } else if(refTab==='station'){
+    BOARD.forEach(t=>{
+      if(t.type!=='railroad') return;
+      listHTML += `<div class="ref-item">
+        <div class="ri-top"><div class="ri-swatch" style="background:#9aa3ad"></div><div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
+        <div class="ri-detail">Sewa: kuasai 1 stasiun <b>${fmt(t.rent[0])}</b> · 2 stasiun <b>${fmt(t.rent[1])}</b> · 3 stasiun <b>${fmt(t.rent[2])}</b> · 4 stasiun <b>${fmt(t.rent[3])}</b><br>Nilai gadai <b>${fmt(t.mortgage)}</b></div>
+      </div>`;
+    });
+    BOARD.forEach(t=>{
+      if(t.type!=='utility') return;
+      listHTML += `<div class="ref-item">
+        <div class="ri-top"><div class="ri-swatch" style="background:#6d7580"></div><div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
+        <div class="ri-detail">Sewa: 4× jumlah mata dadu kalau baru kuasai 1 perusahaan · 10× jumlah mata dadu kalau kuasai keduanya<br>Nilai gadai <b>${fmt(t.mortgage)}</b></div>
+      </div>`;
+    });
+  } else if(refTab==='chest'){
+    CHEST_CARDS.forEach(c=>{ listHTML += `<div class="ref-item"><div class="ri-detail">💰 ${c.text}</div></div>`; });
+  } else if(refTab==='chance'){
+    CHANCE_CARDS.forEach(c=>{ listHTML += `<div class="ref-item"><div class="ri-detail">❓ ${c.text}</div></div>`; });
+  }
+  showModal({
+    title: '📖 Daftar Properti & Kartu',
+    desc: tabsHTML + `<div>${listHTML}</div>`,
+    buttons: [{label:'Tutup', cls:'btn-no', onClick:closeModal}]
+  });
+}
+
+/* ============================================================
+   APA YANG BARU (changelog, dibuka dari menu utama)
+   ============================================================ */
+function openWhatsNewModal(){
+  const html = `
+    <div class="changelog-entry">
+      <div class="cl-date">17 Agustus 2026 — Mode Permainan &amp; Modifikasi Kustom</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Kartu <b>"🎮 Mode Permainan"</b> di layar Pengaturan (Offline) &amp; Lobby (Online): pilih salah satu dari 4 preset — <b>🏠 Classic Mode</b> (standar, menang saat semua lawan bangkrut), <b>⚡ Quick Match</b> (sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, bangun bebas set warna — biar cepat selesai dan cocok untuk main digital), <b>⏱️ Time Attack</b> (permainan berhenti otomatis setelah waktu habis, menang lewat Net Worth tertinggi bukan siapa yang bangkrut duluan), dan <b>🔨 Auction Only</b> (tanah kosong tidak bisa dibeli langsung, selalu dilelang ke semua pemain — memunculkan bluffing &amp; perang harga). Memilih preset hanya <b>mengisi otomatis</b> modifikasi di bawahnya — semua tetap bisa di-on/off-kan satu per satu sesudahnya sesuai selera.</div>
+      <ul>
+        <li><b>Sewa properti ×1,5</b> — modifikasi baru yang menaikkan semua sewa properti/stasiun/perusahaan, dipakai Quick Match.</li>
+        <li><b>Harga rumah lebih murah</b> — modifikasi baru yang memotong biaya bangun rumah/hotel ±30%, dipakai Quick Match.</li>
+        <li><b>🔨 Lelang Saja (wajib lelang)</b> — modifikasi baru: tanah kosong tidak muncul opsi "Beli", langsung masuk lelang ke semua pemain.</li>
+        <li><b>⏱️ Time Attack</b> — modifikasi baru: pilih batas waktu 15/30/45/60 menit. Badge hitung mundur muncul di pojok atas papan (berubah merah di bawah 1 menit); saat waktu habis, permainan otomatis selesai dan pemenang ditentukan dari Net Worth tertinggi (uang tunai + nilai properti + nilai rumah − hutang gadai), lengkap dengan ranking semua pemain.</li>
+      </ul>
+    </div>
+    <div class="changelog-entry">
+      <div class="cl-date">17 Agustus 2026 — Update Bot &amp; Tampilan</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Bot sekarang punya <b>nama acak</b> (bukan lagi "Bot 1/2/3") dan salah satu dari 5 <b>gaya main</b> yang dipilih acak tiap kali ditambahkan: <b>Penabung</b> (super hati-hati simpan uang), <b>Jaga Saldo $250+</b>, <b>Jaga Saldo $500+</b>, <b>Nekat</b> (berani beli & bangun walau kas tipis), dan <b>Gemar Membangun</b> (prioritas bangun rumah/hotel). Gaya ini memengaruhi kapan bot mau beli properti, menawar di lelang, dan berapa buffer kas yang ia jaga.</div>
+      <ul>
+        <li>Bot sekarang bisa <b>membangun rumah/hotel sendiri</b> di properti yang sudah ia kuasai penuh satu warna — otomatis, tanpa perlu dibantu, mengikuti gaya mainnya masing-masing (termasuk saat aturan "Bangun bebas set warna" aktif).</li>
+        <li>Bot sekarang benar-benar <b>menimbang tawaran tawar-menawar properti</b> dari pemain lain (harga vs nilai wajar properti, dan seberapa penting properti itu untuk set warna yang sudah ia kuasai) — bukan otomatis menolak semua tawaran seperti sebelumnya.</li>
+        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Bot yang kadang berhenti total di tengah jalan (diam saja, tidak lempar dadu/tidak menjawab) sekarang diperbaiki: ditemukan bug di mode Online yang membuat status "ini bot" milik seorang pemain bisa hilang setiap kali data disinkronkan ke HP lain. Ditambah juga "penjaga" otomatis yang memeriksa ulang giliran bot tiap beberapa detik supaya bot tidak pernah macet tanpa batas waktu.</li>
+        <li class="fix">Posisi dadu di tengah papan dipindah agak ke atas dan area log riwayat di bawahnya dipersempit, supaya log tidak lagi menutupi dadu.</li>
+        <li class="fix">Saat pemain (atau bot) melempar dadu, sekarang ada animasi dadu mengacak sekilas sebelum berhenti di angka final — sebelumnya dadu langsung "meloncat" ke angka tanpa animasi.</li>
+        <li class="fix">Halaman "Cara Bermain" di menu utama sekarang muncul sebagai kotak pop-up ringkas (sama seperti "Daftar Properti & Kartu"), bukan lagi memanjang ke bawah di halaman menu.</li>
+      </ul>
+    </div>
+    <div class="changelog-entry">
+      <div class="cl-date">17 Agustus 2026</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Pemain <b>Bot 🤖</b> — isi slot pemain yang kosong dengan bot supaya bisa main sendirian atau berdua. Di mode Offline, aktifkan lewat saklar "🤖" di samping nama pemain 2–4 pada layar Pengaturan. Di mode Online, host bisa menambah/menghapus bot lewat tombol "+ Tambah Bot" di Lobby. Bot melempar dadu, memutuskan beli/lewat properti, membayar sewa dan utang (gadai/jual rumah otomatis kalau perlu), menjawab lelang, menjawab tawaran tawar-menawar, dan menyelesaikan giliran — semua otomatis dengan jeda singkat supaya terasa alami.</div>
+      <ul>
+        <li>Label mode main diperjelas jadi <b>"Offline — Bergantian di 1 HP"</b> dan <b>"Online — Multiplayer antar HP"</b> lengkap dengan penjelasan singkat di masing-masing kartu.</li>
+        <li>Halaman "Cara Bermain" di menu utama ditulis ulang jauh lebih lengkap: alur giliran, aturan penjara, membangun rumah/hotel, gadai properti, cara menyelesaikan utang, tawar-menawar antar pemain, dan penjelasan bot.</li>
+        <li>Tombol baru <b>"📖 Daftar Properti & Kartu"</b> di menu utama: daftar harga & tabel sewa lengkap semua properti/stasiun/perusahaan, plus isi penuh 16 kartu Dana Umum dan 16 kartu Kesempatan.</li>
+        <li>Tombol baru <b>"🆕 Apa yang Baru"</b> (halaman yang sedang kamu baca ini) untuk mencatat riwayat pembaruan lengkap dengan tanggalnya.</li>
+      </ul>
+      <ul>
+        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Animasi +/- uang dirombak total: sekarang muncul tepat di sisi kanan angka total uang pemain lalu geser ke kiri, warna hijau untuk penambahan dan merah untuk pengurangan, tampil sekitar 3 detik. Yang terpenting: animasinya sekarang benar-benar tersinkron dan tampil di SEMUA HP pemain (sebelumnya cuma muncul di HP yang melakukan transaksinya saja, jadi kelihatan seperti tidak berfungsi di HP lain).</li>
+        <li class="fix">Delay update antar-HP di mode Online dipangkas jauh — polling dipercepat dari ±1,8 detik menjadi ±0,4 detik, ditambah jalur percepatan realtime tambahan kalau tersedia di server. Giliran "Selesai Giliran" dan aksi pemain lain sekarang terasa jauh lebih instan di HP lawan, bukan lagi delay 1 detik lebih.</li>
+        <li class="fix">Log riwayat di bawah dadu sekarang menampung sampai 5 baris (sebelumnya maksimal 3), dengan ukuran font diperkecil supaya tetap rapi dan tidak menutupi papan.</li>
+      </ul>
+    </div>`;
+  showModal({ title:'🆕 Apa yang Baru', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
+}
 function goToMenu(){ showScreen('screen-menu'); }
 function goToModeSelect(){ showScreen('screen-mode'); }
 
@@ -845,8 +1204,33 @@ function goToOnline(){
   document.getElementById('onlineChooseView').style.display='block';
   document.getElementById('onlineLobbyView').style.display='none';
 }
-function leaveOnline(){
+async function leaveOnline(){
   clearInterval(lobbyPollTimer); clearInterval(gamePollTimer);
+  try{ if(lobbyRealtimeChannel){ sbClient.removeChannel(lobbyRealtimeChannel); lobbyRealtimeChannel=null; } }catch(e){}
+  try{ if(gameRealtimeChannel){ sbClient.removeChannel(gameRealtimeChannel); gameRealtimeChannel=null; } }catch(e){}
+  // Kalau kita sedang di dalam sebuah room (lobby) yang belum mulai,
+  // hapus diri kita dari daftar pemain di server supaya tidak jadi
+  // "hantu" yang masih terlihat di layar host, dan supaya kalau kita
+  // gabung lagi nanti tidak numpuk jadi entri ganda.
+  if(lobby && myOnlineSlot!=null && !lobby.started){
+    try{
+      const res = await window.storage.get('mproom_'+lobby.code, true);
+      if(res){
+        const remote = JSON.parse(res.value);
+        if(!remote.started){
+          remote.players = remote.players.filter(pl=>pl.slot!==myOnlineSlot);
+          if(remote.players.length===0){
+            await window.storage.delete('mproom_'+remote.code, true);
+          }else{
+            if(remote.hostSlot===myOnlineSlot){
+              remote.hostSlot = remote.players.slice().sort((a,b)=>a.slot-b.slot)[0].slot;
+            }
+            await window.storage.set('mproom_'+remote.code, JSON.stringify(remote), true);
+          }
+        }
+      }
+    }catch(e){}
+  }
   lobby=null; myOnlineSlot=null;
   showScreen('screen-mode');
 }
@@ -900,23 +1284,61 @@ function renderLobby(){
   document.getElementById('lobbyCodeDisplay').textContent = lobby.code;
   const list = document.getElementById('lobbyPlayerList');
   list.innerHTML='';
+  const isHost = myOnlineSlot===lobby.hostSlot;
   lobby.players.slice().sort((a,b)=>a.slot-b.slot).forEach(pl=>{
     const row=document.createElement('div');
     row.className='player-row';
-    row.innerHTML = `<div class="token-dot" style="background:${TOKEN_COLORS[pl.slot]}"></div><div style="flex:1;font-size:14px;">${pl.name}${pl.slot===lobby.hostSlot?' (Host)':''}${pl.slot===myOnlineSlot?' — kamu':''}</div>`;
+    const label = pl.isBot
+      ? `🤖 ${pl.name} <span class="bot-tag">${botPersonalityOf(pl).label}</span>`
+      : `${pl.name}${pl.slot===lobby.hostSlot?' (Host)':''}${pl.slot===myOnlineSlot?' — kamu':''}`;
+    row.innerHTML = `<div class="token-dot" style="background:${TOKEN_COLORS[pl.slot]}"></div><div style="flex:1;font-size:14px;">${label}</div>`;
+    if(pl.isBot && isHost){
+      const x=document.createElement('button');
+      x.className='mini-x'; x.textContent='✕'; x.title='Hapus bot';
+      x.onclick=()=>lobbyRemoveBot(pl.slot);
+      row.appendChild(x);
+    }
     list.appendChild(row);
   });
-  const isHost = myOnlineSlot===lobby.hostSlot;
   document.getElementById('lobbyRulesCard').style.display = isHost?'block':'none';
   document.getElementById('lobbyStartBtn').style.display = isHost?'block':'none';
   document.getElementById('lobbyStartBtn').disabled = lobby.players.length<2;
+  document.getElementById('lobbyAddBotBtn').style.display = (isHost && lobby.players.length<4) ? 'block' : 'none';
   document.getElementById('lobbyWaitingNote').textContent = isHost
-    ? (lobby.players.length<2?'Butuh minimal 2 pemain untuk mulai.':'')
+    ? (lobby.players.length<2?'Butuh minimal 2 pemain untuk mulai. Bisa tambah bot kalau perlu.':'')
     : 'Menunggu host memulai permainan...';
 }
+async function lobbyAddBot(){
+  if(!lobby || myOnlineSlot!==lobby.hostSlot) return;
+  if(lobby.players.length>=4) return;
+  const used = lobby.players.map(p=>p.slot);
+  let slot=0; while(used.includes(slot)) slot++;
+  const name = pickBotName(lobby.players.map(p=>p.name));
+  const personality = pickBotPersonality();
+  lobby.players.push({slot, name, isBot:true, personality});
+  renderLobby();
+  await saveLobby();
+}
+async function lobbyRemoveBot(slot){
+  if(!lobby || myOnlineSlot!==lobby.hostSlot) return;
+  lobby.players = lobby.players.filter(p=>p.slot!==slot);
+  renderLobby();
+  await saveLobby();
+}
+let lobbyRealtimeChannel = null;
 function startLobbyPolling(){
   clearInterval(lobbyPollTimer);
-  lobbyPollTimer = setInterval(pollLobby, 1800);
+  lobbyPollTimer = setInterval(pollLobby, 700);
+  // Percepatan opsional lewat Supabase Realtime: kalau tersedia, perubahan
+  // di server memicu poll SEGERA tanpa menunggu interval berikutnya. Kalau
+  // realtime tidak aktif di project ini, ini gagal diam-diam dan polling
+  // cepat di atas tetap jadi jalur utama.
+  try{
+    if(lobbyRealtimeChannel) sbClient.removeChannel(lobbyRealtimeChannel);
+    lobbyRealtimeChannel = sbClient.channel('room-'+lobby.code)
+      .on('postgres_changes', {event:'*', schema:'public', table:'kv_store', filter:'key=eq.mproom_'+lobby.code}, ()=>pollLobby())
+      .subscribe();
+  }catch(e){}
 }
 async function pollLobby(){
   if(!lobby) return;
@@ -941,22 +1363,29 @@ async function hostStartOnline(){
     freeParkingPot: document.getElementById('lobbyFreeParking').checked,
     monopolyDoubleRent: true,
     houseFreeBuild: document.getElementById('lobbyHouseFreeBuild').checked,
+    ...readModeExtraRules('lobby'),
   };
   const players = lobby.players.slice().sort((a,b)=>a.slot-b.slot).map(pl=>({
     id: pl.slot, name: pl.name, color: TOKEN_COLORS[pl.slot], token: TOKEN_NAMES[pl.slot],
     money: rules.startMoney, pos:0, inJail:false, jailTurns:0, jailCards:0,
-    bankrupt:false, doublesCount:0, properties:[]
+    bankrupt:false, doublesCount:0, properties:[], isBot: !!pl.isBot,
+    personality: pl.isBot ? (pl.personality || pickBotPersonality()) : null,
+    propsBought:0, timesJailed:0, rentPaid:0, rentCollected:0
   }));
   const propStates = {};
   BOARD.forEach((t,i)=>{ if(t.type==='property'||t.type==='railroad'||t.type==='utility'){ propStates[i]={owner:null,houses:0,mortgaged:false}; } });
   state = {
     mode:'online', roomCode: lobby.code, rules, players, currentIndex:0, freeParkingPot:0,
-    log:[`Room ${lobby.code} dimulai dengan ${players.length} pemain online. Uang awal ${fmt(rules.startMoney)}.`],
+    log:[],
     turnPhase:'canRoll', lastRoll:[1,1], propStates,
     chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
     chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
-    rev:0, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null
+    rev:0, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, auction:null, lastMoveMeta:null, timeAttackEndedShown:false
   };
+  log(`Room ${lobby.code} dimulai dengan ${players.length} pemain online. Uang awal ${fmt(rules.startMoney)}.`);
+  if(rules.timeAttackEndsAt) log(`⏱️ Mode Time Attack aktif — permainan berhenti otomatis dalam ${Math.round((rules.timeAttackEndsAt-Date.now())/60000)} menit, menang berdasar Net Worth tertinggi.`);
+  if(rules.auctionOnly) log(`🔨 Mode Lelang Saja aktif — semua tanah kosong wajib dilelang.`);
+  logBotStyles(players);
   lobby.started = true;
   clearInterval(lobbyPollTimer);
   const ok = await saveLobby();
@@ -978,7 +1407,8 @@ async function beginOnlineGameFromLobby(){
       currentIndex:payload.currentIndex, freeParkingPot:payload.freeParkingPot, log:payload.log,
       turnPhase:payload.turnPhase, propStates:payload.propStates, lastRoll:payload.lastRoll,
       chanceDeckIds:payload.chanceDeckIds, chestDeckIds:payload.chestDeckIds, rev:payload.rev,
-      pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:payload.pendingTradeOffer||null
+      pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:payload.pendingTradeOffer||null,
+      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null
     };
     buildBoardDOM();
     showScreen('screen-game');
@@ -987,9 +1417,20 @@ async function beginOnlineGameFromLobby(){
     beginPlayerTurn();
   }catch(e){ setTimeout(beginOnlineGameFromLobby, 1200); }
 }
+let gameRealtimeChannel = null;
 function startGamePolling(){
   clearInterval(gamePollTimer);
-  gamePollTimer = setInterval(pollGameState, 1800);
+  // Interval polling dipercepat jauh (dari 1800ms ke 400ms) supaya delay
+  // antar-HP minimal. Ditambah Supabase Realtime sebagai percepatan
+  // tambahan (kalau aktif di project): perubahan di server langsung
+  // memicu poll instan tanpa menunggu interval.
+  gamePollTimer = setInterval(pollGameState, 400);
+  try{
+    if(gameRealtimeChannel) sbClient.removeChannel(gameRealtimeChannel);
+    gameRealtimeChannel = sbClient.channel('game-'+state.roomCode)
+      .on('postgres_changes', {event:'*', schema:'public', table:'kv_store', filter:'key=eq.mpstate_'+state.roomCode}, ()=>pollGameState())
+      .subscribe();
+  }catch(e){}
 }
 async function pollGameState(){
   if(!state || state.mode!=='online') return;
@@ -1001,33 +1442,168 @@ async function pollGameState(){
     applyRemoteState(payload);
   }catch(e){}
 }
+let remoteAnimGen = 0;
 function applyRemoteState(payload){
+  const myGen = ++remoteAnimGen; // pembatal animasi lama kalau ada state baru masuk lagi
   const prevOffer = state.pendingTradeOffer;
-  state.rev = payload.rev;
-  state.rules = payload.rules;
-  state.players = payload.players;
-  state.currentIndex = payload.currentIndex;
-  state.freeParkingPot = payload.freeParkingPot;
-  state.log = payload.log;
-  state.turnPhase = payload.turnPhase;
-  state.propStates = payload.propStates;
-  state.lastRoll = payload.lastRoll;
-  state.chanceDeckIds = payload.chanceDeckIds;
-  state.chestDeckIds = payload.chestDeckIds;
-  state.pendingTradeOffer = payload.pendingTradeOffer||null;
-  renderAll();
-  beginPlayerTurn();
-  if(!document.getElementById('winnerOverlay').classList.contains('show')) checkGameOver();
-  const offer = state.pendingTradeOffer;
-  if(offer && (!prevOffer || prevOffer.idx!==offer.idx || prevOffer.amount!==offer.amount || prevOffer.fromId!==offer.fromId) && myOnlineSlot===offer.toId){
-    showTradeOfferReceived();
+  const prevPlayers = (state.players||[]).map(p=>({id:p.id,pos:p.pos,bankrupt:p.bankrupt,money:p.money}));
+  const prevLog = state.log || [];
+  const prevLastRoll = state.lastRoll;
+
+  // Baris log baru (belum pernah kita lihat di HP ini) -> akan ditampilkan
+  // sebagai toast satu-per-satu, bukan langsung numpuk semua sekaligus.
+  const seenIds = new Set(prevLog.filter(e=>e&&e.id!=null).map(e=>e.id));
+  const newLogEntries = (payload.log||[]).filter(e=> e && e.id!=null && !seenIds.has(e.id));
+
+  // Pemain mana saja yang posisinya berubah sejak update terakhir kita lihat
+  // (dipakai supaya token-nya "jalan" pelan-pelan di layar semua pemain,
+  // bukan cuma "teleport" ke posisi akhir).
+  const movedEntries = [];
+  (payload.players||[]).forEach(np=>{
+    const op = prevPlayers.find(p=>p.id===np.id);
+    if(op && !np.bankrupt && !op.bankrupt && op.pos!==np.pos){
+      // Arah jalan token HARUS ikut arah asli permainan (selalu maju,
+      // kecuali kartu "Mundur N petak" yang memang mundur), BUKAN
+      // ditebak dari jarak mana yang lebih pendek — karena kalau maju
+      // jauh (mis. hampir muter satu papan penuh) tapi kebetulan mundur
+      // lebih pendek, tebakan jarak-terpendek akan salah arah.
+      const backward = !!(payload.lastMoveMeta && payload.lastMoveMeta.id===np.id && payload.lastMoveMeta.backward);
+      movedEntries.push({id:np.id, from:op.pos, to:np.pos, backward});
+    }
+  });
+  const rolledNew = payload.lastRoll && (!prevLastRoll || prevLastRoll[0]!==payload.lastRoll[0] || prevLastRoll[1]!==payload.lastRoll[1]);
+
+  function finalizeState(){
+    state.rev = payload.rev;
+    state.rules = payload.rules;
+    state.players = payload.players;
+    state.currentIndex = payload.currentIndex;
+    state.freeParkingPot = payload.freeParkingPot;
+    state.log = payload.log;
+    state.turnPhase = payload.turnPhase;
+    state.propStates = payload.propStates;
+    state.lastRoll = payload.lastRoll;
+    state.chanceDeckIds = payload.chanceDeckIds;
+    state.chestDeckIds = payload.chestDeckIds;
+    state.pendingTradeOffer = payload.pendingTradeOffer||null;
+    state.auction = payload.auction||null;
+    state.lastMoveMeta = payload.lastMoveMeta||null;
   }
+
+  function afterApply(){
+    if(myGen!==remoteAnimGen) return; // sudah ada update lebih baru, jangan render data usang
+    renderAll();
+    // Tampilkan animasi +/- uang di HP ini juga untuk perubahan uang yang
+    // terjadi di HP lain, supaya animasinya tersinkron di semua pemain
+    // (bukan cuma tampil di HP yang melakukan transaksinya).
+    (payload.players||[]).forEach(np=>{
+      const op = prevPlayers.find(x=>x.id===np.id);
+      if(op && op.money!==np.money) showMoneyFx(np.id, np.money-op.money);
+    });
+    beginPlayerTurn();
+    if(!document.getElementById('winnerOverlay').classList.contains('show')) checkGameOver();
+    const offer = state.pendingTradeOffer;
+    if(offer && (!prevOffer || prevOffer.idx!==offer.idx || prevOffer.amount!==offer.amount || prevOffer.fromId!==offer.fromId)){
+      const respondingId = offer.type==='sell' ? offer.fromId : offer.toId;
+      if(myOnlineSlot===respondingId) showTradeOfferReceived();
+    }
+    handleBotAutomation();
+  }
+
+  // Data (uang, kepemilikan, dll) selalu diterapkan SEGERA supaya selalu
+  // akurat/terbaru (mis. supaya "Bayar Sekarang" tidak pernah pakai data
+  // basi). Yang dianimasikan cuma tampilan dadu, jalannya token, dan
+  // urutan munculnya log — bukan datanya.
+  finalizeState();
+
+  const screenActive = document.getElementById('screen-game') && document.getElementById('screen-game').classList.contains('active');
+  const shouldAnimate = !appSettings.reducedMotion && screenActive && (movedEntries.length>0 || rolledNew);
+
+  if(!shouldAnimate){
+    // Tetap tampilkan log baru sebagai toast walau tanpa animasi jalan.
+    newLogEntries.forEach(e=>showToast(e.msg));
+    afterApply();
+    return;
+  }
+
+  // Log ditampilkan satu-per-satu berbarengan dengan animasi supaya
+  // "log di bawah dadu" ikut hidup di semua pemain, bukan cuma muncul
+  // borongan di akhir.
+  (function replayLogs(){
+    let li=0;
+    function nextLog(){
+      if(myGen!==remoteAnimGen) return;
+      if(li>=newLogEntries.length) return;
+      showToast(newLogEntries[li].msg);
+      li++;
+      setTimeout(nextLog, 420);
+    }
+    nextLog();
+  })();
+
+  function playDiceFlicker(cb){
+    if(myGen!==remoteAnimGen) return;
+    if(!rolledNew){ cb(); return; }
+    const box = document.getElementById('diceBox');
+    let n=0;
+    const flick = setInterval(()=>{
+      if(myGen!==remoteAnimGen){ clearInterval(flick); return; }
+      if(box) box.innerHTML = diceHTML(1+Math.floor(Math.random()*6))+diceHTML(1+Math.floor(Math.random()*6));
+      n++;
+      if(n>=5){
+        clearInterval(flick);
+        if(box) box.innerHTML = diceHTML(payload.lastRoll[0])+diceHTML(payload.lastRoll[1]);
+        playSound('roll');
+        cb();
+      }
+    }, 80);
+  }
+
+  function animateMoveFor(entry, cb){
+    if(myGen!==remoteAnimGen) return;
+    const overridePos = {};
+    let cur = entry.from;
+    const fwd = mod(entry.to-entry.from,40);
+    const back = 40-fwd;
+    // Selalu ikuti arah asli gerakan (maju, kecuali ditandai mundur
+    // secara eksplisit oleh kartu "Mundur N petak") — jangan menebak
+    // dari jarak mana yang lebih pendek di papan.
+    const goBack = !!entry.backward;
+    let stepsLeft = goBack?back:fwd;
+    if(stepsLeft<=0){ cb(); return; }
+    function tick(){
+      if(myGen!==remoteAnimGen) return;
+      cur = goBack? mod(cur-1,40) : mod(cur+1,40);
+      overridePos[entry.id]=cur;
+      renderTokensAndHouses(entry.id, overridePos);
+      playSound('step');
+      stepsLeft--;
+      if(stepsLeft<=0){ cb(); } else { setTimeout(tick,150); }
+    }
+    setTimeout(tick,150);
+  }
+  function animateAllMoves(cb){
+    if(movedEntries.length===0){ cb(); return; }
+    let idx=0;
+    function step(){
+      if(myGen!==remoteAnimGen) return;
+      if(idx>=movedEntries.length){ cb(); return; }
+      animateMoveFor(movedEntries[idx], ()=>{ idx++; step(); });
+    }
+    step();
+  }
+
+  playDiceFlicker(()=>{
+    animateAllMoves(()=>{
+      afterApply();
+    });
+  });
 }
 function serializeState(){
   return {
     rev: (state.rev||0)+1,
     rules: state.rules,
-    players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,doublesCount:p.doublesCount,properties:p.properties||[]})),
+    players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,doublesCount:p.doublesCount,properties:p.properties||[],propsBought:p.propsBought||0,timesJailed:p.timesJailed||0,rentPaid:p.rentPaid||0,rentCollected:p.rentCollected||0,isBot:!!p.isBot,personality:p.personality||null})),
     currentIndex: state.currentIndex,
     freeParkingPot: state.freeParkingPot,
     log: state.log.slice(-60),
@@ -1037,21 +1613,61 @@ function serializeState(){
     chanceDeckIds: state.chanceDeckIds,
     chestDeckIds: state.chestDeckIds,
     pendingTradeOffer: state.pendingTradeOffer||null,
+    auction: state.auction||null,
+    lastMoveMeta: state.lastMoveMeta||null,
   };
 }
 async function syncPush(){
   try{
+    // Tarik data terbaru dari server tepat sebelum menulis, supaya baris log
+    // dari HP lain yang barusan masuk (dan belum sempat kita poll) tidak
+    // ikut hilang tertimpa oleh push kita.
+    try{
+      const res = await window.storage.get('mpstate_'+state.roomCode, true);
+      if(res){
+        const remote = JSON.parse(res.value);
+        state.log = mergeLogs(remote.log, state.log);
+        if(remote.rev > (state.rev||0)) state.rev = remote.rev;
+      }
+    }catch(e){}
     const payload = serializeState();
     state.rev = payload.rev;
     await window.storage.set('mpstate_'+state.roomCode, JSON.stringify(payload), true);
   }catch(e){ console.error('sync push failed', e); }
 }
+/* Tarik & terapkan state terbaru dari server jika ada yang lebih baru dari
+   milik kita. Dipakai sebelum aksi yang boleh terjadi di luar giliran
+   (tawar-menawar properti) supaya risiko bentrok/tertimpa makin kecil. */
+async function ensureFresh(){
+  if(!state || state.mode!=='online') return;
+  try{
+    const res = await window.storage.get('mpstate_'+state.roomCode, true);
+    if(res){
+      const payload = JSON.parse(res.value);
+      if(payload.rev > (state.rev||0)) applyRemoteState(payload);
+    }
+  }catch(e){}
+}
 function commit(){
   renderAll();
   if(state.mode==='online') syncPush();
+  else saveGameLocal();
+  handleBotAutomation();
 }
+let botDriving = false; // true selagi host sedang menjalankan giliran bot secara terprogram
 function myTurnOK(){
+  if(botDriving) return true;
   return !(state && state.mode==='online' && myOnlineSlot!==state.currentIndex);
+}
+/* Pemain "aku" di HP ini: di mode online = slot milikku sendiri (supaya
+   "Kelola Properti" bisa dibuka kapan saja, bukan cuma pas giliranku),
+   di mode hotseat/solo = tetap pemain yang lagi jalan (satu HP dipakai
+   bergantian). */
+function localPlayer(){
+  if(state && state.mode==='online' && myOnlineSlot!=null){
+    return state.players.find(p=>p.id===myOnlineSlot) || currentPlayer();
+  }
+  return currentPlayer();
 }
 
 let setupPlayerCount = 4;
@@ -1088,8 +1704,100 @@ function renderPlayerInputs(){
     input.value = prevVals[i] || '';
     input.id='playerName'+i;
     row.appendChild(dot); row.appendChild(input);
+    if(i>0){
+      const botWrap=document.createElement('div');
+      botWrap.className='bot-toggle-row';
+      botWrap.innerHTML = `🤖<label class="switch"><input type="checkbox" id="playerBot${i}"><span class="slider"></span></label>`;
+      row.appendChild(botWrap);
+    }
     wrap.appendChild(row);
   }
+}
+
+/* ============================================================
+   MODE PERMAINAN (preset) — Classic / Quick Match / Time Attack / Auction Only
+   Preset hanya MENGISI aturan di bawahnya secara otomatis; setiap
+   modifikasi tetap bisa di-on/off-kan satu per satu sesudahnya.
+   ============================================================ */
+const MODE_PRESETS = {
+  classic: {
+    label:'🏠 Classic Mode',
+    desc:'Mode default, paling dekat dengan Monopoly tradisional. Pemain terakhir yang tidak bangkrut menang.',
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, monopolyRent:true,
+    houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:0
+  },
+  quick: {
+    label:'⚡ Quick Match',
+    desc:'Cocok untuk main cepat/digital: sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, tanpa aturan komplek untuk membangun. Ekonomi berputar lebih cepat, pemain bangkrut lebih cepat juga.',
+    startMoney:2000, goSalary:300, doublesJail:true, freeParking:false, monopolyRent:true,
+    houseFreeBuild:true, rentBoost:true, cheapHouses:true, auctionOnly:false, timeAttack:0
+  },
+  timeattack: {
+    label:'⏱️ Time Attack',
+    desc:'Tidak ada yang menang sampai bangkrut — permainan berhenti otomatis setelah waktu habis. Pemenang ditentukan dari Net Worth tertinggi (uang tunai + properti + rumah − hutang).',
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, monopolyRent:true,
+    houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:30
+  },
+  auction: {
+    label:'🔨 Auction Only',
+    desc:'Tanah kosong tidak bisa dibeli langsung — selalu masuk lelang ke semua pemain. Memunculkan bluffing, bidding, strategi ekonomi, dan perang harga. Bisa jadi mode paling strategis.',
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, monopolyRent:true,
+    houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:true, timeAttack:0
+  }
+};
+function ruleElId(scope, base){
+  const setupMap = { StartMoney:'ruleStartMoney', GoSalary:'ruleGoSalary', DoublesJail:'ruleDoublesJail',
+    FreeParking:'ruleFreeParking', MonopolyRent:'ruleMonopolyRent', HouseFreeBuild:'ruleHouseFreeBuild',
+    RentBoost:'ruleRentBoost', CheapHouses:'ruleCheapHouses', AuctionOnly:'ruleAuctionOnly', TimeAttack:'ruleTimeAttack' };
+  const lobbyMap = { StartMoney:'lobbyStartMoney', GoSalary:'lobbyGoSalary', DoublesJail:'lobbyDoublesJail',
+    FreeParking:'lobbyFreeParking', HouseFreeBuild:'lobbyHouseFreeBuild', RentBoost:'lobbyRentBoost',
+    CheapHouses:'lobbyCheapHouses', AuctionOnly:'lobbyAuctionOnly', TimeAttack:'lobbyTimeAttack' };
+  return (scope==='lobby' ? lobbyMap : setupMap)[base] || null;
+}
+function setRuleField(scope, base, value){
+  const id = ruleElId(scope, base);
+  const el = id && document.getElementById(id);
+  if(!el) return;
+  if(el.type==='checkbox') el.checked = !!value; else el.value = String(value);
+}
+function selectModePreset(preset, scope){
+  const cfg = MODE_PRESETS[preset];
+  if(!cfg) return;
+  setRuleField(scope,'StartMoney',cfg.startMoney);
+  setRuleField(scope,'GoSalary',cfg.goSalary);
+  setRuleField(scope,'DoublesJail',cfg.doublesJail);
+  setRuleField(scope,'FreeParking',cfg.freeParking);
+  setRuleField(scope,'MonopolyRent',cfg.monopolyRent);
+  setRuleField(scope,'HouseFreeBuild',cfg.houseFreeBuild);
+  setRuleField(scope,'RentBoost',cfg.rentBoost);
+  setRuleField(scope,'CheapHouses',cfg.cheapHouses);
+  setRuleField(scope,'AuctionOnly',cfg.auctionOnly);
+  setRuleField(scope,'TimeAttack',cfg.timeAttack);
+  const row = document.getElementById('modePresetRow-'+scope);
+  if(row) row.querySelectorAll('.mode-pill').forEach(btn=>btn.classList.toggle('active', btn.dataset.preset===preset));
+  const desc = document.getElementById('modePresetDesc-'+scope);
+  if(desc) desc.textContent = cfg.desc;
+}
+function markModeCustom(scope){
+  const row = document.getElementById('modePresetRow-'+scope);
+  if(row) row.querySelectorAll('.mode-pill').forEach(btn=>btn.classList.remove('active'));
+  const desc = document.getElementById('modePresetDesc-'+scope);
+  if(desc) desc.textContent = 'Kustom — kombinasi modifikasi buatanmu sendiri.';
+}
+/* Kumpulkan field aturan tambahan (modifikasi custom) dari form aktif,
+   dipakai bareng oleh startGame() (offline) dan hostStartOnline(). */
+function readModeExtraRules(scope){
+  const rentEl = document.getElementById(ruleElId(scope,'RentBoost'));
+  const cheapEl = document.getElementById(ruleElId(scope,'CheapHouses'));
+  const auctionEl = document.getElementById(ruleElId(scope,'AuctionOnly'));
+  const timeEl = document.getElementById(ruleElId(scope,'TimeAttack'));
+  const timeMinutes = timeEl ? parseInt(timeEl.value)||0 : 0;
+  return {
+    rentMultiplier: (rentEl && rentEl.checked) ? 1.5 : 1,
+    houseCostMultiplier: (cheapEl && cheapEl.checked) ? 0.7 : 1,
+    auctionOnly: !!(auctionEl && auctionEl.checked),
+    timeAttackEndsAt: timeMinutes>0 ? (Date.now() + timeMinutes*60000) : null,
+  };
 }
 
 function startGame(){
@@ -1100,15 +1808,20 @@ function startGame(){
     freeParkingPot: document.getElementById('ruleFreeParking').checked,
     monopolyDoubleRent: document.getElementById('ruleMonopolyRent').checked,
     houseFreeBuild: document.getElementById('ruleHouseFreeBuild').checked,
+    ...readModeExtraRules('setup'),
   };
   const players = [];
   for(let i=0;i<setupPlayerCount;i++){
     const nameInput = document.getElementById('playerName'+i);
-    const name = (nameInput.value||'').trim() || ('Pemain '+(i+1));
+    const botInput = document.getElementById('playerBot'+i);
+    const isBot = i>0 && botInput && botInput.checked;
+    const name = (nameInput.value||'').trim() || (isBot ? pickBotName(players.map(pl=>pl.name)) : ('Pemain '+(i+1)));
     players.push({
       id:i, name, color:TOKEN_COLORS[i], token:TOKEN_NAMES[i],
       money:rules.startMoney, pos:0, inJail:false, jailTurns:0, jailCards:0,
-      bankrupt:false, doublesCount:0, properties:[]
+      bankrupt:false, doublesCount:0, properties:[], isBot,
+      personality: isBot ? pickBotPersonality() : null,
+      propsBought:0, timesJailed:0, rentPaid:0, rentCollected:0
     });
   }
   const propStates = {};
@@ -1117,25 +1830,40 @@ function startGame(){
     mode:'hotseat', roomCode:null, rev:0,
     rules, players, currentIndex:0, freeParkingPot:0,
     log:[], turnPhase:'canRoll', pendingDebt:null, lastRoll:[1,1],
-    pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, propStates,
+    pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, auction:null, propStates,
     chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
     chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
+    lastMoveMeta:null, timeAttackEndedShown:false,
   };
   buildBoardDOM();
   renderAll();
   showScreen('screen-game');
   log(`Permainan dimulai dengan ${players.length} pemain. Uang awal ${fmt(rules.startMoney)}.`);
+  if(rules.timeAttackEndsAt) log(`⏱️ Mode Time Attack aktif — permainan berhenti otomatis dalam ${Math.round((rules.timeAttackEndsAt-Date.now())/60000)} menit, menang berdasar Net Worth tertinggi.`);
+  if(rules.auctionOnly) log(`🔨 Mode Lelang Saja aktif — semua tanah kosong wajib dilelang.`);
+  logBotStyles(players);
   updateTurnBanner();
+  saveGameLocal();
   beginPlayerTurn();
 }
 
 function confirmQuit(){
+  const isHotseat = state && state.mode==='hotseat';
   showModal({
-    title:'Akhiri Permainan?',
-    desc:'Progres permainan ini tidak disimpan.',
+    title:'Keluar ke Menu Utama?',
+    desc: isHotseat
+      ? 'Progres akan otomatis tersimpan di HP ini dan bisa kamu lanjutkan lagi nanti lewat tombol "Lanjutkan Permainan Tersimpan".'
+      : 'Kamu akan meninggalkan room online ini.',
     buttons:[
       {label:'Batal', cls:'btn-no', onClick:closeModal},
-      {label:'Ya, Akhiri', cls:'btn-danger', onClick:()=>{ closeModal(); location.reload(); }}
+      {label:'Ya, Keluar', cls:'btn-danger', onClick:()=>{
+        closeModal();
+        stopTurnTimer();
+        if(isHotseat) saveGameLocal();
+        clearInterval(gamePollTimer);
+        goToMenu();
+        refreshResumeButton();
+      }}
     ]
   });
 }
@@ -1222,14 +1950,17 @@ function renderAll(){
   updateTurnBanner();
   renderBuyBar();
   renderHouseBar();
+  maybeShowAuctionModal();
+  updateTimeAttackBadge();
 }
-function renderTokensAndHouses(animatePlayerId){
+function renderTokensAndHouses(animatePlayerId, overridePos){
   BOARD.forEach((t,i)=>{
     const tokEl = document.getElementById('tokens'+i);
     if(tokEl){
       tokEl.innerHTML='';
       state.players.forEach(p=>{
-        if(!p.bankrupt && p.pos===i){
+        const pos = (overridePos && overridePos[p.id]!=null) ? overridePos[p.id] : p.pos;
+        if(!p.bankrupt && pos===i){
           const d=document.createElement('div');
           d.className='token'+(p.id===animatePlayerId?' walking':'');
           d.style.borderColor=p.color;
@@ -1264,15 +1995,43 @@ function renderPlayersStrip(){
   strip.innerHTML='';
   state.players.forEach(p=>{
     const chip=document.createElement('div');
+    chip.id = 'chip'+p.id;
     chip.className='player-chip'+(p.id===state.currentIndex?' current':'')+(p.bankrupt?' bankrupt':'');
-    chip.innerHTML = `<div class="row1"><span class="token" style="background:${p.color};position:static;display:inline-block;">&nbsp;</span> ${p.name}</div>
-      <div class="row2">${p.bankrupt?'Bangkrut':fmt(p.money)}</div>`;
+    chip.innerHTML = `<div class="row1"><span class="token" style="background:${p.color};position:static;display:inline-block;">&nbsp;</span> ${p.name}${p.isBot?' <span class="bot-tag">Bot</span>':''}</div>
+      <div class="row2" id="money${p.id}">${p.bankrupt?'Bangkrut':fmt(p.money)}</div>`;
     strip.appendChild(chip);
   });
 }
+/* Efek uang mengambang (+$X / -$X) di samping kartu nama pemain,
+   dipakai setiap kali uang seorang pemain berubah karena transaksi. */
+function showMoneyFx(playerId, delta){
+  if(!delta) return;
+  const anchor = document.getElementById('money'+playerId) || document.getElementById('chip'+playerId);
+  if(!anchor) return;
+  const el = document.createElement('div');
+  el.className = 'money-fx '+(delta>0?'pos':'neg');
+  el.textContent = (delta>0?'+':'-')+fmt(Math.abs(delta));
+  anchor.appendChild(el);
+  setTimeout(()=>{ if(el.parentNode) el.parentNode.removeChild(el); }, 3050);
+}
 function log(msg){
-  state.log.push(msg);
+  state.log.push({id: Date.now()+'-'+CLIENT_ID+'-'+(logSeq++), msg});
   showToast(msg);
+}
+/* Gabungkan log lokal dengan log dari server berdasarkan id unik,
+   supaya baris log dari HP lain tidak hilang tertimpa saat kita push. */
+function mergeLogs(remoteLog, localLog){
+  const map = new Map();
+  (remoteLog||[]).forEach(e=>{ if(e && e.id!=null) map.set(e.id, e); });
+  (localLog||[]).forEach(e=>{ if(e && e.id!=null) map.set(e.id, e); });
+  const merged = Array.from(map.values());
+  merged.sort((a,b)=>{
+    const ta = Number(String(a.id).split('-')[0])||0;
+    const tb = Number(String(b.id).split('-')[0])||0;
+    if(ta!==tb) return ta-tb;
+    return String(a.id).localeCompare(String(b.id));
+  });
+  return merged.slice(-150);
 }
 function showToast(msg){
   const stack = document.getElementById('toastStack');
@@ -1281,7 +2040,7 @@ function showToast(msg){
   el.className = 'toast';
   el.innerHTML = msg;
   stack.prepend(el);
-  while(stack.children.length>3){ stack.removeChild(stack.lastChild); }
+  while(stack.children.length>5){ stack.removeChild(stack.lastChild); }
   requestAnimationFrame(()=>el.classList.add('show'));
 }
 function updateTurnBanner(){
@@ -1291,9 +2050,9 @@ function updateTurnBanner(){
   document.getElementById('tbName').textContent = p.name+"'s turn";
   document.getElementById('tbMoney').textContent = fmt(p.money);
   document.getElementById('tbJail').textContent = p.inJail ? 'DI PENJARA' : (notMyTurn ? 'Menunggu giliran...' : '');
-  document.getElementById('btnRoll').disabled = state.turnPhase!=='canRoll' || notMyTurn || !!state.pendingDebt;
-  document.getElementById('btnEndTurn').disabled = state.turnPhase!=='canEndTurn' || notMyTurn || !!state.pendingDebt;
-  document.getElementById('btnManage').disabled = notMyTurn;
+  document.getElementById('btnRoll').disabled = state.turnPhase!=='canRoll' || notMyTurn || !!state.pendingDebt || !!state.auction;
+  document.getElementById('btnEndTurn').disabled = state.turnPhase!=='canEndTurn' || notMyTurn || !!state.pendingDebt || !!state.auction;
+  document.getElementById('btnManage').disabled = false; // Kelola Properti: bisa dibuka kapan saja
   const btnPass = document.getElementById('btnPassTurn');
   const btnRollEl = document.getElementById('btnRoll');
   const btnManageEl = document.getElementById('btnManage');
@@ -1365,7 +2124,7 @@ function renderHouseBar(){
       bar.style.display='none';
       return;
     }
-    const cost = HOUSE_COST[t.group];
+    const cost = HC(t.group);
     const canAfford = p.money >= cost;
     const label = ps.houses===4 ? 'Hotel' : ('Rumah ke-'+(ps.houses+1));
     bar.style.display='flex';
@@ -1400,40 +2159,78 @@ function currentPlayer(){ return state.players[state.currentIndex]; }
 /* ============================================================
    TURN FLOW
    ============================================================ */
+/* Animasi acak singkat sebelum dadu "berhenti" di angka final — dipakai
+   tiap kali PEMAIN INI (manusia atau bot) yang melempar, supaya lemparan
+   terasa hidup, bukan langsung snap ke angka. Dihormati juga setelan
+   "Kurangi Animasi". */
+function animateDiceRoll(cb){
+  const box = document.getElementById('diceBox');
+  if(appSettings.reducedMotion || !box){ cb(); return; }
+  box.classList.add('rolling');
+  let n=0;
+  const flick = setInterval(()=>{
+    box.innerHTML = diceHTML(1+Math.floor(Math.random()*6))+diceHTML(1+Math.floor(Math.random()*6));
+    n++;
+    if(n>=6){
+      clearInterval(flick);
+      box.classList.remove('rolling');
+      cb();
+    }
+  }, 70);
+}
 function onRoll(){
   if(!myTurnOK()) return;
   if(state.turnPhase!=='canRoll') return;
   const p = currentPlayer();
   state.pendingHouseBuild = null;
   if(p.inJail){ handleJailRoll(p); return; }
-  const d1 = 1+Math.floor(Math.random()*6);
-  const d2 = 1+Math.floor(Math.random()*6);
-  state.lastRoll=[d1,d2];
-  document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
-  playSound('roll');
-  const isDouble = d1===d2;
-  if(isDouble){ p.doublesCount++; } else { p.doublesCount=0; }
-  log(`${p.name} melempar dadu: <span class="hl">${d1} + ${d2}</span>${isDouble?' (Dobel!)':''}`);
-
-  if(isDouble && p.doublesCount>=3 && state.rules.doublesToJail){
-    log(`${p.name} dobel 3× berturut-turut. Langsung masuk penjara!`);
-    goToJail(p);
-    p.doublesCount=0;
-    state.turnPhase='canEndTurn';
-    commit();
-    return;
-  }
   document.getElementById('btnRoll').disabled = true;
-  moveSteps(p, d1+d2, isDouble);
+  animateDiceRoll(()=>{
+    const d1 = 1+Math.floor(Math.random()*6);
+    const d2 = 1+Math.floor(Math.random()*6);
+    state.lastRoll=[d1,d2];
+    document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
+    playSound('roll');
+    const isDouble = d1===d2;
+    if(isDouble){ p.doublesCount++; } else { p.doublesCount=0; }
+    log(`${p.name} melempar dadu: <span class="hl">${d1} + ${d2}</span>${isDouble?' (Dobel!)':''}`);
+
+    if(isDouble && p.doublesCount>=3 && state.rules.doublesToJail){
+      log(`${p.name} dobel 3× berturut-turut. Langsung masuk penjara!`);
+      goToJail(p);
+      p.doublesCount=0;
+      state.turnPhase='canEndTurn';
+      commit();
+      return;
+    }
+    moveSteps(p, d1+d2, isDouble);
+  });
 }
 /* Animate a token walking forward `steps` tiles, one tile at a time. */
 function animateWalk(p, steps, paySalary, callback){
+  if(appSettings.reducedMotion){
+    let left = steps;
+    while(left>0){
+      p.pos = mod(p.pos+1,40);
+      if(paySalary && p.pos===0){
+        p.money += state.rules.goSalary;
+        showMoneyFx(p.id, state.rules.goSalary);
+        log(`${p.name} melewati MULAI, kumpulkan ${fmt(state.rules.goSalary)}.`);
+      }
+      left--;
+    }
+    renderTokensAndHouses(p.id);
+    renderPlayersStrip();
+    callback();
+    return;
+  }
   let left = steps;
   function tick(){
     if(left<=0){ callback(); return; }
     p.pos = mod(p.pos+1,40);
     if(paySalary && p.pos===0){
       p.money += state.rules.goSalary;
+      showMoneyFx(p.id, state.rules.goSalary);
       log(`${p.name} melewati MULAI, kumpulkan ${fmt(state.rules.goSalary)}.`);
       renderPlayersStrip();
     }
@@ -1446,6 +2243,13 @@ function animateWalk(p, steps, paySalary, callback){
 }
 /* Animate a token walking backward `steps` tiles (no salary). */
 function animateWalkBack(p, steps, callback){
+  if(appSettings.reducedMotion){
+    let left = steps;
+    while(left>0){ p.pos = mod(p.pos-1,40); left--; }
+    renderTokensAndHouses(p.id);
+    callback();
+    return;
+  }
   let left = steps;
   function tick(){
     if(left<=0){ callback(); return; }
@@ -1458,6 +2262,7 @@ function animateWalkBack(p, steps, callback){
   tick();
 }
 function moveSteps(p, steps, wasDouble){
+  state.lastMoveMeta = {id:p.id, backward:false};
   animateWalk(p, steps, true, ()=>{
     state._wasDouble = wasDouble;
     landOnTile(p, wasDouble);
@@ -1466,11 +2271,13 @@ function moveSteps(p, steps, wasDouble){
 function advanceTo(p, idx, paySalaryIfPass){
   let steps = mod(idx-p.pos,40);
   if(steps===0 && paySalaryIfPass) steps=40;
+  state.lastMoveMeta = {id:p.id, backward:false};
   animateWalk(p, steps, paySalaryIfPass, ()=>{
     landOnTile(p, false, true);
   });
 }
 function advanceBack(p, n){
+  state.lastMoveMeta = {id:p.id, backward:true};
   animateWalkBack(p, n, ()=>{
     landOnTile(p, false, true);
   });
@@ -1482,6 +2289,7 @@ function advanceToNearest(p, type, doubleRent){
     if(BOARD[cand].type===type){ idx=cand; break; }
   }
   const steps = mod(idx-p.pos,40);
+  state.lastMoveMeta = {id:p.id, backward:false};
   animateWalk(p, steps, true, ()=>{
     landOnTile(p, false, true, doubleRent);
   });
@@ -1497,6 +2305,7 @@ function landOnTile(p, wasDouble, fromCard, forceDoubleRent){
   if(t.type==='freeparking'){
     if(state.rules.freeParkingPot && state.freeParkingPot>0){
       p.money += state.freeParkingPot;
+      showMoneyFx(p.id, state.freeParkingPot);
       log(`${p.name} mengambil Dana Parkir Bebas sebesar ${fmt(state.freeParkingPot)}!`);
       state.freeParkingPot=0;
     }
@@ -1516,6 +2325,11 @@ function landOnTile(p, wasDouble, fromCard, forceDoubleRent){
   if(t.type==='property' || t.type==='railroad' || t.type==='utility'){
     const ps = state.propStates[idx];
     if(ps.owner==null){
+      if(state.rules.auctionOnly){
+        log(`${t.name} belum ada pemilik. Mode Lelang Saja aktif — langsung dilelang, tidak bisa dibeli langsung!`);
+        startAuction(idx, wasDouble);
+        return;
+      }
       state.pendingBuy = {idx, wasDouble};
       state.turnPhase = 'canDecideBuy';
       log(`${t.name} belum ada pemilik. Kelola properti dulu kalau perlu, lalu putuskan beli atau lewati.`);
@@ -1533,6 +2347,8 @@ function landOnTile(p, wasDouble, fromCard, forceDoubleRent){
     } else {
       const owner = state.players.find(pl=>pl.id===ps.owner);
       const rentAmt = computeRent(idx, forceDoubleRent);
+      p.rentPaid = (p.rentPaid||0)+rentAmt;
+      owner.rentCollected = (owner.rentCollected||0)+rentAmt;
       log(`${p.name} harus bayar sewa ${fmt(rentAmt)} ke ${owner.name}.`);
       playSound('pay');
       chargePlayer(p, rentAmt, owner.id, ()=>finishLanding(p, wasDouble));
@@ -1557,20 +2373,25 @@ function computeRent(idx, forceDoubleRent){
   const t = BOARD[idx];
   const ps = state.propStates[idx];
   const owner = state.players.find(pl=>pl.id===ps.owner);
+  let rent;
   if(t.type==='railroad'){
     const count = owner.properties.filter(i=>BOARD[i].type==='railroad').length;
-    return t.rent[count-1];
-  }
-  if(t.type==='utility'){
+    rent = t.rent[count-1];
+  } else if(t.type==='utility'){
     const count = owner.properties.filter(i=>BOARD[i].type==='utility').length;
     const diceSum = state.lastRoll[0]+state.lastRoll[1];
-    return diceSum * (count>=2 ? 10 : 4);
+    rent = diceSum * (count>=2 ? 10 : 4);
+  } else {
+    // property
+    if(ps.houses>0){ rent = t.rent[ps.houses]; }
+    else {
+      const base = t.rent[0];
+      rent = (state.rules.monopolyDoubleRent && ownsFullGroup(owner, t.group)) ? base*2 : base;
+    }
   }
-  // property
-  if(ps.houses>0){ return t.rent[ps.houses]; }
-  const base = t.rent[0];
-  if(state.rules.monopolyDoubleRent && ownsFullGroup(owner, t.group)){ return base*2; }
-  return base;
+  if(forceDoubleRent) rent *= 2; // efek kartu "bayar sewa 2x lipat"
+  if(state.rules.rentMultiplier && state.rules.rentMultiplier!==1) rent = Math.round(rent*state.rules.rentMultiplier);
+  return rent;
 }
 function ownsFullGroup(player, group){
   const groupTiles = BOARD.map((t,i)=>({t,i})).filter(x=>x.t.type==='property' && x.t.group===group).map(x=>x.i);
@@ -1582,33 +2403,42 @@ function ownsFullGroup(player, group){
    ============================================================ */
 function pay(p, amount, toId){
   // amount>0 => player pays; amount<0 => player receives
-  if(amount<=0){ p.money += -amount; log(`${p.name} menerima ${fmt(-amount)}.`); renderAll(); return; }
+  if(amount<=0){ p.money += -amount; showMoneyFx(p.id, -amount); log(`${p.name} menerima ${fmt(-amount)}.`); renderAll(); return; }
   chargePlayer(p, amount, toId, ()=>{ state.turnPhase='canEndTurn'; renderAll(); });
 }
 function chargePlayer(p, amount, toId, onDone){
   if(p.money >= amount){
     p.money -= amount;
+    showMoneyFx(p.id, -amount);
     if(toId==='bank'){
       if(state.rules.freeParkingPot){ state.freeParkingPot += amount; }
     } else {
       const to = state.players.find(pl=>pl.id===toId);
-      if(to){ to.money += amount; }
+      if(to){ to.money += amount; showMoneyFx(to.id, amount); }
     }
     renderAll();
     onDone && onDone();
   } else {
-    state.pendingDebt = {player:p, amount, toId, onDone};
+    // Simpan hanya ID pemain (bukan referensi objek) supaya utang tetap
+    // valid dan akurat walau data pemain disegarkan lewat sinkronisasi
+    // online di tengah proses (bug lama: "Bayar Sekarang" gagal terus
+    // walau uang sudah cukup, karena mengacu ke data pemain yang basi).
+    state.pendingDebt = {playerId:p.id, amount, toId, onDone};
+    stopTurnTimer();
     renderAll();
     openDebtModal();
   }
 }
 function collectFromAll(p, amt){
+  let total = 0;
   state.players.forEach(other=>{
     if(other.id!==p.id && !other.bankrupt){
       const pay = Math.min(amt, other.money);
       other.money -= pay; p.money += pay;
+      if(pay>0){ showMoneyFx(other.id, -pay); total += pay; }
     }
   });
+  if(total>0) showMoneyFx(p.id, total);
   log(`${p.name} menerima ${fmt(amt)} dari setiap pemain lain (ulang tahun).`);
   renderAll();
 }
@@ -1624,41 +2454,55 @@ function payRepairs(p, perHouse, perHotel){
 }
 
 function openDebtModal(){
-  const {player, amount, toId} = state.pendingDebt;
-  const toName = toId==='bank' ? 'Bank' : state.players.find(pl=>pl.id===toId).name;
+  stopTurnTimer();
+  const debt = state.pendingDebt;
+  const player = state.players.find(pl=>pl.id===debt.playerId);
+  if(!player){ state.pendingDebt=null; closeModal(); return; }
+  const toName = debt.toId==='bank' ? 'Bank' : (state.players.find(pl=>pl.id===debt.toId)||{name:'?'}).name;
   showModal({
     title:'Uang Tidak Cukup!',
-    desc:`${player.name} harus membayar ${fmt(amount)} ke ${toName} tapi hanya punya ${fmt(player.money)}. Gadai atau jual rumah/hotel dari menu "Kelola Properti", lalu bayar. Atau nyatakan bangkrut.`,
-    priceTag: fmt(amount)+' dibutuhkan',
+    desc:`${player.name} harus membayar ${fmt(debt.amount)} ke ${toName} tapi hanya punya ${fmt(player.money)}. Gadai atau jual rumah/hotel dari menu "Kelola Properti", lalu bayar. Atau nyatakan bangkrut. Tidak ada batas waktu — timer giliran berhenti sampai utang ini selesai.`,
+    priceTag: fmt(debt.amount)+' dibutuhkan',
     buttons:[
       {label:'Kelola Properti', cls:'btn-no', onClick:()=>{ closeModal(); openManage(); }},
+      {label:'Tawarkan ke Teman', cls:'btn-no', onClick:()=>{ closeModal(); openSellOffer(null); }},
       {label:'Bayar Sekarang', cls:'btn-yes', onClick:tryPayDebt},
       {label:'Nyatakan Bangkrut', cls:'btn-danger', onClick:declareBankrupt},
     ]
   });
+  handleBotAutomation();
 }
 function tryPayDebt(){
   if(!myTurnOK()) return;
   const debt = state.pendingDebt;
   if(!debt) return;
-  if(debt.player.money < debt.amount){
-    log(`${debt.player.name} masih kekurangan uang (${fmt(debt.player.money)}/${fmt(debt.amount)}).`);
+  // Selalu ambil data pemain TERBARU dari state.players (bukan referensi
+  // lama), supaya kalau uang pemain baru saja bertambah (mis. gadai
+  // properti, atau jual/terima uang dari pemain lain) itu langsung
+  // terbaca dan tombol "Bayar Sekarang" berfungsi dengan benar.
+  const player = state.players.find(pl=>pl.id===debt.playerId);
+  if(!player){ state.pendingDebt=null; closeModal(); return; }
+  if(player.money < debt.amount){
+    log(`${player.name} masih kekurangan uang (${fmt(player.money)}/${fmt(debt.amount)}).`);
+    renderAll();
     return;
   }
-  debt.player.money -= debt.amount;
+  player.money -= debt.amount;
+  showMoneyFx(player.id, -debt.amount);
   if(debt.toId==='bank'){ if(state.rules.freeParkingPot){ state.freeParkingPot += debt.amount; } }
-  else { const to = state.players.find(pl=>pl.id===debt.toId); if(to) to.money += debt.amount; }
-  log(`${debt.player.name} melunasi ${fmt(debt.amount)}.`);
+  else { const to = state.players.find(pl=>pl.id===debt.toId); if(to){ to.money += debt.amount; showMoneyFx(to.id, debt.amount); } }
+  log(`${player.name} melunasi ${fmt(debt.amount)}.`);
   const onDone = debt.onDone;
   state.pendingDebt = null;
   closeModal();
   commit();
+  beginPlayerTurn();
   onDone && onDone();
 }
 function declareBankrupt(){
   if(!myTurnOK()) return;
   const debt = state.pendingDebt;
-  const p = debt ? debt.player : currentPlayer();
+  const p = debt ? (state.players.find(pl=>pl.id===debt.playerId) || currentPlayer()) : currentPlayer();
   p.bankrupt = true;
   log(`${p.name} dinyatakan BANGKRUT.`);
   (p.properties||[]).forEach(i=>{
@@ -1676,7 +2520,8 @@ function declareBankrupt(){
   });
   if(debt && debt.toId!=='bank'){
     const creditor = state.players.find(pl=>pl.id===debt.toId);
-    creditor.money += p.money;
+    if(creditor && p.money>0) showMoneyFx(creditor.id, p.money);
+    if(creditor) creditor.money += p.money;
   }
   p.money = 0;
   p.properties = [];
@@ -1684,19 +2529,73 @@ function declareBankrupt(){
   closeModal();
   closeManage();
   checkGameOver();
+  beginPlayerTurn();
   state.turnPhase='canEndTurn';
   commit();
 }
 function checkGameOver(){
+  if(state.timeAttackEndedShown) return; // permainan sudah selesai lewat Time Attack
   const alive = state.players.filter(p=>!p.bankrupt);
   if(alive.length<=1){
     const winner = alive[0];
     document.getElementById('winnerName').textContent = winner ? winner.name+' MENANG!' : 'Permainan Selesai';
     document.getElementById('winnerSub').textContent = winner ? `${winner.name} adalah satu-satunya pemain yang tidak bangkrut.` : '';
+    renderWinnerStats();
     document.getElementById('winnerOverlay').classList.add('show');
     stopTurnTimer();
     playSound('win');
+    clearSavedGame();
   }
+}
+function renderWinnerStats(rankByNetWorth){
+  const el = document.getElementById('winnerStats');
+  if(!el || !state) return;
+  let players = state.players.slice();
+  if(rankByNetWorth) players.sort((a,b)=>netWorthOf(b)-netWorthOf(a));
+  const rows = players.map((p,i)=>`
+    <div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.08);">
+      <span style="font-weight:800;color:${p.bankrupt?'var(--paper-dim)':'var(--gold)'};">${rankByNetWorth?('#'+(i+1)+' '):''}${p.name}${p.bankrupt?' (bangkrut)':''}</span>
+      <span style="color:var(--paper-dim);text-align:right;">${rankByNetWorth?`💎 Net Worth ${fmt(netWorthOf(p))}<br>`:''}🏠${p.propsBought||0} beli · 🔒${p.timesJailed||0}× penjara<br>💸${fmt(p.rentPaid||0)} sewa dibayar · 💰${fmt(p.rentCollected||0)} sewa didapat</span>
+    </div>`).join('');
+  el.innerHTML = `<div style="font-size:10px;color:var(--gold-dim);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;text-align:center;">${rankByNetWorth?'Ranking Net Worth':'Statistik Permainan'}</div>${rows}`;
+}
+
+/* ============================================================
+   TIME ATTACK — batas waktu permainan, menang berdasarkan Net Worth
+   ============================================================ */
+function updateTimeAttackBadge(){
+  const badge = document.getElementById('timeAttackBadge');
+  if(!badge) return;
+  if(!state || !state.rules || !state.rules.timeAttackEndsAt){ badge.style.display='none'; return; }
+  const remainingMs = state.rules.timeAttackEndsAt - Date.now();
+  const remainingSec = Math.max(0, Math.ceil(remainingMs/1000));
+  const m = Math.floor(remainingSec/60);
+  const s = remainingSec%60;
+  badge.style.display='inline-block';
+  badge.textContent = '⏱ '+m+':'+(s<10?'0':'')+s;
+  badge.style.color = remainingSec<=60 ? 'var(--red)' : '';
+  badge.style.borderColor = remainingSec<=60 ? 'var(--red)' : '';
+}
+function checkTimeAttackExpiry(){
+  if(!state || !state.rules || !state.rules.timeAttackEndsAt) return;
+  if(state.timeAttackEndedShown) return;
+  if(Date.now() >= state.rules.timeAttackEndsAt){
+    state.timeAttackEndedShown = true;
+    endGameTimeAttack();
+  }
+}
+function endGameTimeAttack(){
+  const alive = state.players.filter(p=>!p.bankrupt);
+  if(alive.length===0) return;
+  let winner = alive[0];
+  alive.forEach(p=>{ if(netWorthOf(p) > netWorthOf(winner)) winner = p; });
+  document.getElementById('winnerName').textContent = '⏰ Waktu Habis! '+winner.name+' MENANG!';
+  document.getElementById('winnerSub').textContent = `Time Attack selesai — ${winner.name} unggul dengan Net Worth ${fmt(netWorthOf(winner))}, meski belum ada yang bangkrut.`;
+  renderWinnerStats(true);
+  document.getElementById('winnerOverlay').classList.add('show');
+  stopTurnTimer();
+  playSound('win');
+  clearSavedGame();
 }
 
 /* ============================================================
@@ -1719,16 +2618,132 @@ function decideBuy(buy){
     }
     if(p.money < t.price){ log(`${p.name} tidak cukup uang untuk membeli ${t.name}.`); playSound('error'); return; }
     p.money -= t.price;
+    showMoneyFx(p.id, -t.price);
     state.propStates[idx].owner = p.id;
     p.properties = p.properties||[];
     if(!p.properties.includes(idx)) p.properties.push(idx);
+    p.propsBought = (p.propsBought||0)+1;
     log(`${p.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
     playSound('buy');
+    state.pendingBuy = null;
+    finishLanding(p, info.wasDouble);
   } else {
-    log(`${p.name} memilih tidak membeli ${t.name}.`);
+    log(`${p.name} memilih tidak membeli ${t.name}, properti akan dilelang!`);
+    state.pendingBuy = null;
+    startAuction(idx, info.wasDouble);
   }
-  state.pendingBuy = null;
-  finishLanding(p, info.wasDouble);
+}
+
+/* ============================================================
+   LELANG (AUCTION) — dipicu saat pemain melewati beli properti
+   ============================================================ */
+let auctionShownSig = null;
+function startAuction(idx, wasDouble){
+  const activeIds = [];
+  const n = state.players.length;
+  // Pemain yang baru saja lewat (tidak membeli) TIDAK ikut menawar lagi.
+  // Penawaran dimulai dari pemain setelahnya, urut giliran.
+  for(let i=1;i<n;i++){
+    const pidx = mod(state.currentIndex+i, n);
+    if(!state.players[pidx].bankrupt) activeIds.push(state.players[pidx].id);
+  }
+  if(activeIds.length===0){
+    log(`Tidak ada pemain lain untuk melelang ${BOARD[idx].name}, tetap milik bank.`);
+    finishLanding(currentPlayer(), wasDouble);
+    return;
+  }
+  const t = BOARD[idx];
+  state.auction = { idx, remaining: activeIds, pos:0, highBid:0, highBidderId:null, highBidderName:null, wasDouble, startPrice: t.price, increment: 5 };
+  log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(t.price)}, naik ${fmt(5)} tiap tawaran.`);
+  auctionShownSig = null;
+  commit();
+}
+function auctionTurnOK(){
+  if(!state.auction) return false;
+  if(botDriving) return true;
+  if(state.mode!=='online') return true;
+  const a = state.auction;
+  const bidderId = a.remaining[a.pos % a.remaining.length];
+  return myOnlineSlot===bidderId;
+}
+function maybeShowAuctionModal(){
+  if(!state || !state.auction) return;
+  const a = state.auction;
+  const bidderId = a.remaining[a.pos % a.remaining.length];
+  if(state.mode==='online' && myOnlineSlot!==bidderId) return;
+  const sig = a.idx+':'+a.pos+':'+a.remaining.join(',')+':'+a.highBid;
+  if(auctionShownSig===sig) return;
+  auctionShownSig = sig;
+  const bidder = state.players.find(p=>p.id===bidderId);
+  const t = BOARD[a.idx];
+  const nextBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
+  const canBid = bidder.money >= nextBid;
+  showModal({
+    title:'🔨 Lelang: '+t.name,
+    desc:`Tawaran tertinggi saat ini: <span class="hl">${fmt(a.highBid)}</span>${a.highBidderName?(' oleh '+a.highBidderName):' (belum ada)'}<br><br>Giliran menawar: <b>${bidder.name}</b> (${fmt(bidder.money)})`,
+    buttons:[
+      {label:`Tawar ${fmt(nextBid)}`, cls:'btn-yes', disabled: !canBid, onClick:()=>auctionBid(nextBid)},
+      {label:'Lewati', cls:'btn-no', onClick:auctionPass},
+    ]
+  });
+}
+function auctionBid(amount){
+  if(!auctionTurnOK()) return;
+  const a = state.auction; if(!a) return;
+  const bidderId = a.remaining[a.pos % a.remaining.length];
+  const bidder = state.players.find(p=>p.id===bidderId);
+  if(bidder.money < amount) return;
+  a.highBid = amount; a.highBidderId = bidderId; a.highBidderName = bidder.name;
+  log(`${bidder.name} menawar ${fmt(amount)} untuk ${BOARD[a.idx].name}.`);
+  closeModal();
+  auctionShownSig = null;
+  // Kalau cuma tersisa 1 penawar (mis. main berdua, jadi hanya lawan
+  // 1 orang yang boleh ikut lelang), tidak ada lawan lagi untuk menawar
+  // lebih tinggi -> properti langsung jadi milik dia, tidak perlu
+  // menawar melawan dirinya sendiri berulang-ulang.
+  if(a.remaining.length<=1){
+    finishAuction();
+    return;
+  }
+  a.pos = (a.pos+1) % a.remaining.length;
+  commit();
+}
+function auctionPass(){
+  if(!auctionTurnOK()) return;
+  const a = state.auction; if(!a) return;
+  const bidderId = a.remaining[a.pos % a.remaining.length];
+  const bidder = state.players.find(p=>p.id===bidderId);
+  a.remaining = a.remaining.filter(id=>id!==bidderId);
+  log(`${bidder.name} melewati lelang ${BOARD[a.idx].name}.`);
+  closeModal();
+  auctionShownSig = null;
+  if(a.remaining.length<=1){
+    finishAuction();
+    return;
+  }
+  a.pos = a.pos % a.remaining.length;
+  commit();
+}
+function finishAuction(){
+  const a = state.auction; if(!a) return;
+  const t = BOARD[a.idx];
+  if(a.remaining.length===1 && a.highBid>0){
+    const winner = state.players.find(p=>p.id===a.remaining[0]);
+    winner.money -= a.highBid;
+    showMoneyFx(winner.id, -a.highBid);
+    state.propStates[a.idx].owner = winner.id;
+    winner.properties = winner.properties||[];
+    if(!winner.properties.includes(a.idx)) winner.properties.push(a.idx);
+    winner.propsBought = (winner.propsBought||0)+1;
+    log(`${winner.name} memenangkan lelang <b>${t.name}</b> seharga ${fmt(a.highBid)}.`);
+    playSound('buy');
+  } else {
+    log(`Tidak ada tawaran untuk ${t.name}, tetap milik bank.`);
+  }
+  const wasDouble = a.wasDouble;
+  state.auction = null;
+  auctionShownSig = null;
+  finishLanding(currentPlayer(), wasDouble);
 }
 
 function drawCard(p, type, wasDouble){
@@ -1737,14 +2752,17 @@ function drawCard(p, type, wasDouble){
   const id = state[idsKey].shift();
   state[idsKey].push(id);
   const card = staticArr[id];
+  log(`${p.name} membuka kartu ${type==='chance'?'❓ Kesempatan':'💰 Dana Umum'}: "${card.text}"`);
   playCardDrawAnimation(type, ()=>{
+    awaitingCardOke = true;
     showModal({
       title: type==='chance' ? '❓ Kesempatan' : '💰 Dana Umum',
       desc: card.text,
       buttons:[
-        {label:'Oke', cls:'btn-yes', onClick:()=>{ closeModal(); card.fn(p); setTimeout(()=>{ if(!state.pendingDebt) finishLanding(p, wasDouble); },50); }},
+        {label:'Oke', cls:'btn-yes', onClick:()=>{ awaitingCardOke=false; closeModal(); card.fn(p); setTimeout(()=>{ if(!state.pendingDebt) finishLanding(p, wasDouble); },50); }},
       ]
     });
+    handleBotAutomation();
   });
 }
 function playCardDrawAnimation(type, onDone){
@@ -1777,6 +2795,10 @@ function goToJail(p){
   p.pos = 10;
   p.inJail = true;
   p.jailTurns = 0;
+  p.timesJailed = (p.timesJailed||0)+1;
+  // "Dikirim" ke penjara itu teleport, bukan kartu "mundur" — pastikan
+  // penanda arah gerak sebelumnya tidak ikut kebawa ke sini.
+  state.lastMoveMeta = {id:p.id, backward:false};
   renderTokensAndHouses();
   log(`${p.name} dikirim ke Penjara.`);
 }
@@ -1792,28 +2814,30 @@ function handleJailRoll(p){
   });
 }
 function jailTryDouble(p){
-  const d1=1+Math.floor(Math.random()*6), d2=1+Math.floor(Math.random()*6);
-  state.lastRoll=[d1,d2];
-  document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
-  log(`${p.name} melempar dadu di penjara: ${d1} + ${d2}.`);
-  if(d1===d2){
-    p.inJail=false; p.jailTurns=0;
-    log(`${p.name} dobel! Bebas dari penjara.`);
-    moveSteps(p, d1+d2, false);
-  } else {
-    p.jailTurns++;
-    if(p.jailTurns>=3){
-      log(`${p.name} sudah 3× gagal, wajib bayar $50 dan keluar.`);
-      chargePlayer(p, 50, 'bank', ()=>{
-        p.inJail=false; p.jailTurns=0;
-        moveSteps(p, d1+d2, false);
-      });
+  animateDiceRoll(()=>{
+    const d1=1+Math.floor(Math.random()*6), d2=1+Math.floor(Math.random()*6);
+    state.lastRoll=[d1,d2];
+    document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
+    log(`${p.name} melempar dadu di penjara: ${d1} + ${d2}.`);
+    if(d1===d2){
+      p.inJail=false; p.jailTurns=0;
+      log(`${p.name} dobel! Bebas dari penjara.`);
+      moveSteps(p, d1+d2, false);
     } else {
-      log(`${p.name} tidak dobel, tetap di penjara.`);
-      state.turnPhase='canEndTurn';
-      commit();
+      p.jailTurns++;
+      if(p.jailTurns>=3){
+        log(`${p.name} sudah 3× gagal, wajib bayar $50 dan keluar.`);
+        chargePlayer(p, 50, 'bank', ()=>{
+          p.inJail=false; p.jailTurns=0;
+          moveSteps(p, d1+d2, false);
+        });
+      } else {
+        log(`${p.name} tidak dobel, tetap di penjara.`);
+        state.turnPhase='canEndTurn';
+        commit();
+      }
     }
-  }
+  });
 }
 function jailPayBail(p){
   chargePlayer(p, 50, 'bank', ()=>{
@@ -1843,7 +2867,7 @@ function endTurn(){
   state.turnPhase='canRoll';
   commit();
   playSound('turn');
-  if(state.mode==='hotseat') showPassOverlay(); else beginPlayerTurn();
+  if(state.mode==='hotseat' && !state.players[next].isBot) showPassOverlay(); else beginPlayerTurn();
 }
 
 /* ============================================================
@@ -1879,6 +2903,17 @@ function showModal({title, desc, priceTag, buttons}){
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
 
+/* ============================================================
+   RIWAYAT LENGKAP
+   ============================================================ */
+function openHistory(){
+  const entries = (state.log||[]).slice().reverse();
+  const html = entries.length===0
+    ? '<div style="color:var(--paper-dim);font-size:12px;">Belum ada kejadian.</div>'
+    : `<div class="deed-list" style="max-height:380px;">${entries.map(m=>`<div style="padding:7px 9px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px;line-height:1.4;">${m&&m.msg!=null?m.msg:m}</div>`).join('')}</div>`;
+  showModal({ title:'📜 Riwayat Permainan', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
+}
+
 function showTileInfo(idx){
   const t = BOARD[idx];
   if(t.type!=='property' && t.type!=='railroad' && t.type!=='utility') return;
@@ -1886,7 +2921,7 @@ function showTileInfo(idx){
   const owner = ps.owner!=null ? state.players.find(p=>p.id===ps.owner) : null;
   let desc = '';
   if(t.type==='property'){
-    desc = `Set: ${t.group}<br>Harga: ${fmt(t.price)}<br>Sewa dasar: ${fmt(t.rent[0])} • 1 Rumah: ${fmt(t.rent[1])} • 2 Rumah: ${fmt(t.rent[2])} • 3 Rumah: ${fmt(t.rent[3])} • 4 Rumah: ${fmt(t.rent[4])} • Hotel: ${fmt(t.rent[5])}<br>Biaya rumah: ${fmt(HOUSE_COST[t.group])}`;
+    desc = `Set: ${t.group}<br>Harga: ${fmt(t.price)}<br>Sewa dasar: ${fmt(t.rent[0])} • 1 Rumah: ${fmt(t.rent[1])} • 2 Rumah: ${fmt(t.rent[2])} • 3 Rumah: ${fmt(t.rent[3])} • 4 Rumah: ${fmt(t.rent[4])} • Hotel: ${fmt(t.rent[5])}<br>Biaya rumah: ${fmt(HC(t.group))}`;
   } else if(t.type==='railroad'){
     desc = `Harga: ${fmt(t.price)}<br>Sewa: 1 stasiun ${fmt(t.rent[0])}, 2 stasiun ${fmt(t.rent[1])}, 3 stasiun ${fmt(t.rent[2])}, 4 stasiun ${fmt(t.rent[3])}`;
   } else {
@@ -1900,18 +2935,20 @@ function showTileInfo(idx){
    MANAGE PROPERTIES
    ============================================================ */
 function openManage(){
-  if(!myTurnOK()) return;
+  // Bisa dibuka kapan saja (bukan cuma pas giliran sendiri), supaya
+  // pemain bisa cek/gadai propertinya sendiri kapan pun dibutuhkan.
   renderDeedList();
   document.getElementById('manageOverlay').classList.add('show');
 }
 function closeManage(){
   document.getElementById('manageOverlay').classList.remove('show');
-  if(state.pendingDebt){ openDebtModal(); }
+  const debt = state.pendingDebt;
+  if(debt && debt.playerId===localPlayer().id){ openDebtModal(); }
 }
 function propertyDetailsHTML(t, ps){
   const rowLevels = ['Tanah kosong','1 rumah','2 rumah','3 rumah','4 rumah','Hotel'];
   if(t.type==='property'){
-    const hc = HOUSE_COST[t.group];
+    const hc = HC(t.group);
     const rentRows = t.rent.map((r,lvl)=>{
       const isCurrent = ps && ps.houses===lvl;
       return `<div class="dd-row${isCurrent?' dd-current':''}"><span>Sewa ${rowLevels[lvl]}</span><b>${fmt(r)}</b></div>`;
@@ -1941,7 +2978,7 @@ function propertyDetailsHTML(t, ps){
   return '';
 }
 function renderDeedList(){
-  const p = currentPlayer();
+  const p = localPlayer();
   const list = document.getElementById('deedList');
   list.innerHTML='';
   const props = Array.from(new Set(p.properties||[])).sort((a,b)=>a-b);
@@ -1967,10 +3004,11 @@ function renderDeedList(){
           <div class="di-info">${info}${ps.mortgaged?' • Digadai':''}</div>
         </div>
         <div class="di-btns">
-          ${t.type==='property' ? `<button ${canBuild?'':'disabled'} onclick="buildHouse(${i})">+ ${fmt(HOUSE_COST[t.group])}</button>` : ''}
+          ${t.type==='property' ? `<button ${canBuild?'':'disabled'} onclick="buildHouse(${i})">+ ${fmt(HC(t.group))}</button>` : ''}
           ${t.type==='property' ? `<button ${canSellHouse?'':'disabled'} onclick="confirmSellHouse(${i})">- Rumah</button>` : ''}
           <button class="mort" ${canMortgage?'':'disabled'} onclick="confirmMortgage(${i})">Gadai</button>
           <button class="mort" ${canUnmortgage?'':'disabled'} onclick="confirmUnmortgage(${i})">Tebus</button>
+          <button onclick="openSellOffer(${i})">🤝 Tawarkan</button>
         </div>
       </div>
       ${propertyDetailsHTML(t, ps)}`;
@@ -1978,8 +3016,7 @@ function renderDeedList(){
   });
 }
 function confirmSellHouse(i){
-  if(!myTurnOK()) return;
-  const t = BOARD[i]; const cost = HOUSE_COST[t.group];
+  const t = BOARD[i]; const cost = HC(t.group);
   showModal({
     title:'Yakin Jual Rumah?',
     desc:`Kamu akan menjual 1 rumah di ${t.name} dan mendapat ${fmt(Math.round(cost/2))}.`,
@@ -1990,7 +3027,6 @@ function confirmSellHouse(i){
   });
 }
 function confirmMortgage(i){
-  if(!myTurnOK()) return;
   const t = BOARD[i];
   showModal({
     title:'Yakin Gadai Properti?',
@@ -2002,7 +3038,6 @@ function confirmMortgage(i){
   });
 }
 function confirmUnmortgage(i){
-  if(!myTurnOK()) return;
   const t = BOARD[i];
   const cost = Math.round(t.mortgage*1.1);
   showModal({
@@ -2014,43 +3049,47 @@ function confirmUnmortgage(i){
     ]
   });
 }
-function buildHouse(i){
-  if(!myTurnOK()) return;
-  const p = currentPlayer();
+function buildHouse(i, pOverride){
+  const p = pOverride || localPlayer();
   const t = BOARD[i]; const ps = state.propStates[i];
-  const cost = HOUSE_COST[t.group];
+  if(ps.owner!==p.id) return;
+  const cost = HC(t.group);
   if(p.money < cost){ log(`${p.name} tidak cukup uang untuk membangun.`); return; }
   p.money -= cost;
+  showMoneyFx(p.id, -cost);
   ps.houses += 1;
   log(`${p.name} membangun ${ps.houses===5?'Hotel':'rumah ke-'+ps.houses} di ${t.name}.`);
   commit(); renderDeedList();
 }
-function sellHouse(i){
-  if(!myTurnOK()) return;
-  const p = currentPlayer();
+function sellHouse(i, pOverride){
+  const p = pOverride || localPlayer();
   const t = BOARD[i]; const ps = state.propStates[i];
-  const cost = HOUSE_COST[t.group];
+  if(ps.owner!==p.id) return;
+  const cost = HC(t.group);
   ps.houses -= 1;
   p.money += Math.round(cost/2);
+  showMoneyFx(p.id, Math.round(cost/2));
   log(`${p.name} menjual rumah di ${t.name}, dapat ${fmt(Math.round(cost/2))}.`);
   commit(); renderDeedList();
 }
-function mortgageProp(i){
-  if(!myTurnOK()) return;
-  const p = currentPlayer();
+function mortgageProp(i, pOverride){
+  const p = pOverride || localPlayer();
   const t = BOARD[i]; const ps = state.propStates[i];
+  if(ps.owner!==p.id) return;
   ps.mortgaged = true;
   p.money += t.mortgage;
+  showMoneyFx(p.id, t.mortgage);
   log(`${p.name} menggadaikan ${t.name}, dapat ${fmt(t.mortgage)}.`);
   commit(); renderDeedList();
 }
-function unmortgageProp(i){
-  if(!myTurnOK()) return;
-  const p = currentPlayer();
+function unmortgageProp(i, pOverride){
+  const p = pOverride || localPlayer();
   const t = BOARD[i]; const ps = state.propStates[i];
+  if(ps.owner!==p.id) return;
   const cost = Math.round(t.mortgage*1.1);
   if(p.money < cost){ log(`${p.name} tidak cukup uang untuk menebus.`); return; }
   p.money -= cost;
+  showMoneyFx(p.id, -cost);
   ps.mortgaged = false;
   log(`${p.name} menebus ${t.name} seharga ${fmt(cost)}.`);
   commit(); renderDeedList();
@@ -2060,8 +3099,33 @@ function checkAutoResolveDebtButton(){ /* handled via modal Bayar Sekarang butto
 /* ============================================================
    LIHAT PROPERTI TEMAN
    ============================================================ */
+/* Berapa yang harus dibayar kalau kita mendarat di petak milik orang lain
+   sekarang juga (dipakai di tampilan "Properti Teman"). */
+function rentPreviewText(idx){
+  const t = BOARD[idx];
+  const ps = state.propStates[idx];
+  if(!ps || ps.owner==null) return '—';
+  if(ps.mortgaged) return 'Digadai, tidak bayar sewa';
+  const owner = state.players.find(pl=>pl.id===ps.owner);
+  if(!owner) return '—';
+  if(t.type==='railroad'){
+    const count = owner.properties.filter(i=>BOARD[i].type==='railroad').length;
+    return fmt(t.rent[Math.max(0,count-1)]);
+  }
+  if(t.type==='utility'){
+    const count = owner.properties.filter(i=>BOARD[i].type==='utility').length;
+    return (count>=2?'10':'4')+'× hasil dadu';
+  }
+  let rent;
+  if(ps.houses>0){ rent = t.rent[ps.houses]; }
+  else {
+    const base = t.rent[0];
+    rent = (state.rules.monopolyDoubleRent && ownsFullGroup(owner, t.group)) ? base*2 : base;
+  }
+  return fmt(rent);
+}
 function openFriendProps(){
-  const me = currentPlayer();
+  const me = localPlayer();
   const others = state.players.filter(p=>p.id!==me.id && !p.bankrupt);
   if(others.length===0){
     showModal({title:'👀 Properti Teman', desc:'Tidak ada pemain lain untuk dilihat.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]});
@@ -2075,16 +3139,21 @@ function openFriendProps(){
     if(props.length===0){
       html += `<div style="color:var(--paper-dim);font-size:12px;">Belum punya properti.</div>`;
     } else {
-      html += `<div class="deed-list" style="max-height:160px;">`;
+      html += `<div class="deed-list" style="max-height:220px;">`;
       props.forEach(i=>{
         const t = BOARD[i]; const ps = state.propStates[i];
         const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
         const info = t.type==='property' ? (ps.houses===5?'Hotel':(ps.houses>0?ps.houses+' rumah':'Tanpa rumah')) : 'Aktif';
-        html += `<div class="deed-item">
+        const rentTxt = rentPreviewText(i);
+        html += `<div class="deed-item" style="flex-direction:row;align-items:center;">
           <div class="deed-swatch" style="background:${swatchColor}"></div>
           <div style="flex:1;">
             <div class="di-name">${t.name}</div>
             <div class="di-info">${info}${ps.mortgaged?' • Digadai':''}</div>
+          </div>
+          <div style="text-align:right;flex:none;padding-left:6px;">
+            <div style="font-size:9px;color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.5px;">Bayar jika berhenti</div>
+            <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:${ps.mortgaged?'var(--paper-dim)':'var(--gold)'};">${rentTxt}</div>
           </div>
         </div>`;
       });
@@ -2138,7 +3207,7 @@ function openTradeOffer(){
     ]
   });
 }
-function submitTradeOffer(){
+async function submitTradeOffer(){
   const fromId = Number(document.getElementById('offerFrom').value);
   const idx = Number(document.getElementById('offerProp').value);
   const amountRaw = Number(document.getElementById('offerAmount').value);
@@ -2151,10 +3220,77 @@ function submitTradeOffer(){
   const fromPlayer = state.players.find(p=>p.id===fromId);
   const toPlayer = state.players.find(p=>p.id===ps.owner);
   closeModal();
-  state.pendingTradeOffer = {fromId, toId: toPlayer.id, idx, amount};
+  await ensureFresh();
+  state.pendingTradeOffer = {fromId, toId: toPlayer.id, idx, amount, type:'buy'};
   log(`${fromPlayer.name} menawarkan ${fmt(amount)} untuk <b>${t.name}</b> milik ${toPlayer.name}.`);
   commit();
-  showTradeOfferReceived();
+  // Hanya tampilkan prompt terima/tolak ke pemilik properti (toPlayer);
+  // di mode online, si penawar tidak boleh langsung memutuskan tawarannya sendiri.
+  // Kalau pemiliknya bot, jangan tampilkan modal ke manusia — biarkan bot
+  // menjawab sendiri lewat handleBotAutomation() (sudah terpicu dari commit()).
+  if(!toPlayer.isBot && (state.mode!=='online' || myOnlineSlot===toPlayer.id)) showTradeOfferReceived();
+}
+function openSellOffer(presetIdx){
+  const p = localPlayer();
+  const myProps = Array.from(new Set(p.properties||[])).sort((a,b)=>a-b)
+    .filter(i=>state.propStates[i] && state.propStates[i].owner===p.id);
+  if(myProps.length===0){
+    showModal({title:'🤝 Tawarkan Properti', desc:'Kamu belum punya properti untuk ditawarkan.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModalMaybeReturnToDebt}]});
+    return;
+  }
+  const buyers = state.players.filter(pl=>!pl.bankrupt && pl.id!==p.id);
+  if(buyers.length===0){
+    showModal({title:'🤝 Tawarkan Properti', desc:'Tidak ada pemain lain untuk ditawarkan.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModalMaybeReturnToDebt}]});
+    return;
+  }
+  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(215,169,75,0.4);background:var(--ink2);color:var(--paper);font-size:13px;';
+  const propOpts = myProps.map(i=>`<option value="${i}" ${presetIdx===i?'selected':''}>${BOARD[i].name}</option>`).join('');
+  const buyerOpts = buyers.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+  const html = `
+    <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
+      <label style="font-size:12px;color:var(--paper-dim);">Properti yang ditawarkan
+        <select id="sellOfferProp" style="${fieldStyle}">${propOpts}</select>
+      </label>
+      <label style="font-size:12px;color:var(--paper-dim);">Tawarkan ke
+        <select id="sellOfferTo" style="${fieldStyle}">${buyerOpts}</select>
+      </label>
+      <label style="font-size:12px;color:var(--paper-dim);">Harga jual ($)
+        <input id="sellOfferAmount" type="number" min="1" step="1" placeholder="Contoh: 250" style="${fieldStyle}">
+      </label>
+    </div>`;
+  showModal({
+    title:'🤝 Tawarkan Properti ke Teman',
+    desc: html,
+    buttons:[
+      {label:'Kirim Tawaran', cls:'btn-yes', onClick: submitSellOffer},
+      {label:'Batal', cls:'btn-no', onClick: closeModalMaybeReturnToDebt},
+    ]
+  });
+}
+function closeModalMaybeReturnToDebt(){
+  closeModal();
+  const debt = state.pendingDebt;
+  if(debt && debt.playerId===localPlayer().id){ openDebtModal(); }
+}
+async function submitSellOffer(){
+  const p = localPlayer();
+  const idx = Number(document.getElementById('sellOfferProp').value);
+  const toId = Number(document.getElementById('sellOfferTo').value);
+  const amountRaw = Number(document.getElementById('sellOfferAmount').value);
+  const amount = Math.round(amountRaw);
+  const ps = state.propStates[idx];
+  const t = BOARD[idx];
+  if(!ps || ps.owner!==p.id){ closeModalMaybeReturnToDebt(); log('Properti tersebut sudah bukan milikmu.'); return; }
+  if(!amountRaw || amount<=0){ playSound('error'); log('Masukkan harga jual yang valid.'); return; }
+  const buyer = state.players.find(pl=>pl.id===toId);
+  if(!buyer){ closeModalMaybeReturnToDebt(); return; }
+  closeModal();
+  await ensureFresh();
+  state.pendingTradeOffer = {fromId: buyer.id, toId: p.id, idx, amount, type:'sell'};
+  log(`${p.name} menawarkan menjual <b>${t.name}</b> ke ${buyer.name} seharga ${fmt(amount)}.`);
+  commit();
+  if(!buyer.isBot && (state.mode!=='online' || myOnlineSlot===buyer.id)) showTradeOfferReceived();
+  else if(state.pendingDebt && state.pendingDebt.playerId===p.id){ openDebtModal(); }
 }
 function showTradeOfferReceived(){
   const offer = state.pendingTradeOffer;
@@ -2163,6 +3299,19 @@ function showTradeOfferReceived(){
   const fromPlayer = state.players.find(p=>p.id===offer.fromId);
   const toPlayer = state.players.find(p=>p.id===offer.toId);
   if(!fromPlayer || !toPlayer){ state.pendingTradeOffer=null; return; }
+  if(offer.type==='sell'){
+    // Tawaran jual: pemilik (toPlayer) sudah menetapkan harga,
+    // yang perlu menjawab adalah calon pembeli (fromPlayer).
+    showModal({
+      title:'📩 Tawaran Jual Masuk',
+      desc: `${toPlayer.name} menawarkan <b>${t.name}</b> untuk kamu beli seharga <span class="hl">${fmt(offer.amount)}</span>.<br><br>Beli sekarang?`,
+      buttons:[
+        {label:'Beli', cls:'btn-yes', onClick: ()=>respondTradeOffer(true)},
+        {label:'Tolak', cls:'btn-no', onClick: ()=>respondTradeOffer(false)},
+      ]
+    });
+    return;
+  }
   showModal({
     title:'📩 Tawaran Masuk',
     desc: `${fromPlayer.name} menawar <span class="hl">${fmt(offer.amount)}</span> untuk <b>${t.name}</b> milik ${toPlayer.name}.<br><br>Terima tawaran ini?`,
@@ -2179,28 +3328,410 @@ function respondTradeOffer(accept){
   const ps = state.propStates[offer.idx];
   const fromPlayer = state.players.find(p=>p.id===offer.fromId);
   const toPlayer = state.players.find(p=>p.id===offer.toId);
+  const isSell = offer.type==='sell';
   if(accept){
     if(!ps || ps.owner!==offer.toId){
       log(`Tawaran dibatalkan, kepemilikan ${t.name} sudah berubah.`);
     } else if(!fromPlayer || fromPlayer.money < offer.amount){
-      log(`${fromPlayer?fromPlayer.name:'Penawar'} tidak cukup uang untuk membayar tawarannya.`);
+      log(`${fromPlayer?fromPlayer.name:'Pembeli'} tidak cukup uang untuk membayar tawarannya.`);
     } else {
       fromPlayer.money -= offer.amount;
       toPlayer.money += offer.amount;
+      showMoneyFx(fromPlayer.id, -offer.amount);
+      showMoneyFx(toPlayer.id, offer.amount);
       ps.owner = fromPlayer.id;
       toPlayer.properties = (toPlayer.properties||[]).filter(x=>x!==offer.idx);
       fromPlayer.properties = fromPlayer.properties||[];
       if(!fromPlayer.properties.includes(offer.idx)) fromPlayer.properties.push(offer.idx);
-      log(`${toPlayer.name} menerima tawaran, <b>${t.name}</b> berpindah ke ${fromPlayer.name} seharga ${fmt(offer.amount)}.`);
+      log(isSell
+        ? `${fromPlayer.name} membeli <b>${t.name}</b> dari ${toPlayer.name} seharga ${fmt(offer.amount)}.`
+        : `${toPlayer.name} menerima tawaran, <b>${t.name}</b> berpindah ke ${fromPlayer.name} seharga ${fmt(offer.amount)}.`);
       playSound('buy');
     }
   } else {
-    log(`${toPlayer?toPlayer.name:'Pemilik'} menolak tawaran ${fmt(offer.amount)} untuk ${t.name}.`);
+    log(isSell
+      ? `${fromPlayer?fromPlayer.name:'Calon pembeli'} menolak tawaran jual ${t.name} seharga ${fmt(offer.amount)}.`
+      : `${toPlayer?toPlayer.name:'Pemilik'} menolak tawaran ${fmt(offer.amount)} untuk ${t.name}.`);
   }
   state.pendingTradeOffer = null;
   closeModal();
   commit();
+  // Setelah transaksi ini, kalau pemain yang sedang berutang (di HP ini)
+  // ternyata baru saja menerima uang cukup, modal utang akan otomatis
+  // muncul lagi dengan data uang TERBARU sehingga tombol "Bayar Sekarang"
+  // langsung bisa dipakai (bukan data lama yang basi).
+  const debt = state.pendingDebt;
+  if(debt && debt.playerId===localPlayer().id){ openDebtModal(); }
 }
+
+/* ============================================================
+   IDENTITAS & GAYA MAIN BOT
+   Tiap bot dapat nama acak (bukan "Bot 1/2/3") dan satu "kepribadian"
+   yang memengaruhi seberapa berani ia beli properti, kapan mau mulai
+   membangun rumah/hotel, dan harga berapa yang mau ia terima/tawar
+   saat tawar-menawar properti dengan pemain lain.
+   ============================================================ */
+const BOT_NAME_POOL = ['Budi','Sari','Andi','Dewi','Rian','Nadia','Fajar','Lestari','Bagus','Intan','Yoga','Putri','Doni','Ayu','Reza','Wulan','Hendra','Citra','Agus','Melati','Rizky','Sinta','Bayu','Nia','Firman','Ratna','Dimas','Vina','Arief','Tari','Galih','Ika','Panji','Yuni','Wawan','Diah'];
+function pickBotName(existingNames){
+  const used = new Set((existingNames||[]).filter(Boolean).map(n=>String(n).toLowerCase()));
+  const avail = BOT_NAME_POOL.filter(n=>!used.has(n.toLowerCase()));
+  const pool = avail.length ? avail : BOT_NAME_POOL;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+const BOT_PERSONALITIES = {
+  saver:     { label:'Penabung',        buyBuffer:400, houseBuffer:420, buildBias:0.32, tradeMinProfit:1.3,  auctionFactor:0.6 },
+  stable250: { label:'Jaga Saldo $250+',buyBuffer:250, houseBuffer:250, buildBias:0.55, tradeMinProfit:1.1,  auctionFactor:0.8 },
+  stable500: { label:'Jaga Saldo $500+',buyBuffer:500, houseBuffer:500, buildBias:0.65, tradeMinProfit:1.1,  auctionFactor:0.85 },
+  reckless:  { label:'Nekat',           buyBuffer:20,  houseBuffer:20,  buildBias:0.92, tradeMinProfit:1.0,  auctionFactor:1.0 },
+  builder:   { label:'Gemar Membangun', buyBuffer:150, houseBuffer:90,  buildBias:0.9,  tradeMinProfit:1.15, auctionFactor:0.75 },
+};
+function pickBotPersonality(){
+  const keys = Object.keys(BOT_PERSONALITIES);
+  return keys[Math.floor(Math.random()*keys.length)];
+}
+function botPersonalityOf(p){ return BOT_PERSONALITIES[p && p.personality] || BOT_PERSONALITIES.stable250; }
+function logBotStyles(players){
+  (players||[]).filter(p=>p.isBot).forEach(p=>{
+    const per = botPersonalityOf(p);
+    log(`🤖 ${p.name} bergabung sebagai bot dengan gaya main <b>${per.label}</b>.`);
+  });
+}
+
+/* ============================================================
+   BOT PLAYER (mesin pemain otomatis)
+   Bot dikendalikan oleh SATU perangkat saja: di mode hotseat oleh HP
+   yang sedang dipakai (semua toh satu HP), di mode online oleh HP host
+   saja (supaya tidak ada dua HP sama-sama menjalankan giliran bot yang
+   sama secara bersamaan/bentrok). Perangkat lain cukup menerima hasilnya
+   lewat sinkronisasi biasa dan menganimasikannya seperti giliran normal.
+   ============================================================ */
+let awaitingCardOke = false; // true selagi modal "Oke" kartu Kesempatan/Dana Umum terbuka
+let lastBotSig = null;
+let lastBotSigAt = 0;
+let botActionTimer = null;
+const BOT_RETRY_MS = 4000; // kalau kondisi persis sama masih "macet" setelah sekian detik, coba lagi
+function amIBotDriver(){
+  if(!state) return false;
+  if(state.mode!=='online') return true;
+  return !!(lobby && myOnlineSlot===lobby.hostSlot);
+}
+function scheduleBotAction(sig, delay, fn){
+  const now = Date.now();
+  // Aksi untuk kondisi persis ini sudah dijadwalkan/dijalankan baru-baru
+  // ini -> jangan dobel. TAPI kalau sudah lewat BOT_RETRY_MS dan state
+  // masih sama persis (misalnya karena fn() sebelumnya gagal/error tanpa
+  // sempat mengubah apa pun), coba lagi supaya bot tidak macet selamanya.
+  if(lastBotSig===sig && (now-lastBotSigAt)<BOT_RETRY_MS) return;
+  lastBotSig = sig;
+  lastBotSigAt = now;
+  if(botActionTimer) clearTimeout(botActionTimer);
+  botActionTimer = setTimeout(()=>{
+    botActionTimer = null;
+    try{ fn(); }
+    catch(e){
+      console.error('bot error', e);
+      // Buka jalan supaya kondisi yang sama boleh dicoba ulang segera,
+      // bukan menunggu penuh BOT_RETRY_MS.
+      lastBotSig = null;
+      setTimeout(()=>{ try{ handleBotAutomation(); }catch(e2){ console.error('bot retry error', e2); } }, 400);
+    }
+  }, delay);
+}
+function handleBotAutomation(){
+  if(!state || !amIBotDriver()) return;
+  if(document.getElementById('winnerOverlay') && document.getElementById('winnerOverlay').classList.contains('show')) return;
+
+  // 1) Tawaran tawar-menawar yang ditujukan ke seorang bot (kapan saja,
+  //    tidak harus giliran bot itu) -> bot benar-benar menimbang tawaran
+  //    (lihat botEvaluateTradeOffer), bukan selalu menolak.
+  const offer = state.pendingTradeOffer;
+  if(offer){
+    const responderId = offer.type==='sell' ? offer.fromId : offer.toId;
+    const responder = state.players.find(p=>p.id===responderId);
+    if(responder && responder.isBot){
+      const sig = 'trade:'+offer.idx+':'+offer.fromId+':'+offer.toId+':'+offer.amount+':'+offer.type;
+      scheduleBotAction(sig, 1100, ()=>{
+        if(!state.pendingTradeOffer) return;
+        const accept = botEvaluateTradeOffer(responder, offer);
+        botDriving = true;
+        try{ respondTradeOffer(accept); } finally { botDriving = false; }
+      });
+    }
+    return;
+  }
+
+  // 2) Lelang: kalau giliran menawar sekarang adalah bot, putuskan tawar/lewat.
+  if(state.auction && state.auction.remaining && state.auction.remaining.length){
+    const a = state.auction;
+    const bidderId = a.remaining[a.pos % a.remaining.length];
+    const bidder = state.players.find(p=>p.id===bidderId);
+    if(bidder && bidder.isBot){
+      const sig = 'auction:'+a.idx+':'+a.pos+':'+a.remaining.join(',')+':'+a.highBid;
+      scheduleBotAction(sig, 850, ()=>botAuctionAct());
+    }
+    return;
+  }
+
+  // 3) Modal kartu Kesempatan/Dana Umum sedang menunggu ditutup.
+  if(awaitingCardOke){
+    const cp = currentPlayer();
+    if(cp && cp.isBot){
+      const sig = 'cardoke:'+cp.id+':'+state.rev+':'+(state.log?state.log.length:0);
+      scheduleBotAction(sig, 750, ()=>{
+        const btn = document.querySelector('#modalBtns .btn-yes');
+        if(btn) btn.click();
+      });
+    }
+    return;
+  }
+
+  const cp = currentPlayer();
+  if(!cp || cp.bankrupt || !cp.isBot) return;
+
+  // 4) Utang yang harus dilunasi bot.
+  if(state.pendingDebt && state.pendingDebt.playerId===cp.id){
+    const d = state.pendingDebt;
+    const sig = 'debt:'+d.playerId+':'+d.amount+':'+d.toId;
+    scheduleBotAction(sig, 700, ()=>botResolveDebt(cp));
+    return;
+  }
+
+  // 5) Bot di penjara, putuskan cara keluar.
+  if(cp.inJail && state.turnPhase==='canRoll'){
+    const sig = 'jail:'+cp.id+':'+cp.jailTurns;
+    scheduleBotAction(sig, 750, ()=>botHandleJailTurn(cp));
+    return;
+  }
+
+  // 6) Keputusan beli properti yang baru didarati bot.
+  if(state.pendingBuy){
+    const b = state.pendingBuy;
+    const sig = 'buy:'+cp.id+':'+b.idx;
+    scheduleBotAction(sig, 800, ()=>botDecideBuy(cp));
+    return;
+  }
+
+  // 7) Lempar dadu.
+  if(state.turnPhase==='canRoll'){
+    const sig = 'roll:'+cp.id+':'+state.rev+':'+cp.doublesCount;
+    scheduleBotAction(sig, 700, ()=>{ botDriving=true; try{ onRoll(); } finally { botDriving=false; } });
+    return;
+  }
+
+  // 7.5) Aturan "Bangun bebas set warna": bot baru saja mendarat di
+  //      propertinya sendiri dan boleh langsung membangun di situ.
+  if(state.pendingHouseBuild!=null){
+    const sig = 'housefree:'+cp.id+':'+state.pendingHouseBuild+':'+state.propStates[state.pendingHouseBuild].houses+':'+cp.money;
+    scheduleBotAction(sig, 750, ()=>{ botDriving=true; try{ botDecideHouseFreeBuild(cp); } finally { botDriving=false; } });
+    return;
+  }
+
+  // 8) Sebelum mengakhiri giliran, bot mempertimbangkan membangun rumah
+  //    di properti yang sudah dikuasai penuh (kalau aturan build-bebas
+  //    tidak aktif), sesuai gaya main masing-masing bot. Baru kalau tidak
+  //    ada lagi yang mau/bisa dibangun, giliran benar-benar diakhiri.
+  if(state.turnPhase==='canEndTurn'){
+    const buildTarget = botPickBuildTarget(cp);
+    if(buildTarget!=null){
+      const sig = 'build:'+cp.id+':'+buildTarget+':'+state.propStates[buildTarget].houses+':'+cp.money;
+      scheduleBotAction(sig, 800, ()=>{
+        cp._turnBuilds = (cp._turnBuilds||0)+1;
+        botDriving = true;
+        try{ buildHouse(buildTarget, cp); } finally { botDriving = false; }
+      });
+      return;
+    }
+    const sig = 'end:'+cp.id+':'+state.rev+':'+botBuildFingerprint(cp);
+    scheduleBotAction(sig, 900, ()=>{ botDriving=true; try{ endTurn(); } finally { botDriving=false; } });
+    return;
+  }
+}
+/* Watchdog: kalau karena sebab apa pun (tab di-background, race kondisi
+   render, dsb) commit() gagal memicu handleBotAutomation() tepat waktu,
+   pengecekan berkala ini akan tetap menemukan & menjalankan giliran bot
+   yang macet, supaya bot TIDAK PERNAH diam terus tanpa batas waktu. */
+setInterval(()=>{ if(state) handleBotAutomation(); }, 2500);
+setInterval(()=>{ if(state){ updateTimeAttackBadge(); checkTimeAttackExpiry(); } }, 1000);
+
+/* Keputusan penjara sederhana: pakai kartu bebas kalau ada, coba lempar
+   dobel 2x pertama, baru bayar $50 kalau masih gagal. */
+function botHandleJailTurn(p){
+  if(!state || p.bankrupt) return;
+  if(p.jailCards>0){ jailUseCard(p); return; }
+  if(p.jailTurns<2){ jailTryDouble(p); }
+  else { jailPayBail(p); }
+}
+/* Keputusan beli: makin besar buffer kas gaya main si bot, makin besar
+   sisa uang yang wajib tersisa sebelum ia mau beli. Bot "Nekat" nyaris
+   selalu beli, bot "Penabung"/"Jaga Saldo" lebih pilih-pilih. */
+function botDecideBuy(cp){
+  if(!state || !state.pendingBuy) return;
+  const t = BOARD[state.pendingBuy.idx];
+  const per = botPersonalityOf(cp);
+  const buy = cp.money - t.price >= per.buyBuffer;
+  botDriving = true;
+  try{ decideBuy(buy); } finally { botDriving = false; }
+}
+/* Lunasi utang bot: gadai properti tanpa rumah / jual rumah dulu sampai
+   cukup, baru bayar. Kalau semua aset sudah habis dan masih kurang,
+   nyatakan bangkrut. */
+function botResolveDebt(cp){
+  if(!state || !state.pendingDebt) return;
+  const debt = state.pendingDebt;
+  let guard = 0;
+  while(cp.money < debt.amount && guard<40){
+    guard++;
+    const props = (cp.properties||[]).map(i=>({i, ps:state.propStates[i]})).filter(x=>x.ps && x.ps.owner===cp.id);
+    const withHouses = props.find(x=>x.ps && x.ps.houses>0);
+    if(withHouses){ sellHouse(withHouses.i, cp); continue; }
+    const mortgagable = props.find(x=>x.ps && !x.ps.mortgaged);
+    if(mortgagable){ mortgageProp(mortgagable.i, cp); continue; }
+    break;
+  }
+  botDriving = true;
+  try{
+    if(cp.money >= debt.amount){ closeModal(); tryPayDebt(); }
+    else { closeModal(); declareBankrupt(); }
+  } finally { botDriving = false; }
+}
+/* Tawar lelang: batas kemauan menawar mengikuti gaya main (auctionFactor
+   dari kepribadian bot), selama masih sisa buffer uang, kalau tidak lewati. */
+function botAuctionAct(){
+  if(!state || !state.auction) return;
+  const a = state.auction;
+  if(!a.remaining || !a.remaining.length) return;
+  const bidderId = a.remaining[a.pos % a.remaining.length];
+  const bidder = state.players.find(p=>p.id===bidderId);
+  if(!bidder) return;
+  const t = BOARD[a.idx];
+  const per = botPersonalityOf(bidder);
+  const nextBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
+  const maxWillingness = Math.round(t.price*per.auctionFactor);
+  botDriving = true;
+  try{
+    if(bidder.money>=nextBid && nextBid<=maxWillingness && (bidder.money-nextBid)>=per.buyBuffer*0.3){
+      auctionBid(nextBid);
+    } else {
+      auctionPass();
+    }
+  } finally { botDriving = false; }
+}
+
+/* ============================================================
+   BOT: MEMBANGUN RUMAH/HOTEL SENDIRI
+   ============================================================ */
+/* Sidik jari singkat kondisi rumah/gadai milik bot, dipakai supaya sinyal
+   "akhiri giliran" berubah tiap kali bot baru saja selesai membangun
+   (state.rev tidak selalu berubah di mode hotseat), sehingga keputusan
+   berikutnya (bangun lagi / benar-benar akhiri giliran) selalu dievaluasi
+   ulang alih-alih ketiban cache sinyal lama. */
+function botBuildFingerprint(p){
+  return (p.properties||[]).map(i=>{
+    const ps = state.propStates[i];
+    return i+':'+(ps?ps.houses:0)+(ps&&ps.mortgaged?'m':'');
+  }).join(',')+':'+(p._turnBuilds||0);
+}
+/* Pilih 1 petak terbaik untuk dibangun sekarang (mode default, bukan
+   aturan "Bangun bebas set warna"). Cari set warna yang sudah dikuasai
+   penuh, utamakan petak dengan rumah paling sedikit dulu (biar merata),
+   lalu putuskan mau bangun atau tidak sesuai gaya main bot: bot "Gemar
+   Membangun"/"Nekat" nyaris selalu bangun kalau mampu, bot "Penabung"
+   lebih sering menahan diri. Dibatasi maksimal 3× bangun per giliran
+   supaya tidak kelamaan menunggu animasi bot bangun beruntun. */
+function botPickBuildTarget(cp){
+  if(!state || state.rules.houseFreeBuild) return null; // mode ini pakai alur pendingHouseBuild sendiri
+  if((cp._turnBuilds||0) >= 3) return null;
+  const per = botPersonalityOf(cp);
+  const groups = Object.keys(BASE_HOUSE_COST);
+  for(const g of groups){
+    if(!ownsFullGroup(cp, g)) continue;
+    const cost = HC(g);
+    if(cp.money - cost < per.houseBuffer) continue;
+    const tiles = BOARD.map((t,i)=>({t,i})).filter(x=>x.t.type==='property'&&x.t.group===g).map(x=>x.i);
+    const candidates = tiles.filter(i=>{ const ps=state.propStates[i]; return ps && !ps.mortgaged && ps.houses<5; });
+    if(!candidates.length) continue;
+    candidates.sort((a,b)=>state.propStates[a].houses - state.propStates[b].houses);
+    if(Math.random() > per.buildBias) continue; // sesuai gaya main, kadang sengaja dilewati dulu
+    return candidates[0];
+  }
+  return null;
+}
+/* Keputusan bangun untuk aturan "Bangun bebas set warna" (hanya boleh
+   bangun tepat saat mendarat di petak sendiri). */
+function botDecideHouseFreeBuild(cp){
+  if(!state || state.pendingHouseBuild==null) return;
+  const idx = state.pendingHouseBuild;
+  const t = BOARD[idx]; const ps = state.propStates[idx];
+  if(!t || t.type!=='property' || !ps || ps.owner!==cp.id || ps.mortgaged || ps.houses>=5){
+    state.pendingHouseBuild = null; commit(); return;
+  }
+  const per = botPersonalityOf(cp);
+  const cost = HC(t.group);
+  const willing = (cp.money - cost >= per.houseBuffer) && Math.random() < per.buildBias;
+  state.pendingHouseBuild = null;
+  if(willing){ buildHouse(idx, cp); }
+  else { log(`${cp.name} memilih tidak membangun di ${t.name} sekarang.`); commit(); }
+}
+
+/* ============================================================
+   BOT: MENIMBANG TAWARAN TAWAR-MENAWAR PROPERTI
+   ============================================================ */
+/* Perkiraan kasar nilai sebuah petak: harga beli dasar, ditambah nilai
+   rumah/hotel yang sudah dibangun di atasnya (rumah menaikkan nilai jual
+   properti itu, bukan cuma sewa). */
+function estimatePropertyValue(idx){
+  const t = BOARD[idx];
+  const ps = state.propStates[idx];
+  let v = t.price || 150;
+  if(t.type==='property' && ps && ps.houses>0){
+    v += ps.houses * HC(t.group) * 0.7;
+  }
+  return v;
+}
+/* Net Worth seorang pemain (dipakai untuk ranking mode Time Attack):
+   uang tunai + nilai properti + nilai rumah − hutang. Properti yang
+   sedang digadai dihitung sebagai hutang (nilai gadainya), bukan aset. */
+function netWorthOf(p){
+  let v = p.money||0;
+  (p.properties||[]).forEach(idx=>{
+    const ps = state.propStates && state.propStates[idx];
+    const t = BOARD[idx];
+    if(!ps || !t) return;
+    if(ps.mortgaged){ v -= t.mortgage||0; }
+    else { v += estimatePropertyValue(idx); }
+  });
+  return v;
+}
+/* Bot menimbang tawaran tawar-menawar (bukan otomatis menolak lagi):
+   - type 'buy'  -> cp adalah PEMILIK yang menerima tawaran beli. Makin
+     penting petak itu buat cp (bagian dari set yang sudah/nyaris ia
+     kuasai), makin tinggi harga yang diminta sebelum mau melepasnya.
+   - type 'sell' -> cp adalah CALON PEMBELI yang ditawari beli oleh
+     pemiliknya. Bot menolak kalau harga kemahalan dibanding nilai wajar,
+     atau kalau membayarnya akan menggerus buffer kas sesuai gaya mainnya. */
+function botEvaluateTradeOffer(cp, offer){
+  const per = botPersonalityOf(cp);
+  const idx = offer.idx;
+  const t = BOARD[idx];
+  const baseValue = estimatePropertyValue(idx);
+  if(offer.type==='buy'){
+    if(t.type==='property'){
+      const tiles = BOARD.map((x,i)=>({x,i})).filter(o=>o.x.type==='property'&&o.x.group===t.group).map(o=>o.i);
+      const ownedByMe = tiles.filter(i=>state.propStates[i].owner===cp.id).length;
+      if(ownedByMe>=tiles.length) return offer.amount >= baseValue*3*per.tradeMinProfit; // set lengkap, berat dilepas
+      if(ownedByMe>1) return offer.amount >= baseValue*1.8*per.tradeMinProfit;
+    }
+    return offer.amount >= baseValue*per.tradeMinProfit;
+  }
+  // type 'sell': cp calon pembeli
+  if(cp.money - offer.amount < per.buyBuffer) return false;
+  return offer.amount <= baseValue*(2-per.tradeMinProfit);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+refreshResumeButton();
 </script>
 </body>
 </html>
