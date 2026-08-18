@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3">
-<title>Monopoli Dunia — Mabar 4 HP</title>
+<title>Monopoli Dunia — Mabar 1 HP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -99,12 +99,22 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .rule-label{font-size:13px;color:var(--paper);}
 .rule-label small{display:block;color:var(--paper-dim);font-size:11px;margin-top:2px;}
 select.rule-select{background:rgba(255,255,255,0.08);color:var(--paper);border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:6px 8px;font-size:13px;}
+.fake-select-btn{background:rgba(255,255,255,0.08);color:var(--gold);border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:700;font-family:inherit;min-width:76px;text-align:right;}
+.fake-select-btn:active{background:rgba(215,169,75,0.18);}
+.fake-select-btn:disabled{opacity:0.4;}
+.picker-list{display:flex;flex-direction:column;gap:8px;margin-top:4px;max-height:55vh;overflow-y:auto;}
+.picker-option{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:rgba(255,255,255,0.05);border:1px solid rgba(215,169,75,0.25);border-radius:10px;padding:13px 14px;font-size:15px;color:var(--paper);font-family:inherit;font-weight:600;}
+.picker-option:active{background:rgba(215,169,75,0.15);}
+.picker-option.selected{border-color:var(--gold);background:rgba(215,169,75,0.14);color:var(--gold);}
+.picker-option .pk-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(215,169,75,0.4);flex:none;}
+.picker-option.selected .pk-dot{border-color:var(--gold);background:radial-gradient(var(--gold) 0 40%,transparent 42%);}
 .switch{position:relative;width:44px;height:24px;flex:none;}
 .switch input{opacity:0;width:0;height:0;}
 .slider{position:absolute;inset:0;background:rgba(255,255,255,0.15);border-radius:999px;transition:.2s;cursor:pointer;}
 .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--paper);border-radius:50%;transition:.2s;}
 input:checked + .slider{background:var(--teal);}
 input:checked + .slider:before{transform:translateX(20px);background:var(--gold);}
+input:disabled + .slider{opacity:0.4;cursor:default;}
 .sticky-bottom{position:fixed;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(0deg, var(--ink2) 60%, transparent);display:flex;justify-content:center;gap:10px;}
 .btn-big{padding:14px 26px;border-radius:999px;border:none;background:var(--gold);color:var(--ink2);font-weight:800;font-size:15px;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(0,0,0,0.35);}
 .btn-ghost{padding:14px 20px;border-radius:999px;border:2px solid rgba(215,169,75,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:14px;}
@@ -375,7 +385,7 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
     <span class="bot">Dunia Edition</span>
   </div>
   <h1>Monopoli Dunia</h1>
-  <div class="tag">Mabar offline 2–4 pemain, gantian di 4 HP</div>
+  <div class="tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
   <button class="menu-btn primary" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
   <button class="menu-btn primary" onclick="goToModeSelect()">▶ Main</button>
   <button class="menu-btn" onclick="openHowToModal()">Cara Bermain</button>
@@ -388,7 +398,7 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
 <div id="screen-mode" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
   <div class="setup-header">
     <h2>Pilih Mode Main</h2>
-    <p>Gantian di 1 HP, atau tiap pemain pegang HP sendiri mang?</p>
+    <p>Gantian di 1 HP, atau tiap pemain pegang HP sendiri?</p>
   </div>
   <div class="card" style="cursor:pointer" onclick="goToSetup()">
     <h3>📱 Offline — Bergantian di 1 HP</h3>
@@ -613,6 +623,11 @@ input:checked + .slider:before{transform:translateX(20px);background:var(--gold)
 <!-- Generic action modal -->
 <div class="overlay" id="modalOverlay">
   <div class="modal" id="modalBox"></div>
+</div>
+
+<!-- Custom picker (replaces native select dropdown) -->
+<div class="overlay" id="pickerOverlay" onclick="if(event.target===this) closePicker();">
+  <div class="modal" id="pickerBox"></div>
 </div>
 
 <!-- Manage properties modal -->
@@ -1289,7 +1304,7 @@ function renderLobby(){
     const row=document.createElement('div');
     row.className='player-row';
     const label = pl.isBot
-      ? `🤖 ${pl.name} <span class="bot-tag">${botPersonalityOf(pl).label}</span>`
+      ? `🤖 ${pl.name}`
       : `${pl.name}${pl.slot===lobby.hostSlot?' (Host)':''}${pl.slot===myOnlineSlot?' — kamu':''}`;
     row.innerHTML = `<div class="token-dot" style="background:${TOKEN_COLORS[pl.slot]}"></div><div style="flex:1;font-size:14px;">${label}</div>`;
     if(pl.isBot && isHost){
@@ -1301,6 +1316,11 @@ function renderLobby(){
     list.appendChild(row);
   });
   document.getElementById('lobbyRulesCard').style.display = isHost?'block':'none';
+  document.getElementById('lobbyRulesCard2').style.display = isHost?'block':'none';
+  if(!isHost){
+    document.getElementById('lobbyRulesCard').querySelectorAll('select,input,button').forEach(el=>el.disabled=true);
+    document.getElementById('lobbyRulesCard2').querySelectorAll('select,input,button').forEach(el=>el.disabled=true);
+  }
   document.getElementById('lobbyStartBtn').style.display = isHost?'block':'none';
   document.getElementById('lobbyStartBtn').disabled = lobby.players.length<2;
   document.getElementById('lobbyAddBotBtn').style.display = (isHost && lobby.players.length<4) ? 'block' : 'none';
@@ -1758,8 +1778,52 @@ function setRuleField(scope, base, value){
   const id = ruleElId(scope, base);
   const el = id && document.getElementById(id);
   if(!el) return;
-  if(el.type==='checkbox') el.checked = !!value; else el.value = String(value);
+  if(el.type==='checkbox') el.checked = !!value; else { el.value = String(value); refreshFakeSelect(el); }
 }
+/* ============================================================
+   CUSTOM SELECT PICKER (ganti dropdown native browser yang polos/
+   putih dengan popup bertema gelap-emas, konsisten dgn tampilan app)
+   ============================================================ */
+function refreshFakeSelect(sel){
+  if(sel && sel._fakeBtn){
+    const opt = sel.options[sel.selectedIndex];
+    sel._fakeBtn.textContent = (opt?opt.textContent:'') + ' ▾';
+  }
+}
+function initCustomSelects(){
+  document.querySelectorAll('select.rule-select').forEach(sel=>{
+    if(sel.dataset.enhanced) return;
+    sel.dataset.enhanced='1';
+    const btn = document.createElement('button');
+    btn.type='button';
+    btn.className='fake-select-btn';
+    sel._fakeBtn = btn;
+    refreshFakeSelect(sel);
+    btn.onclick=()=>openSelectPicker(sel);
+    sel.style.display='none';
+    sel.insertAdjacentElement('afterend', btn);
+  });
+}
+function openSelectPicker(sel){
+  if(sel.disabled) return;
+  const box = document.getElementById('pickerBox');
+  const labelEl = sel.closest('.rule-row')?.querySelector('.rule-label');
+  const title = labelEl ? (labelEl.childNodes[0].textContent||'').trim() : 'Pilih';
+  const rows = Array.from(sel.options).map((opt,i)=>
+    `<button type="button" class="picker-option${opt.selected?' selected':''}" data-idx="${i}"><span>${opt.textContent}</span><span class="pk-dot"></span></button>`
+  ).join('');
+  box.innerHTML = `<h3>${title}</h3><div class="picker-list">${rows}</div><div class="modal-actions"><button class="btn-no" onclick="closePicker()">Batal</button></div>`;
+  box.querySelectorAll('.picker-option').forEach(b=>{
+    b.onclick=()=>{
+      sel.selectedIndex = parseInt(b.dataset.idx,10);
+      refreshFakeSelect(sel);
+      sel.dispatchEvent(new Event('change',{bubbles:true}));
+      closePicker();
+    };
+  });
+  document.getElementById('pickerOverlay').classList.add('show');
+}
+function closePicker(){ document.getElementById('pickerOverlay').classList.remove('show'); }
 function selectModePreset(preset, scope){
   const cfg = MODE_PRESETS[preset];
   if(!cfg) return;
@@ -3392,8 +3456,7 @@ function pickBotPersonality(){
 function botPersonalityOf(p){ return BOT_PERSONALITIES[p && p.personality] || BOT_PERSONALITIES.stable250; }
 function logBotStyles(players){
   (players||[]).filter(p=>p.isBot).forEach(p=>{
-    const per = botPersonalityOf(p);
-    log(`🤖 ${p.name} bergabung sebagai bot dengan gaya main <b>${per.label}</b>.`);
+    log(`🤖 ${p.name} bergabung sebagai bot.`);
   });
 }
 
@@ -3732,6 +3795,7 @@ function botEvaluateTradeOffer(cp, offer){
    INIT
    ============================================================ */
 refreshResumeButton();
+initCustomSelects();
 </script>
 </body>
 </html>
