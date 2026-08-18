@@ -47,7 +47,21 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .screen.active{display:flex;}
 
 /* ---------- MENU ---------- */
-#screen-menu{justify-content:center;padding:24px 16px;text-align:center;position:relative;}
+#screen-menu{justify-content:center;padding:24px 16px;text-align:center;position:relative;overflow:hidden;}
+#screen-menu::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(215,169,75,0.035) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(-45deg, rgba(215,169,75,0.025) 0 2px, transparent 2px 26px);
+}
+#screen-menu::after{
+  content:"";position:absolute;left:50%;top:8%;width:280px;height:280px;
+  background:radial-gradient(circle, rgba(215,169,75,0.16) 0%, transparent 70%);
+  transform:translateX(-50%);pointer-events:none;z-index:0;
+  animation:menuGlow 5s ease-in-out infinite;
+}
+@keyframes menuGlow{0%,100%{opacity:0.6;}50%{opacity:1;}}
+#screen-menu > *{position:relative;z-index:1;}
 .stamp{
   width:150px;height:150px;border-radius:50%;
   border:3px dashed var(--gold);
@@ -55,22 +69,33 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
   transform:rotate(-8deg);
   margin:0 auto 18px;
   box-shadow:0 0 0 6px rgba(215,169,75,0.08);
+  position:relative;
 }
+.stamp::before{
+  content:"";position:absolute;inset:-11px;border-radius:50%;
+  border:1px dashed rgba(215,169,75,0.3);
+  animation:stampSpin 60s linear infinite;
+}
+@keyframes stampSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 .stamp span{display:block;}
 .stamp .top{font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700;}
 .stamp .mid{font-family:'Playfair Display',serif;font-size:30px;font-weight:800;color:var(--gold);line-height:1;margin:4px 0;}
 .stamp .bot{font-size:10px;letter-spacing:2px;color:var(--gold-dim);text-transform:uppercase;}
-#screen-menu h1{font-size:38px;margin:6px 0 4px;letter-spacing:0.5px;}
-#screen-menu .tag{color:var(--paper-dim);font-size:14px;margin-bottom:34px;letter-spacing:0.5px;}
+#screen-menu h1{font-size:38px;margin:6px 0 4px;letter-spacing:0.5px;text-shadow:0 2px 18px rgba(215,169,75,0.25);}
+#screen-menu .tag{color:var(--paper-dim);font-size:14px;margin-bottom:14px;letter-spacing:0.5px;}
+.menu-divider{color:var(--gold-dim);letter-spacing:9px;font-size:10px;margin-bottom:26px;}
 .menu-btn{
   width:min(320px,80vw);
   padding:16px 20px;margin:8px 0;border-radius:999px;border:2px solid var(--gold);
-  background:transparent;color:var(--gold);font-weight:700;font-size:16px;letter-spacing:1px;
-  transition:all .15s ease;
+  background:rgba(255,255,255,0.02);color:var(--gold);font-weight:700;font-size:16px;letter-spacing:1px;
+  transition:all .15s ease;position:relative;overflow:hidden;
 }
-.menu-btn.primary{background:var(--gold);color:var(--ink2);}
+.menu-btn.primary{
+  background:linear-gradient(135deg, #ecc978 0%, var(--gold) 55%, #c0913a 100%);
+  color:var(--ink2);box-shadow:0 8px 22px rgba(215,169,75,0.35);border-color:#f0d493;
+}
 .menu-btn:active{transform:scale(0.97);}
-.menu-footer{margin-top:40px;font-size:11px;color:var(--gold-dim);letter-spacing:1px;}
+.menu-footer{margin-top:36px;font-size:11px;color:var(--gold-dim);letter-spacing:1px;padding-top:16px;border-top:1px solid rgba(215,169,75,0.15);width:min(220px,60vw);}
 .howto{max-width:420px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.3);border-radius:var(--radius);padding:16px 18px;margin-top:18px;font-size:13px;line-height:1.6;color:var(--paper-dim);display:none;}
 .howto.show{display:block;}
 .howto b{color:var(--gold);}
@@ -121,7 +146,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 
 /* ---------- GAME ---------- */
 #screen-game{width:100%;padding:10px 10px 12px;align-items:center;}
-.topbar{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;padding:4px 6px 10px;}
+.topbar{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 6px 10px;}
 .topbar .title{font-size:14px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:700;}
 .icon-btn{background:transparent;border:1px solid rgba(215,169,75,0.4);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:12px;}
 
@@ -386,9 +411,10 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   </div>
   <h1>Monopoli Dunia</h1>
   <div class="tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
+  <div class="menu-divider">✦ ✦ ✦</div>
   <button class="menu-btn primary" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
   <button class="menu-btn primary" onclick="goToModeSelect()">▶ Main</button>
-  <button class="menu-btn" onclick="openHowToModal()">Cara Bermain</button>
+  <button class="menu-btn" onclick="openHowToModal()">📘 Cara Bermain</button>
   <button class="menu-btn secondary-link" onclick="openReferenceModal()">📖 Daftar Properti &amp; Kartu</button>
   <button class="menu-btn secondary-link" onclick="openWhatsNewModal()">🆕 Apa yang Baru</button>
   <div class="menu-footer">Aturan bisa disesuaikan di layar berikutnya</div>
@@ -406,7 +432,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   </div>
   <div class="card" style="cursor:pointer" onclick="goToOnline()">
     <h3>🌐 Online — Multiplayer antar HP</h3>
-    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing, main di waktu bersamaan lewat kode Room. Butuh internet, dan semua pemain buka halaman ini lewat link yang sama (link Publish/Share dari Claude). Host bisa tambah bot 🤖 juga.</p>
+    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing dan main di waktu bersamaan lewat kode Room. Butuh internet — semua pemain buka aplikasi ini lalu gabung pakai kode Room yang sama. Host bisa tambah bot 🤖 juga.</p>
   </div>
   <div style="height:70px"></div>
   <div class="sticky-bottom"><button class="btn-ghost" onclick="goToMenu()">Kembali</button></div>
@@ -416,7 +442,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 <div id="screen-online" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
   <div class="setup-header">
     <h2>Main Online</h2>
-    <p id="onlineSubText">Bagikan link halaman ini ke pemain lain, lalu buat atau gabung Room.</p>
+    <p id="onlineSubText">Buat Room lalu bagikan kodenya ke pemain lain, atau gabung pakai kode yang sudah ada.</p>
   </div>
 
   <div id="onlineChooseView">
@@ -437,7 +463,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
     <div class="card" style="text-align:center;">
       <h3>Kode Room</h3>
       <div style="font-family:'Space Mono',monospace;font-size:34px;letter-spacing:8px;color:var(--gold);font-weight:700;" id="lobbyCodeDisplay">----</div>
-      <p style="font-size:12px;color:var(--paper-dim);margin:6px 0 0;">Bagikan kode ini ke pemain lain (mereka buka link halaman ini juga)</p>
+      <p style="font-size:12px;color:var(--paper-dim);margin:6px 0 0;">Bagikan kode ini ke pemain lain (mereka buka aplikasi ini juga lalu pilih Gabung Room)</p>
     </div>
     <div class="card">
       <h3>Pemain Bergabung</h3>
@@ -1161,6 +1187,14 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <div class="changelog-entry">
+      <div class="cl-date">18 Agustus 2026 — Perbaikan Tampilan</div>
+      <ul>
+        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Tampilan menu utama dirombak: ada efek kilau lembut, bingkai cap berputar pelan, dan tombol utama dibuat lebih menonjol supaya tidak terasa monoton.</li>
+        <li class="fix">Teks di layar "Pilih Mode Main" diperbaiki — deskripsi mode Online sebelumnya salah menyebut "link Publish/Share dari Claude", sekarang sudah sesuai dengan sistem kode Room berbasis Supabase yang dipakai aplikasi ini.</li>
+        <li class="fix">Bar atas (nama game, badge Room, tombol Menu) saat main sekarang diberi jarak lebih ke bawah mengikuti area aman notch/status bar HP, supaya tidak ketutupan panel notifikasi atau Dynamic Island di beberapa HP.</li>
+      </ul>
+    </div>
+    <div class="changelog-entry">
       <div class="cl-date">17 Agustus 2026 — Mode Permainan &amp; Modifikasi Kustom</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Kartu <b>"🎮 Mode Permainan"</b> di layar Pengaturan (Offline) &amp; Lobby (Online): pilih salah satu dari 4 preset — <b>🏠 Classic Mode</b> (standar, menang saat semua lawan bangkrut), <b>⚡ Quick Match</b> (sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, bangun bebas set warna — biar cepat selesai dan cocok untuk main digital), <b>⏱️ Time Attack</b> (permainan berhenti otomatis setelah waktu habis, menang lewat Net Worth tertinggi bukan siapa yang bangkrut duluan), dan <b>🔨 Auction Only</b> (tanah kosong tidak bisa dibeli langsung, selalu dilelang ke semua pemain — memunculkan bluffing &amp; perang harga). Memilih preset hanya <b>mengisi otomatis</b> modifikasi di bawahnya — semua tetap bisa di-on/off-kan satu per satu sesudahnya sesuai selera.</div>
       <ul>
@@ -1205,7 +1239,7 @@ function goToModeSelect(){ showScreen('screen-mode'); }
 /* ---------- ONLINE MODE ---------- */
 function ensureStorage(){
   if(typeof window.storage === 'undefined'){
-    alertModal('Mode online butuh fitur penyimpanan artifact Claude. Pastikan halaman ini dibuka lewat link yang di-Publish/Share dari Claude (bukan file HTML yang diunduh langsung), dan semua HP terhubung internet.');
+    alertModal('Mode online butuh koneksi ke server. Pastikan HP kamu terhubung internet, lalu coba lagi.');
     return false;
   }
   return true;
@@ -3797,17 +3831,5 @@ function botEvaluateTradeOffer(cp, offer){
 refreshResumeButton();
 initCustomSelects();
 </script>
-  <script>
-const versiSaya = new URLSearchParams(location.search).get('v') || 1;
-fetch('versi.json').then(r=>r.json()).then(data=>{
-  if (parseInt(versiSaya) < data.terbaru) {
-    document.body.innerHTML = `<div style="position:fixed;inset:0;background:#0b1a3a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:9999;font-family:sans-serif">
-      <h2>🔔 Update Tersedia!</h2>
-      <p>Ada versi baru Anumpoly. Update dulu ya biar bisa main bareng teman.</p>
-      <a href="${data.link_apk}" style="background:#facc15;color:#000;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:14px">⬇️ Download Update</a>
-    </div>`;
-  }
-}).catch(()=>{});
-  </script>
 </body>
 </html>
