@@ -32,10 +32,14 @@
 html,body{margin:0;padding:0;height:100%;}
 body{
   font-family:'Inter',sans-serif;
-  background:radial-gradient(circle at 30% 0%, #1a2c4a 0%, var(--ink) 45%, var(--ink2) 100%);
+  /* Warna polos sebagai fallback saja — gradien + motif sesungguhnya
+     sekarang ada di #appBg (lihat bawah), supaya konsisten di semua
+     layar dan tidak "berjahit"/terpotong di layar panjang. */
+  background:var(--ink2);
   color:var(--paper);
   min-height:100vh;
   overflow-x:hidden;
+  position:relative;
 }
 h1,h2,h3,.display{font-family:'Playfair Display',serif;}
 .mono{font-family:'Space Mono',monospace;}
@@ -43,17 +47,31 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 ::-webkit-scrollbar{height:8px;width:8px;}
 ::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:4px;}
 
-.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;}
-.screen.active{display:flex;}
-
-/* ---------- MENU ---------- */
-#screen-menu{justify-content:center;padding:24px 16px;text-align:center;position:relative;overflow:hidden;}
-#screen-menu::before{
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+/* ---------- LATAR BELAKANG GLOBAL (semua layar, bukan cuma menu) ----------
+   Dulu gradien+motif garis diagonal cuma dipasang di #screen-menu, jadi
+   layar lain (setup, lobby, game, dst) terlihat polos/tidak senada.
+   Sekarang dipindah ke satu elemen #appBg yang fixed seukuran viewport
+   dan dipasang di belakang SEMUA layar, jadi motifnya konsisten di
+   mana-mana. Karena ukurannya dikunci ke viewport (bukan ke tinggi
+   halaman yang bisa sangat panjang saat discroll), gradiennya juga
+   tidak pernah "diulang"/kelihatan sambungannya di tengah halaman —
+   itu selalu digambar utuh satu kali seukuran layar. */
+#appBg{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+  background:radial-gradient(circle at 30% 0%, #1a2c4a 0%, var(--ink) 45%, var(--ink2) 100%);
+}
+#appBg::before{
+  content:"";position:absolute;inset:0;
   background-image:
     repeating-linear-gradient(45deg, rgba(215,169,75,0.035) 0 2px, transparent 2px 26px),
     repeating-linear-gradient(-45deg, rgba(215,169,75,0.025) 0 2px, transparent 2px 26px);
 }
+
+.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* ---------- MENU ---------- */
+#screen-menu{justify-content:center;padding:24px 16px;text-align:center;position:relative;overflow:hidden;}
 #screen-menu::after{
   content:"";position:absolute;left:50%;top:8%;width:280px;height:280px;
   background:radial-gradient(circle, rgba(215,169,75,0.16) 0%, transparent 70%);
@@ -401,6 +419,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
+<div id="appBg" aria-hidden="true"></div>
 
 <!-- ================= MENU ================= -->
 <div id="screen-menu" class="screen active">
@@ -998,19 +1017,24 @@ function openSettingsMenu(){
 }
 function confirmSurrender(){
   if(!state) { closeModal(); return; }
-  const p = currentPlayer();
+  // PENTING: yang menyerah harus SELALU pemain pemilik HP ini (localPlayer),
+  // BUKAN currentPlayer() / pemain yang sedang giliran jalan. Menu ☰ bisa
+  // dibuka kapan saja, termasuk saat giliran pemain lain (mis. mode
+  // online) — kalau pakai currentPlayer(), pemain yang menyerah malah bisa
+  // salah jadi pemain lain yang kebetulan sedang jalan.
+  const p = localPlayer();
   showModal({
     title:'Yakin Menyerah?',
     desc:`${p.name} akan dinyatakan bangkrut dan keluar dari permainan ini. Properti miliknya kembali ke bank.`,
     buttons:[
       {label:'Batal', cls:'btn-no', onClick:closeModal},
-      {label:'Ya, Menyerah', cls:'btn-danger', onClick:surrenderPlayer},
+      {label:'Ya, Menyerah', cls:'btn-danger', onClick:()=>surrenderPlayer(p.id)},
     ]
   });
 }
-function surrenderPlayer(){
+function surrenderPlayer(playerId){
   if(!state) { closeModal(); return; }
-  const p = currentPlayer();
+  const p = state.players.find(pl=>pl.id===playerId) || localPlayer();
   p.bankrupt = true;
   log(`${p.name} menyerah dan dinyatakan bangkrut.`);
   (p.properties||[]).forEach(i=>{
@@ -1023,9 +1047,16 @@ function surrenderPlayer(){
   p.properties = [];
   closeModal();
   checkGameOver();
-  if(!document.getElementById('winnerOverlay').classList.contains('show')){
+  if(document.getElementById('winnerOverlay').classList.contains('show')){
+    commit();
+  } else if(p.id===currentPlayer().id){
+    // Yang menyerah kebetulan memang lagi giliran jalan -> lanjut ke
+    // pemain berikutnya seperti biasa.
     forceEndTurn();
   } else {
+    // Yang menyerah BUKAN pemain yang lagi giliran jalan -> jangan
+    // sentuh giliran yang sedang berjalan, cukup sinkronkan status
+    // bangkrutnya saja.
     commit();
   }
 }
@@ -1496,9 +1527,30 @@ async function pollGameState(){
     applyRemoteState(payload);
   }catch(e){}
 }
-let remoteAnimGen = 0;
+// Antrean animasi remote: dulu memakai "generation id" yang MEMBATALKAN
+// animasi lama begitu update baru datang (jadi kalau pemain berikutnya
+// jalan cepat, animasi pemain sebelumnya terpotong dan tampak dua token
+// jalan "bertabrakan"/tumpang tindih di HP lawan). Sekarang tiap update
+// baru diantre dan BARU diputar setelah animasi update sebelumnya benar-
+// benar selesai, satu per satu, berurutan sesuai giliran.
+let remoteAnimQueue = [];
+let remoteAnimBusy = false;
 function applyRemoteState(payload){
-  const myGen = ++remoteAnimGen; // pembatal animasi lama kalau ada state baru masuk lagi
+  // BUGFIX: kalau update ini adalah "gema" dari push kita SENDIRI (HP yang
+  // sama, mis. skenario "Mabar 1 HP" tempat 1 device jadi host sekaligus
+  // menjalankan semua bot), device ini SUDAH menampilkan gerakan/animasinya
+  // secara langsung saat aksinya terjadi (lihat animateWalk/moveSteps dsb).
+  // Kalau payload ini diproses lagi lewat jalur animasi "penonton jarak jauh"
+  // di bawah, hasilnya bidak jalan KEDUA KALINYA (kelihatan "dobel"/aneh),
+  // dan modal beli/lelang bisa sempat menampilkan state basi seolah giliran
+  // pemain lain adalah giliran kita. Jadi untuk gema dari diri sendiri,
+  // cukup selaraskan data (rev & gabungan log kalau ada baris baru dari
+  // device lain) TANPA antre animasi ulang.
+  if(payload.clientId && payload.clientId===CLIENT_ID){
+    state.rev = payload.rev;
+    state.log = mergeLogs(payload.log, state.log);
+    return;
+  }
   const prevOffer = state.pendingTradeOffer;
   const prevPlayers = (state.players||[]).map(p=>({id:p.id,pos:p.pos,bankrupt:p.bankrupt,money:p.money}));
   const prevLog = state.log || [];
@@ -1527,25 +1579,41 @@ function applyRemoteState(payload){
   });
   const rolledNew = payload.lastRoll && (!prevLastRoll || prevLastRoll[0]!==payload.lastRoll[0] || prevLastRoll[1]!==payload.lastRoll[1]);
 
-  function finalizeState(){
-    state.rev = payload.rev;
-    state.rules = payload.rules;
-    state.players = payload.players;
-    state.currentIndex = payload.currentIndex;
-    state.freeParkingPot = payload.freeParkingPot;
-    state.log = payload.log;
-    state.turnPhase = payload.turnPhase;
-    state.propStates = payload.propStates;
-    state.lastRoll = payload.lastRoll;
-    state.chanceDeckIds = payload.chanceDeckIds;
-    state.chestDeckIds = payload.chestDeckIds;
-    state.pendingTradeOffer = payload.pendingTradeOffer||null;
-    state.auction = payload.auction||null;
-    state.lastMoveMeta = payload.lastMoveMeta||null;
+  // Data (uang, kepemilikan, dll) selalu diterapkan SEGERA supaya selalu
+  // akurat/terbaru (mis. supaya "Bayar Sekarang" tidak pernah pakai data
+  // basi). Yang diantre & dianimasikan cuma tampilan dadu, jalannya
+  // token, dan urutan munculnya log — bukan datanya.
+  state.rev = payload.rev;
+  state.rules = payload.rules;
+  state.players = payload.players;
+  state.currentIndex = payload.currentIndex;
+  state.freeParkingPot = payload.freeParkingPot;
+  state.log = payload.log;
+  state.turnPhase = payload.turnPhase;
+  state.propStates = payload.propStates;
+  state.lastRoll = payload.lastRoll;
+  state.chanceDeckIds = payload.chanceDeckIds;
+  state.chestDeckIds = payload.chestDeckIds;
+  state.pendingTradeOffer = payload.pendingTradeOffer||null;
+  state.auction = payload.auction||null;
+  state.lastMoveMeta = payload.lastMoveMeta||null;
+
+  remoteAnimQueue.push({payload, prevOffer, prevPlayers, movedEntries, newLogEntries, rolledNew});
+  runNextRemoteAnim();
+}
+function runNextRemoteAnim(){
+  if(remoteAnimBusy) return;
+  const job = remoteAnimQueue.shift();
+  if(!job) return;
+  remoteAnimBusy = true;
+  const {payload, prevOffer, prevPlayers, movedEntries, newLogEntries, rolledNew} = job;
+
+  function finishJob(){
+    remoteAnimBusy = false;
+    runNextRemoteAnim(); // giliran/update berikutnya di antrean baru boleh mulai SEKARANG
   }
 
   function afterApply(){
-    if(myGen!==remoteAnimGen) return; // sudah ada update lebih baru, jangan render data usang
     renderAll();
     // Tampilkan animasi +/- uang di HP ini juga untuk perubahan uang yang
     // terjadi di HP lain, supaya animasinya tersinkron di semua pemain
@@ -1562,13 +1630,8 @@ function applyRemoteState(payload){
       if(myOnlineSlot===respondingId) showTradeOfferReceived();
     }
     handleBotAutomation();
+    finishJob();
   }
-
-  // Data (uang, kepemilikan, dll) selalu diterapkan SEGERA supaya selalu
-  // akurat/terbaru (mis. supaya "Bayar Sekarang" tidak pernah pakai data
-  // basi). Yang dianimasikan cuma tampilan dadu, jalannya token, dan
-  // urutan munculnya log — bukan datanya.
-  finalizeState();
 
   const screenActive = document.getElementById('screen-game') && document.getElementById('screen-game').classList.contains('active');
   const shouldAnimate = !appSettings.reducedMotion && screenActive && (movedEntries.length>0 || rolledNew);
@@ -1586,7 +1649,6 @@ function applyRemoteState(payload){
   (function replayLogs(){
     let li=0;
     function nextLog(){
-      if(myGen!==remoteAnimGen) return;
       if(li>=newLogEntries.length) return;
       showToast(newLogEntries[li].msg);
       li++;
@@ -1596,12 +1658,10 @@ function applyRemoteState(payload){
   })();
 
   function playDiceFlicker(cb){
-    if(myGen!==remoteAnimGen) return;
     if(!rolledNew){ cb(); return; }
     const box = document.getElementById('diceBox');
     let n=0;
     const flick = setInterval(()=>{
-      if(myGen!==remoteAnimGen){ clearInterval(flick); return; }
       if(box) box.innerHTML = diceHTML(1+Math.floor(Math.random()*6))+diceHTML(1+Math.floor(Math.random()*6));
       n++;
       if(n>=5){
@@ -1614,7 +1674,6 @@ function applyRemoteState(payload){
   }
 
   function animateMoveFor(entry, cb){
-    if(myGen!==remoteAnimGen) return;
     const overridePos = {};
     let cur = entry.from;
     const fwd = mod(entry.to-entry.from,40);
@@ -1626,7 +1685,6 @@ function applyRemoteState(payload){
     let stepsLeft = goBack?back:fwd;
     if(stepsLeft<=0){ cb(); return; }
     function tick(){
-      if(myGen!==remoteAnimGen) return;
       cur = goBack? mod(cur-1,40) : mod(cur+1,40);
       overridePos[entry.id]=cur;
       renderTokensAndHouses(entry.id, overridePos);
@@ -1640,7 +1698,6 @@ function applyRemoteState(payload){
     if(movedEntries.length===0){ cb(); return; }
     let idx=0;
     function step(){
-      if(myGen!==remoteAnimGen) return;
       if(idx>=movedEntries.length){ cb(); return; }
       animateMoveFor(movedEntries[idx], ()=>{ idx++; step(); });
     }
@@ -1656,6 +1713,7 @@ function applyRemoteState(payload){
 function serializeState(){
   return {
     rev: (state.rev||0)+1,
+    clientId: CLIENT_ID,
     rules: state.rules,
     players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,doublesCount:p.doublesCount,properties:p.properties||[],propsBought:p.propsBought||0,timesJailed:p.timesJailed||0,rentPaid:p.rentPaid||0,rentCollected:p.rentCollected||0,isBot:!!p.isBot,personality:p.personality||null})),
     currentIndex: state.currentIndex,
@@ -1702,7 +1760,17 @@ async function ensureFresh(){
     }
   }catch(e){}
 }
+// BUGFIX: dulu tanda "aksi ini sudah pernah dijalankan" (sig) di bawah
+// memakai state.rev, yang HANYA bertambah setelah syncPush() ke server
+// berhasil (async, butuh koneksi). Kalau koneksi lambat/gagal (kondisi
+// sinyal HP jelek), state.rev macet di angka lama -> sig aksi berikutnya
+// keliru dianggap "sudah dijalankan barusan" -> bot berhenti jalan sampai
+// 4 detik (BOT_RETRY_MS) per langkah, berulang di tiap langkah giliran,
+// dan dari luar terlihat seperti macet total. localRev bertambah LOKAL,
+// SEKETIKA, tiap commit(), tidak bergantung jaringan sama sekali.
+let localRev = 0;
 function commit(){
+  localRev++;
   renderAll();
   if(state.mode==='online') syncPush();
   else saveGameLocal();
@@ -2425,7 +2493,7 @@ function landOnTile(p, wasDouble, fromCard, forceDoubleRent){
     if(ps.owner==null){
       if(state.rules.auctionOnly){
         log(`${t.name} belum ada pemilik. Mode Lelang Saja aktif — langsung dilelang, tidak bisa dibeli langsung!`);
-        startAuction(idx, wasDouble);
+        startAuction(idx, wasDouble, true);
         return;
       }
       state.pendingBuy = {idx, wasDouble};
@@ -2736,12 +2804,18 @@ function decideBuy(buy){
    LELANG (AUCTION) — dipicu saat pemain melewati beli properti
    ============================================================ */
 let auctionShownSig = null;
-function startAuction(idx, wasDouble){
+function startAuction(idx, wasDouble, includeMover){
   const activeIds = [];
   const n = state.players.length;
-  // Pemain yang baru saja lewat (tidak membeli) TIDAK ikut menawar lagi.
-  // Penawaran dimulai dari pemain setelahnya, urut giliran.
-  for(let i=1;i<n;i++){
+  // Pemain yang baru saja MEMILIH LEWAT beli (bukan mode Lelang Saja)
+  // sudah menyatakan tidak mau, jadi TIDAK ikut menawar lagi — lelang
+  // dimulai dari pemain setelahnya.
+  // TAPI di mode Lelang Saja (auctionOnly), pemain yang jalan/mendarat
+  // belum pernah diberi kesempatan memilih beli atau tidak (langsung
+  // dilelang), jadi dia HARUS ikut sebagai penawar juga, dan gilirannya
+  // menawar duluan (dirinya sendiri dulu, baru pemain berikutnya).
+  const startI = includeMover ? 0 : 1;
+  for(let i=startI;i<n;i++){
     const pidx = mod(state.currentIndex+i, n);
     if(!state.players[pidx].bankrupt) activeIds.push(state.players[pidx].id);
   }
@@ -2751,8 +2825,12 @@ function startAuction(idx, wasDouble){
     return;
   }
   const t = BOARD[idx];
-  state.auction = { idx, remaining: activeIds, pos:0, highBid:0, highBidderId:null, highBidderName:null, wasDouble, startPrice: t.price, increment: 5 };
-  log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(t.price)}, naik ${fmt(5)} tiap tawaran.`);
+  // Lelang dimulai dari harga nominal rendah (bukan langsung harga penuh)
+  // supaya ada ruang tawar-menawar sungguhan dan bot dengan gaya main
+  // hati-hati (auctionFactor<1) tetap bisa ikut menawar dari awal.
+  const startPrice = Math.max(10, Math.round(t.price*0.1));
+  state.auction = { idx, remaining: activeIds, pos:0, highBid:0, highBidderId:null, highBidderName:null, wasDouble, startPrice, increment: 5 };
+  log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(startPrice)}, naik ${fmt(5)} tiap tawaran.`);
   auctionShownSig = null;
   commit();
 }
@@ -2774,13 +2852,36 @@ function maybeShowAuctionModal(){
   auctionShownSig = sig;
   const bidder = state.players.find(p=>p.id===bidderId);
   const t = BOARD[a.idx];
-  const nextBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
-  const canBid = bidder.money >= nextBid;
+  const ps = state.propStates[a.idx];
+  // Tawaran minimum tetap harus naik dari tawaran tertinggi saat ini
+  // (kalau belum ada tawaran, minimum = harga awal lelang), tapi pemain
+  // BEBAS mengetik nominal lebih tinggi dari itu sesuai keinginan sendiri
+  // (dulu cuma bisa 1 nominal "kelipatan +5" yang disodorkan sistem).
+  const minBid = a.highBid>0 ? a.highBid + 1 : (a.startPrice||t.price);
+  const suggestedBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
+  const canBidAtAll = bidder.money >= minBid;
+  const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
   showModal({
     title:'🔨 Lelang: '+t.name,
-    desc:`Tawaran tertinggi saat ini: <span class="hl">${fmt(a.highBid)}</span>${a.highBidderName?(' oleh '+a.highBidderName):' (belum ada)'}<br><br>Giliran menawar: <b>${bidder.name}</b> (${fmt(bidder.money)})`,
+    desc:`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="width:14px;height:14px;border-radius:4px;background:${swatchColor};flex:none;"></div>
+        <div><b style="color:var(--paper);">${t.name}</b> — harga normal ${fmt(t.price)}</div>
+      </div>
+      Tawaran tertinggi saat ini: <span class="hl">${fmt(a.highBid)}</span>${a.highBidderName?(' oleh '+a.highBidderName):' (belum ada)'}<br>
+      Giliran menawar: <b style="color:var(--paper);">${bidder.name}</b> (${fmt(bidder.money)})
+      ${propertyDetailsHTML(t, ps)}
+      <div style="margin-top:12px;">
+        <label style="font-size:12px;color:var(--paper-dim);display:block;margin-bottom:5px;">Jumlah tawaranmu — minimum ${fmt(minBid)}${canBidAtAll?(', uangmu '+fmt(bidder.money)):''}</label>
+        <input type="number" id="auctionCustomBid" value="${Math.min(suggestedBid,bidder.money)}" min="${minBid}" max="${bidder.money}" step="1"
+          style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid rgba(215,169,75,0.4);background:rgba(255,255,255,0.06);color:var(--paper);font-size:16px;font-family:'Space Mono',monospace;">
+      </div>`,
     buttons:[
-      {label:`Tawar ${fmt(nextBid)}`, cls:'btn-yes', disabled: !canBid, onClick:()=>auctionBid(nextBid)},
+      {label:'Tawar', cls:'btn-yes', disabled: !canBidAtAll, onClick:()=>{
+        const inp = document.getElementById('auctionCustomBid');
+        const amount = Math.floor(Number(inp && inp.value));
+        auctionBid(amount);
+      }},
       {label:'Lewati', cls:'btn-no', onClick:auctionPass},
     ]
   });
@@ -2790,7 +2891,13 @@ function auctionBid(amount){
   const a = state.auction; if(!a) return;
   const bidderId = a.remaining[a.pos % a.remaining.length];
   const bidder = state.players.find(p=>p.id===bidderId);
-  if(bidder.money < amount) return;
+  const t = BOARD[a.idx];
+  const minBid = a.highBid>0 ? a.highBid + 1 : (a.startPrice||t.price);
+  // Validasi nominal custom dari input pemain: harus bilangan bulat wajar,
+  // tetap harus MENAIKKAN tawaran tertinggi saat ini (bukan cuma menyamai
+  // atau lebih rendah), dan tidak melebihi uang yang dia punya.
+  amount = Math.floor(Number(amount));
+  if(!Number.isFinite(amount) || amount < minBid || amount > bidder.money) return;
   a.highBid = amount; a.highBidderId = bidderId; a.highBidderName = bidder.name;
   log(`${bidder.name} menawar ${fmt(amount)} untuk ${BOARD[a.idx].name}.`);
   closeModal();
@@ -2851,6 +2958,11 @@ function drawCard(p, type, wasDouble){
   state[idsKey].push(id);
   const card = staticArr[id];
   log(`${p.name} membuka kartu ${type==='chance'?'❓ Kesempatan':'💰 Dana Umum'}: "${card.text}"`);
+  // PENTING: sinkronkan posisi pemain & log kartu ke pemain lain SEKARANG
+  // juga, jangan tunggu sampai pemain ini pencet "Oke" di modalnya sendiri.
+  // Kalau tidak, token pemain ini akan terlihat "diam saja" / tidak jalan
+  // di layar pemain lain sampai dia menutup modal kartunya sendiri.
+  commit();
   playCardDrawAnimation(type, ()=>{
     awaitingCardOke = true;
     showModal({
@@ -3573,7 +3685,7 @@ function handleBotAutomation(){
   if(awaitingCardOke){
     const cp = currentPlayer();
     if(cp && cp.isBot){
-      const sig = 'cardoke:'+cp.id+':'+state.rev+':'+(state.log?state.log.length:0);
+      const sig = 'cardoke:'+cp.id+':'+localRev+':'+(state.log?state.log.length:0);
       scheduleBotAction(sig, 750, ()=>{
         const btn = document.querySelector('#modalBtns .btn-yes');
         if(btn) btn.click();
@@ -3610,7 +3722,7 @@ function handleBotAutomation(){
 
   // 7) Lempar dadu.
   if(state.turnPhase==='canRoll'){
-    const sig = 'roll:'+cp.id+':'+state.rev+':'+cp.doublesCount;
+    const sig = 'roll:'+cp.id+':'+localRev+':'+cp.doublesCount;
     scheduleBotAction(sig, 700, ()=>{ botDriving=true; try{ onRoll(); } finally { botDriving=false; } });
     return;
   }
@@ -3638,7 +3750,7 @@ function handleBotAutomation(){
       });
       return;
     }
-    const sig = 'end:'+cp.id+':'+state.rev+':'+botBuildFingerprint(cp);
+    const sig = 'end:'+cp.id+':'+localRev+':'+botBuildFingerprint(cp);
     scheduleBotAction(sig, 900, ()=>{ botDriving=true; try{ endTurn(); } finally { botDriving=false; } });
     return;
   }
@@ -3835,11 +3947,42 @@ initCustomSelects();
 const versiSaya = new URLSearchParams(location.search).get('v') || 1;
 fetch('versi.json').then(r=>r.json()).then(data=>{
   if (parseInt(versiSaya) < data.terbaru) {
-    document.body.innerHTML = `<div style="position:fixed;inset:0;background:#0b1a3a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:9999;font-family:sans-serif">
-      <h2>🔔 Update Tersedia!</h2>
-      <p>Ada versi baru Anumpoly. Update dulu ya biar bisa main bareng teman.</p>
-      <a href="${data.link_apk}" style="background:#facc15;color:#000;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:bold;margin-top:14px">⬇️ Download Update</a>
-    </div>`;
+    // Dulu tombol "Download Update" tidak memberi respons visual apa pun
+    // setelah dipencet (terlihat seperti "diam saja" / macet), padahal
+    // unduhan APK sebenarnya berjalan di latar belakang lewat browser/HP.
+    // Sekarang tombol berubah status jelas: ikon+teks berubah jadi
+    // "Sedang Diunduh...", lalu setelah beberapa saat berubah lagi jadi
+    // konfirmasi "cek notifikasi HP" beserta link cadangan untuk
+    // menekan ulang kalau unduhan tidak otomatis dimulai.
+    document.body.innerHTML = `<div id="updateOverlay" style="position:fixed;inset:0;background:radial-gradient(circle at 30% 0%, #1a2c4a 0%, #12203A 45%, #0B1626 100%);color:#F3EEE1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:9999;font-family:'Inter',sans-serif;">
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(215,169,75,0.14);border:1px solid rgba(215,169,75,0.35);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:16px;">🔔</div>
+      <h2 style="font-family:'Playfair Display',serif;margin:0 0 8px;font-size:21px;color:#D7A94B;letter-spacing:.3px;">Update Tersedia</h2>
+      <p style="max-width:300px;color:#e7dfc9;font-size:13.5px;line-height:1.6;margin:0 0 18px;">Ada versi baru Monopoli Dunia${data.terbaru?(' (v'+data.terbaru+')'):''}. Update dulu ya biar bisa main bareng teman.</p>
+      <a id="btnDownloadUpdate" href="${data.link_apk}" onclick="handleUpdateDownloadClick(this)" style="background:linear-gradient(135deg,#ecc978 0%,#D7A94B 55%,#c0913a 100%);color:#12203A;padding:15px 30px;border-radius:999px;text-decoration:none;font-weight:800;font-size:14.5px;letter-spacing:.3px;box-shadow:0 4px 14px rgba(0,0,0,.35);display:inline-flex;align-items:center;gap:8px;transition:opacity .2s;">
+        <span id="updateBtnIcon">⬇️</span><span id="updateBtnLabel">Download Update</span>
+      </a>
+      <div id="updateStatus" style="min-height:36px;max-width:300px;font-size:12.5px;color:#a9b3c4;line-height:1.6;margin-top:16px;"></div>
+    </div>
+    <script>
+      function handleUpdateDownloadClick(el){
+        if(el.dataset.busy==='1') return; // cegah dobel-klik numpuk animasi
+        el.dataset.busy='1';
+        var icon = document.getElementById('updateBtnIcon');
+        var label = document.getElementById('updateBtnLabel');
+        var status = document.getElementById('updateStatus');
+        icon.textContent = '⏳';
+        label.textContent = 'Sedang Diunduh...';
+        el.style.opacity = '0.72';
+        status.innerHTML = 'Aplikasi terbaru sedang diunduh di latar belakang, mohon tunggu sebentar.';
+        setTimeout(function(){
+          icon.textContent = '📩';
+          label.textContent = 'Unduhan Dimulai';
+          status.innerHTML = '✅ Cek <b>notifikasi HP</b> kamu untuk lanjutkan instalasi. Kalau unduhan belum juga muncul, <a href="'+el.getAttribute('href')+'" style="color:#D7A94B;text-decoration:underline;">tekan di sini lagi</a>.';
+          el.style.opacity = '1';
+          el.dataset.busy = '0';
+        }, 1800);
+      }
+    <\/script>`;
   }
 }).catch(()=>{});
 </script>
