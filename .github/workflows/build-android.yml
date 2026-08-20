@@ -1,0 +1,55 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor deps
+        run: npm install
+
+      - name: Kumpulkan file web ke folder www/
+        run: |
+          mkdir -p www
+          rsync -a \
+            --exclude='www' --exclude='android' --exclude='node_modules' \
+            --exclude='.git' --exclude='.github' --exclude='package.json' \
+            --exclude='package-lock.json' --exclude='capacitor.config.json' \
+            ./ www/
+
+      - name: Tambah platform Android
+        run: npx cap add android
+
+      - name: Sinkron file web ke project Android
+        run: npx cap sync android
+
+      - name: Build APK (debug)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK sebagai artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: monopoli-dunia-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          
