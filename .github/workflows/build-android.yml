@@ -48,9 +48,9 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
-          echo "$KEYSTORE_BASE64" | base64 -d > app/anumpoly-release.keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/android/app/anumpoly-release.keystore"
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=app/anumpoly-release.keystore \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/android/app/anumpoly-release.keystore" \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias=anumpoly \
             -Pandroid.injected.signing.key.password="$KEYSTORE_PASSWORD"
@@ -60,22 +60,3 @@ jobs:
         with:
           name: monopoli-dunia-apk
           path: android/app/build/outputs/apk/release/app-release.apk
-
-      - name: Tambah platform Android
-        run: npx cap add android
-
-      - name: Sinkron file web ke project Android
-        run: npx cap sync android
-
-      - name: Build APK (debug)
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      - name: Upload APK sebagai artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: monopoli-dunia-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          
