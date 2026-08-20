@@ -8,9 +8,12 @@
     <application>
         <!-- FileProvider khusus untuk membagikan file APK hasil download
              (disimpan di folder cache aplikasi) ke pemasang paket sistem
-             lewat content:// URI, tanpa perlu izin penyimpanan tambahan. -->
+             lewat content:// URI, tanpa perlu izin penyimpanan tambahan.
+             Memakai subclass sendiri (bukan androidx.core.content.FileProvider
+             langsung) supaya tidak bentrok kalau ada plugin lain di aplikasi
+             ini yang juga mendaftarkan FileProvider-nya sendiri. -->
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name="com.anumpoly.apkinstaller.ApkFileProvider"
             android:authorities="${applicationId}.apkinstaller.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
