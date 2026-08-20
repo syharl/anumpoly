@@ -955,11 +955,19 @@ function toggleAccountPasswordVisibility(){
   const inp = document.getElementById('accountPasswordInput');
   inp.type = inp.type==='password' ? 'text' : 'password';
 }
+const GOOGLE_WEB_CLIENT_ID = '20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com';
+
 let socialLoginInitDone = false;
 async function ensureSocialLoginInit(){
   if(socialLoginInitDone) return true;
+  if(GOOGLE_WEB_CLIENT_ID.indexOf('20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com') === 0){
+    showAccountError('Google Client ID belum di-setup. Lihat instruksi setup Google.');
+    return false;
+  }
   try{
-    await window.Capacitor.Plugins.SocialLogin.initialize({});
+    await window.Capacitor.Plugins.SocialLogin.initialize({
+      google: { webClientId: GOOGLE_WEB_CLIENT_ID, mode: 'online' }
+    });
     socialLoginInitDone = true;
     return true;
   }catch(e){ return false; }
@@ -2370,8 +2378,6 @@ function diceHTML(v){
 /* ============================================================
    RENDER STATE
    ============================================================ */
-function ownerOf(i){ return state.players.find(p=>p.properties && p.properties.includes(i)); }
-function propState(i){ return state.propStates[i]; }
 
 function renderAll(){
   if(!state.propStates){
@@ -3553,7 +3559,6 @@ function unmortgageProp(i, pOverride){
   log(`${p.name} menebus ${t.name} seharga ${fmt(cost)}.`);
   commit(); renderDeedList();
 }
-function checkAutoResolveDebtButton(){ /* handled via modal Bayar Sekarang button, no-op */ }
 
 /* ============================================================
    LIHAT PROPERTI TEMAN
