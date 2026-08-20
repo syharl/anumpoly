@@ -459,40 +459,67 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 </div>
 
 <!-- ================= AKUN (LOGIN/DAFTAR/PROFIL) ================= -->
-<div id="screen-account" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
-  <div class="setup-header">
-    <h2>Akun Pemain</h2>
-    <p>Simpan namamu ke akun supaya nyambung di HP mana pun kamu login.</p>
+<div id="screen-account" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;background:#181818;min-height:100dvh;">
+  <div style="display:flex;align-items:center;padding:18px 16px 6px;">
+    <button onclick="goToMenu()" style="background:none;border:none;color:#fff;font-size:22px;padding:6px 10px 6px 0;cursor:pointer;">←</button>
+  </div>
+  <div style="text-align:center;padding:8px 20px 4px;">
+    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:15px;letter-spacing:.5px;color:#8fbf6f;margin-bottom:26px;">🎩 Anumpoly<span style="color:#fff;">.com</span></div>
+    <h2 id="accountScreenTitle" style="color:#fff;font-family:'Inter',sans-serif;font-weight:800;font-size:28px;margin:0 0 22px;">Masuk</h2>
   </div>
 
   <!-- Belum login: form login/daftar -->
-  <div id="accountAuthView">
-    <div class="pill-row" id="accountTabRow" style="margin-bottom:14px;">
-      <button type="button" class="pill active" id="accountTabLogin" onclick="setAccountTab('login')">Masuk</button>
-      <button type="button" class="pill" id="accountTabRegister" onclick="setAccountTab('register')">Daftar</button>
-    </div>
-    <div class="card">
-      <div class="player-row"><input id="accountEmailInput" type="email" placeholder="Email" autocomplete="email"></div>
-      <div class="player-row"><input id="accountPasswordInput" type="password" placeholder="Password (min. 6 karakter)" autocomplete="current-password"></div>
-      <div id="accountError" style="display:none;color:#e8836b;font-size:12.5px;margin:4px 2px 0;line-height:1.5;"></div>
-      <button class="btn-big" id="accountSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitAccountForm()">Masuk</button>
+  <div id="accountAuthView" style="padding:0 18px;">
+    <div style="max-width:420px;margin:0 auto;">
+      <div style="background:#2b2b2b;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <span style="opacity:.6;">👤</span>
+        <input id="accountEmailInput" type="email" placeholder="Email" autocomplete="email" style="flex:1;background:none;border:none;outline:none;color:#fff;font-size:15px;">
+      </div>
+      <div style="background:#2b2b2b;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <span style="opacity:.6;">🔒</span>
+        <input id="accountPasswordInput" type="password" placeholder="Kata sandi" autocomplete="current-password" style="flex:1;background:none;border:none;outline:none;color:#fff;font-size:15px;">
+        <span onclick="toggleAccountPasswordVisibility()" style="cursor:pointer;opacity:.6;font-size:15px;">👁️</span>
+      </div>
+      <div id="accountError" style="display:none;color:#e8836b;font-size:12.5px;margin:6px 2px 0;line-height:1.5;"></div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:22px 0;">
+        <div style="flex:1;height:1px;background:#3a3a3a;"></div>
+        <span style="color:#888;font-size:12px;letter-spacing:1px;">ATAU</span>
+        <div style="flex:1;height:1px;background:#3a3a3a;"></div>
+      </div>
+
+      <button type="button" onclick="signInWithGoogleNative()" style="width:100%;background:#2b2b2b;border:none;border-radius:12px;padding:15px 18px;display:flex;align-items:center;gap:14px;color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;margin-bottom:12px;">
+        <span style="font-size:18px;">🔵</span> Masuk dengan Google
+      </button>
+      <button type="button" onclick="hideAccountError();showAccountError('Login Facebook belum diaktifkan.')" style="width:100%;background:#2b2b2b;border:none;border-radius:12px;padding:15px 18px;display:flex;align-items:center;gap:14px;color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;">
+        <span style="font-size:18px;">🔷</span> Masuk dengan Facebook
+      </button>
+
+      <div style="text-align:center;margin-top:26px;">
+        <button type="button" onclick="setAccountTab(accountTab==='login'?'register':'login')" style="background:none;border:none;color:#8fbf6f;font-size:13.5px;font-weight:700;cursor:pointer;" id="accountTabToggle">Belum punya akun? Daftar</button>
+      </div>
+
+      <button class="btn-big" id="accountSubmitBtn" style="width:100%;margin-top:22px;background:#8fbf6f;color:#12203A;border:none;" onclick="submitAccountForm()">Lanjutkan</button>
     </div>
   </div>
 
   <!-- Sudah login: profil -->
-  <div id="accountProfileView" style="display:none;">
-    <div class="card">
-      <h3>Masuk sebagai</h3>
-      <p id="accountEmailDisplay" style="font-family:'Space Mono',monospace;font-size:14px;color:var(--gold);word-break:break-all;margin:0 0 12px;"></p>
-      <div class="player-row"><input id="accountDisplayNameInput" placeholder="Nama tampilan" maxlength="14"></div>
-      <button class="btn-big" style="width:100%;margin-top:8px;" onclick="saveAccountProfile()">Simpan Nama</button>
-      <div id="accountProfileMsg" style="display:none;color:var(--paper-dim);font-size:12.5px;margin-top:8px;"></div>
+  <div id="accountProfileView" style="display:none;padding:0 18px;">
+    <div style="max-width:420px;margin:0 auto;background:#2b2b2b;border-radius:12px;padding:20px;">
+      <h3 style="color:#8fbf6f;margin:0 0 4px;">Masuk sebagai</h3>
+      <p id="accountEmailDisplay" style="font-family:'Space Mono',monospace;font-size:14px;color:#fff;word-break:break-all;margin:0 0 16px;"></p>
+      <div style="background:#1f1f1f;border-radius:10px;padding:14px 16px;">
+        <input id="accountDisplayNameInput" placeholder="Nama tampilan" maxlength="14" style="width:100%;background:none;border:none;outline:none;color:#fff;font-size:15px;">
+      </div>
+      <button class="btn-big" style="width:100%;margin-top:14px;background:#8fbf6f;color:#12203A;border:none;" onclick="saveAccountProfile()">Simpan Nama</button>
+      <div id="accountProfileMsg" style="display:none;color:#a9b3c4;font-size:12.5px;margin-top:10px;"></div>
     </div>
-    <button class="menu-btn secondary-link" onclick="doAccountSignOut()">Keluar dari Akun</button>
+    <div style="text-align:center;margin-top:18px;">
+      <button type="button" onclick="doAccountSignOut()" style="background:none;border:none;color:#e8836b;font-size:13.5px;font-weight:700;cursor:pointer;">Keluar dari Akun</button>
+    </div>
   </div>
 
-  <div style="height:70px"></div>
-  <div class="sticky-bottom"><button class="btn-ghost" onclick="goToMenu()">Kembali</button></div>
+  <div style="height:90px"></div>
 </div>
 
 <!-- ================= ONLINE (BUAT/GABUNG + LOBBY) ================= -->
@@ -833,10 +860,43 @@ function renderAccountScreen(){
 }
 function setAccountTab(tab){
   accountTab = tab;
-  document.getElementById('accountTabLogin').classList.toggle('active', tab==='login');
-  document.getElementById('accountTabRegister').classList.toggle('active', tab==='register');
-  document.getElementById('accountSubmitBtn').textContent = tab==='login' ? 'Masuk' : 'Daftar';
+  const title = document.getElementById('accountScreenTitle');
+  const toggle = document.getElementById('accountTabToggle');
+  const submitBtn = document.getElementById('accountSubmitBtn');
+  if(tab==='login'){
+    title.textContent = 'Masuk';
+    toggle.textContent = 'Belum punya akun? Daftar';
+    submitBtn.textContent = 'Lanjutkan';
+  } else {
+    title.textContent = 'Daftar Akun';
+    toggle.textContent = 'Sudah punya akun? Masuk';
+    submitBtn.textContent = 'Daftar';
+  }
   hideAccountError();
+}
+function toggleAccountPasswordVisibility(){
+  const inp = document.getElementById('accountPasswordInput');
+  inp.type = inp.type==='password' ? 'text' : 'password';
+}
+async function signInWithGoogleNative(){
+  hideAccountError();
+  if(!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())){
+    showAccountError('Masuk dengan Google hanya bisa dari dalam app (bukan browser).');
+    return;
+  }
+  if(!(window.Capacitor.Plugins && window.Capacitor.Plugins.SocialLogin)){
+    showAccountError('Modul Google Sign-In belum aktif di build APK ini.');
+    return;
+  }
+  try{
+    const res = await window.Capacitor.Plugins.SocialLogin.login({ provider:'google', options:{} });
+    const idToken = res && res.result && res.result.idToken;
+    if(!idToken){ showAccountError('Login Google dibatalkan.'); return; }
+    const { error } = await sbClient.auth.signInWithIdToken({ provider:'google', token: idToken });
+    if(error) throw error;
+  }catch(e){
+    showAccountError(translateAuthError(e && e.message));
+  }
 }
 function showAccountError(msg){
   const el = document.getElementById('accountError');
