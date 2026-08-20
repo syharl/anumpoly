@@ -1,0 +1,16 @@
+{
+  "appId": "com.anumpoly.monopolidunia",
+  "appName": "Monopoli Dunia",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SocialLogin": {
+      "google": {
+        "webClientId": "GANTI_DENGAN_WEB_CLIENT_ID_DARI_GOOGLE_CLOUD_CONSOLE"
+      }
+    }
+  }
+}
