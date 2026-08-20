@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,6 +36,7 @@ jobs:
             --exclude='www' --exclude='android' --exclude='node_modules' \
             --exclude='.git' --exclude='.github' --exclude='package.json' \
             --exclude='package-lock.json' --exclude='capacitor.config.json' \
+            --exclude='plugins' \
             ./ www/
 
       - name: Tambah platform Android
@@ -40,6 +44,21 @@ jobs:
 
       - name: Sinkron file web ke project Android
         run: npx cap sync android
+
+      - name: Baca nomor versi dari versi.json
+        id: versi
+        run: |
+          TERBARU=$(node -p "require('./versi.json').terbaru")
+          echo "terbaru=$TERBARU" >> "$GITHUB_OUTPUT"
+
+      - name: Tulis versionCode/versionName ke project Android
+        # npx cap add android di atas selalu membuat ulang build.gradle
+        # dengan versionCode 1 bawaan template — di sini kita timpa
+        # dengan angka dari versi.json supaya App.getInfo() di dalam
+        # game melaporkan versi yang benar untuk fitur update dalam-game.
+        run: |
+          sed -i "s/versionCode 1/versionCode ${{ steps.versi.outputs.terbaru }}/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"v${{ steps.versi.outputs.terbaru }}\"/" android/app/build.gradle
 
       - name: Build APK (release, ditandatangani)
         working-directory: android
@@ -60,3 +79,17 @@ jobs:
         with:
           name: monopoli-dunia-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Terbitkan/perbarui GitHub Release untuk versi ini
+        # Supaya link_apk di versi.json (dipakai fitur update dalam-game)
+        # selalu mengarah ke file yang benar-benar bisa didownload publik
+        # tanpa login, bukan cuma artifact Actions yang perlu login.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
+          gh release delete "v${{ steps.versi.outputs.terbaru }}" --yes --cleanup-tag || true
+          gh release create "v${{ steps.versi.outputs.terbaru }}" anumpoly.apk \
+            --title "Monopoli Dunia v${{ steps.versi.outputs.terbaru }}" \
+            --notes "Update otomatis dari CI. Lihat riwayat commit untuk detail perubahan."
+
