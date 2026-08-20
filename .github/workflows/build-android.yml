@@ -36,7 +36,7 @@ jobs:
             --exclude='www' --exclude='android' --exclude='node_modules' \
             --exclude='.git' --exclude='.github' --exclude='package.json' \
             --exclude='package-lock.json' --exclude='capacitor.config.json' \
-            --exclude='plugins' \
+            --exclude='plugins' --exclude='anumpoly.apk' \
             ./ www/
 
       - name: Tambah platform Android
@@ -81,9 +81,11 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release.apk
 
       - name: Terbitkan/perbarui GitHub Release untuk versi ini
-        # Supaya link_apk di versi.json (dipakai fitur update dalam-game)
-        # selalu mengarah ke file yang benar-benar bisa didownload publik
-        # tanpa login, bukan cuma artifact Actions yang perlu login.
+        # GitHub Release ini hanya untuk arsip/riwayat rilis — TIDAK dipakai
+        # lagi oleh fitur update dalam-game (lihat step di bawah), karena
+        # alamat download release GitHub diblokir CORS saat di-fetch() dari
+        # dalam WebView aplikasi (download manual di browser tetap normal,
+        # tapi fetch() dari kode JS ditolak).
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -92,4 +94,25 @@ jobs:
           gh release create "v${{ steps.versi.outputs.terbaru }}" anumpoly.apk \
             --title "Monopoli Dunia v${{ steps.versi.outputs.terbaru }}" \
             --notes "Update otomatis dari CI. Lihat riwayat commit untuk detail perubahan."
+
+      - name: Publikasikan APK ke GitHub Pages untuk update dalam-game
+        # Fitur update dalam-game mengunduh APK lewat fetch() di dalam
+        # WebView aplikasi — alamat GitHub Pages (domain *.github.io) yang
+        # sudah kepakai untuk versi.json TERBUKTI lolos CORS (itu sebabnya
+        # deteksi versi baru berhasil), jadi APK-nya juga ditaruh di sini,
+        # bukan di GitHub Release yang diblokir CORS. Nama file selalu sama
+        # (anumpoly.apk) supaya link_apk di versi.json tidak perlu berubah
+        # tiap rilis, cukup angka "terbaru" saja yang di-bump manual.
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add anumpoly.apk
+          if git diff --cached --quiet; then
+            echo "APK tidak berubah, tidak perlu commit baru."
+          else
+            git commit -m "chore: publikasikan anumpoly.apk v${{ steps.versi.outputs.terbaru }} [skip ci]"
+            git pull --rebase origin main
+            git push
+          fi
 
