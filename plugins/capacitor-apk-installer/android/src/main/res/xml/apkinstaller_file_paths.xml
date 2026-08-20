@@ -1,1 +1,8 @@
-
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- @capacitor/filesystem menyimpan Directory.Cache di folder cache
+         internal aplikasi (context.getCacheDir()) — inilah yang dipakai
+         untuk menyimpan file APK hasil download sebelum dipasang. -->
+    <cache-path name="update_apk_cache" path="." />
+    <external-cache-path name="update_apk_external_cache" path="." />
+</paths>
