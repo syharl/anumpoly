@@ -1,0 +1,14 @@
+{
+  "name": "capacitor-apk-installer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plugin Capacitor lokal untuk memicu pemasang APK Android dari dalam aplikasi Monopoli Dunia, dipakai untuk fitur update dalam-game.",
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^8.0.0"
+  }
+}
