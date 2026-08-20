@@ -1,0 +1,22 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace "com.anumpoly.apkinstaller"
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+    }
+    lintOptions {
+        abortOnError false
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation project(':capacitor-android')
+    implementation 'androidx.core:core:1.13.1'
+}
