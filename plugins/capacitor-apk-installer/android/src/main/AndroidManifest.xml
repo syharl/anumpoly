@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Dibutuhkan agar aplikasi ini boleh memicu pemasang paket APK sendiri
+         (update dalam-game) di Android 8 (API 26) ke atas. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application>
+        <!-- FileProvider khusus untuk membagikan file APK hasil download
+             (disimpan di folder cache aplikasi) ke pemasang paket sistem
+             lewat content:// URI, tanpa perlu izin penyimpanan tambahan. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.apkinstaller.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/apkinstaller_file_paths" />
+        </provider>
+    </application>
+
+</manifest>
