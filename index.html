@@ -1543,48 +1543,10 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <div class="changelog-entry">
-      <div class="cl-date">18 Agustus 2026 — Perbaikan Tampilan</div>
+      <div class="cl-date">20 Agustus 2026 — Update Dalam-Game &amp; Perbaikan Bot</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update aplikasi sekarang bisa di-download dan dipasang <b>langsung dari dalam game</b> — tidak perlu lagi keluar ke browser/GitHub dan install ulang manual. Begitu ada versi baru, muncul kartu "Update Tersedia" dengan progress bar asli saat mengunduh, lalu tinggal tekan "Pasang Sekarang".</div>
       <ul>
-        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Tampilan menu utama dirombak: ada efek kilau lembut, bingkai cap berputar pelan, dan tombol utama dibuat lebih menonjol supaya tidak terasa monoton.</li>
-        <li class="fix">Teks di layar "Pilih Mode Main" diperbaiki — deskripsi mode Online sebelumnya salah menyebut "link Publish/Share dari Claude", sekarang sudah sesuai dengan sistem kode Room berbasis Supabase yang dipakai aplikasi ini.</li>
-        <li class="fix">Bar atas (nama game, badge Room, tombol Menu) saat main sekarang diberi jarak lebih ke bawah mengikuti area aman notch/status bar HP, supaya tidak ketutupan panel notifikasi atau Dynamic Island di beberapa HP.</li>
-      </ul>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">17 Agustus 2026 — Mode Permainan &amp; Modifikasi Kustom</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Kartu <b>"🎮 Mode Permainan"</b> di layar Pengaturan (Offline) &amp; Lobby (Online): pilih salah satu dari 4 preset — <b>🏠 Classic Mode</b> (standar, menang saat semua lawan bangkrut), <b>⚡ Quick Match</b> (sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, bangun bebas set warna — biar cepat selesai dan cocok untuk main digital), <b>⏱️ Time Attack</b> (permainan berhenti otomatis setelah waktu habis, menang lewat Net Worth tertinggi bukan siapa yang bangkrut duluan), dan <b>🔨 Auction Only</b> (tanah kosong tidak bisa dibeli langsung, selalu dilelang ke semua pemain — memunculkan bluffing &amp; perang harga). Memilih preset hanya <b>mengisi otomatis</b> modifikasi di bawahnya — semua tetap bisa di-on/off-kan satu per satu sesudahnya sesuai selera.</div>
-      <ul>
-        <li><b>Sewa properti ×1,5</b> — modifikasi baru yang menaikkan semua sewa properti/stasiun/perusahaan, dipakai Quick Match.</li>
-        <li><b>Harga rumah lebih murah</b> — modifikasi baru yang memotong biaya bangun rumah/hotel ±30%, dipakai Quick Match.</li>
-        <li><b>🔨 Lelang Saja (wajib lelang)</b> — modifikasi baru: tanah kosong tidak muncul opsi "Beli", langsung masuk lelang ke semua pemain.</li>
-        <li><b>⏱️ Time Attack</b> — modifikasi baru: pilih batas waktu 15/30/45/60 menit. Badge hitung mundur muncul di pojok atas papan (berubah merah di bawah 1 menit); saat waktu habis, permainan otomatis selesai dan pemenang ditentukan dari Net Worth tertinggi (uang tunai + nilai properti + nilai rumah − hutang gadai), lengkap dengan ranking semua pemain.</li>
-      </ul>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">17 Agustus 2026 — Update Bot &amp; Tampilan</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Bot sekarang punya <b>nama acak</b> (bukan lagi "Bot 1/2/3") dan salah satu dari 5 <b>gaya main</b> yang dipilih acak tiap kali ditambahkan: <b>Penabung</b> (super hati-hati simpan uang), <b>Jaga Saldo $250+</b>, <b>Jaga Saldo $500+</b>, <b>Nekat</b> (berani beli & bangun walau kas tipis), dan <b>Gemar Membangun</b> (prioritas bangun rumah/hotel). Gaya ini memengaruhi kapan bot mau beli properti, menawar di lelang, dan berapa buffer kas yang ia jaga.</div>
-      <ul>
-        <li>Bot sekarang bisa <b>membangun rumah/hotel sendiri</b> di properti yang sudah ia kuasai penuh satu warna — otomatis, tanpa perlu dibantu, mengikuti gaya mainnya masing-masing (termasuk saat aturan "Bangun bebas set warna" aktif).</li>
-        <li>Bot sekarang benar-benar <b>menimbang tawaran tawar-menawar properti</b> dari pemain lain (harga vs nilai wajar properti, dan seberapa penting properti itu untuk set warna yang sudah ia kuasai) — bukan otomatis menolak semua tawaran seperti sebelumnya.</li>
-        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Bot yang kadang berhenti total di tengah jalan (diam saja, tidak lempar dadu/tidak menjawab) sekarang diperbaiki: ditemukan bug di mode Online yang membuat status "ini bot" milik seorang pemain bisa hilang setiap kali data disinkronkan ke HP lain. Ditambah juga "penjaga" otomatis yang memeriksa ulang giliran bot tiap beberapa detik supaya bot tidak pernah macet tanpa batas waktu.</li>
-        <li class="fix">Posisi dadu di tengah papan dipindah agak ke atas dan area log riwayat di bawahnya dipersempit, supaya log tidak lagi menutupi dadu.</li>
-        <li class="fix">Saat pemain (atau bot) melempar dadu, sekarang ada animasi dadu mengacak sekilas sebelum berhenti di angka final — sebelumnya dadu langsung "meloncat" ke angka tanpa animasi.</li>
-        <li class="fix">Halaman "Cara Bermain" di menu utama sekarang muncul sebagai kotak pop-up ringkas (sama seperti "Daftar Properti & Kartu"), bukan lagi memanjang ke bawah di halaman menu.</li>
-      </ul>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">17 Agustus 2026</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Pemain <b>Bot 🤖</b> — isi slot pemain yang kosong dengan bot supaya bisa main sendirian atau berdua. Di mode Offline, aktifkan lewat saklar "🤖" di samping nama pemain 2–4 pada layar Pengaturan. Di mode Online, host bisa menambah/menghapus bot lewat tombol "+ Tambah Bot" di Lobby. Bot melempar dadu, memutuskan beli/lewat properti, membayar sewa dan utang (gadai/jual rumah otomatis kalau perlu), menjawab lelang, menjawab tawaran tawar-menawar, dan menyelesaikan giliran — semua otomatis dengan jeda singkat supaya terasa alami.</div>
-      <ul>
-        <li>Label mode main diperjelas jadi <b>"Offline — Bergantian di 1 HP"</b> dan <b>"Online — Multiplayer antar HP"</b> lengkap dengan penjelasan singkat di masing-masing kartu.</li>
-        <li>Halaman "Cara Bermain" di menu utama ditulis ulang jauh lebih lengkap: alur giliran, aturan penjara, membangun rumah/hotel, gadai properti, cara menyelesaikan utang, tawar-menawar antar pemain, dan penjelasan bot.</li>
-        <li>Tombol baru <b>"📖 Daftar Properti & Kartu"</b> di menu utama: daftar harga & tabel sewa lengkap semua properti/stasiun/perusahaan, plus isi penuh 16 kartu Dana Umum dan 16 kartu Kesempatan.</li>
-        <li>Tombol baru <b>"🆕 Apa yang Baru"</b> (halaman yang sedang kamu baca ini) untuk mencatat riwayat pembaruan lengkap dengan tanggalnya.</li>
-      </ul>
-      <ul>
-        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Animasi +/- uang dirombak total: sekarang muncul tepat di sisi kanan angka total uang pemain lalu geser ke kiri, warna hijau untuk penambahan dan merah untuk pengurangan, tampil sekitar 3 detik. Yang terpenting: animasinya sekarang benar-benar tersinkron dan tampil di SEMUA HP pemain (sebelumnya cuma muncul di HP yang melakukan transaksinya saja, jadi kelihatan seperti tidak berfungsi di HP lain).</li>
-        <li class="fix">Delay update antar-HP di mode Online dipangkas jauh — polling dipercepat dari ±1,8 detik menjadi ±0,4 detik, ditambah jalur percepatan realtime tambahan kalau tersedia di server. Giliran "Selesai Giliran" dan aksi pemain lain sekarang terasa jauh lebih instan di HP lawan, bukan lagi delay 1 detik lebih.</li>
-        <li class="fix">Log riwayat di bawah dadu sekarang menampung sampai 5 baris (sebelumnya maksimal 3), dengan ukuran font diperkecil supaya tetap rapi dan tidak menutupi papan.</li>
+        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Bug dadu "dobel palsu": pada kondisi tertentu (HP lag/animasi molor), bot bisa melempar dadu dua kali dalam satu giliran padahal tidak dapat dobel, membuat token bot melompat tidak wajar. Sekarang giliran dikunci begitu dadu mulai dilempar, sehingga tidak bisa lagi terpicu dobel oleh sistem penjaga otomatis bot.</li>
       </ul>
     </div>`;
   showModal({ title:'🆕 Apa yang Baru', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
@@ -2655,6 +2617,17 @@ function onRoll(){
   const p = currentPlayer();
   state.pendingHouseBuild = null;
   if(p.inJail){ handleJailRoll(p); return; }
+  // Kunci fase ke 'rolling' SEBELUM animasi dadu/jalan token mulai (yang
+  // makan waktu ~1-2 detik). Tanpa ini, state.turnPhase masih tertulis
+  // 'canRoll' selama animasi berjalan — kalau HP lag dan animasi molor
+  // lebih dari BOT_RETRY_MS, watchdog bot (setInterval tiap 2.5 detik di
+  // handleBotAutomation) salah sangka bot macet lalu memanggil onRoll()
+  // KEDUA KALINYA sebelum lemparan pertama selesai diproses, sehingga
+  // dadu ke-lempar dua kali dalam satu giliran (bug "dadu dobel palsu"
+  // yang dilaporkan pemain). Guard di baris atas (turnPhase!=='canRoll')
+  // sekarang otomatis menolak percobaan kedua itu karena fase sudah
+  // berubah jadi 'rolling', bukan 'canRoll' lagi.
+  state.turnPhase = 'rolling';
   document.getElementById('btnRoll').disabled = true;
   animateDiceRoll(()=>{
     const d1 = 1+Math.floor(Math.random()*6);
