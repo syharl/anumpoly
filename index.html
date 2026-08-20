@@ -942,14 +942,23 @@ function toggleAccountPasswordVisibility(){
   const inp = document.getElementById('accountPasswordInput');
   inp.type = inp.type==='password' ? 'text' : 'password';
 }
+const GOOGLE_WEB_CLIENT_ID = '20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com';
+
 let socialLoginInitDone = false;
 async function ensureSocialLoginInit(){
   if(socialLoginInitDone) return true;
+  if(GOOGLE_WEB_CLIENT_ID.indexOf('20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com') === 0){
+    showAccountError('Google Client ID belum di-setup. Lihat instruksi setup Google.');
+    return false;
+  }
   try{
-    await window.Capacitor.Plugins.SocialLogin.initialize({});
+    await window.Capacitor.Plugins.SocialLogin.initialize({
+      google: { webClientId: GOOGLE_WEB_CLIENT_ID, mode: 'online' }
+    });
     socialLoginInitDone = true;
     return true;
   }catch(e){ return false; }
+}
 }
 async function signInWithGoogleNative(){
   hideAccountError();
