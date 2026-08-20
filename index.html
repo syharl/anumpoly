@@ -436,7 +436,8 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   <button class="menu-btn" onclick="openHowToModal()">📘 Cara Bermain</button>
   <button class="menu-btn secondary-link" onclick="openReferenceModal()">📖 Daftar Properti &amp; Kartu</button>
   <button class="menu-btn secondary-link" onclick="openWhatsNewModal()">🆕 Apa yang Baru</button>
-  <div class="menu-footer">Aturan bisa disesuaikan di layar berikutnya</div>
+  <button class="menu-btn secondary-link" onclick="goToAccount()" id="btnAccountMenu">👤 Akun</button>
+  <div class="menu-footer" id="accountMenuStatus">Aturan bisa disesuaikan di layar berikutnya</div>
 </div>
 
 <!-- ================= MODE SELECT ================= -->
@@ -453,6 +454,43 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
     <h3>🌐 Online — Multiplayer antar HP</h3>
     <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing dan main di waktu bersamaan lewat kode Room. Butuh internet — semua pemain buka aplikasi ini lalu gabung pakai kode Room yang sama. Host bisa tambah bot 🤖 juga.</p>
   </div>
+  <div style="height:70px"></div>
+  <div class="sticky-bottom"><button class="btn-ghost" onclick="goToMenu()">Kembali</button></div>
+</div>
+
+<!-- ================= AKUN (LOGIN/DAFTAR/PROFIL) ================= -->
+<div id="screen-account" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
+  <div class="setup-header">
+    <h2>Akun Pemain</h2>
+    <p>Simpan namamu ke akun supaya nyambung di HP mana pun kamu login.</p>
+  </div>
+
+  <!-- Belum login: form login/daftar -->
+  <div id="accountAuthView">
+    <div class="pill-row" id="accountTabRow" style="margin-bottom:14px;">
+      <button type="button" class="pill active" id="accountTabLogin" onclick="setAccountTab('login')">Masuk</button>
+      <button type="button" class="pill" id="accountTabRegister" onclick="setAccountTab('register')">Daftar</button>
+    </div>
+    <div class="card">
+      <div class="player-row"><input id="accountEmailInput" type="email" placeholder="Email" autocomplete="email"></div>
+      <div class="player-row"><input id="accountPasswordInput" type="password" placeholder="Password (min. 6 karakter)" autocomplete="current-password"></div>
+      <div id="accountError" style="display:none;color:#e8836b;font-size:12.5px;margin:4px 2px 0;line-height:1.5;"></div>
+      <button class="btn-big" id="accountSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitAccountForm()">Masuk</button>
+    </div>
+  </div>
+
+  <!-- Sudah login: profil -->
+  <div id="accountProfileView" style="display:none;">
+    <div class="card">
+      <h3>Masuk sebagai</h3>
+      <p id="accountEmailDisplay" style="font-family:'Space Mono',monospace;font-size:14px;color:var(--gold);word-break:break-all;margin:0 0 12px;"></p>
+      <div class="player-row"><input id="accountDisplayNameInput" placeholder="Nama tampilan" maxlength="14"></div>
+      <button class="btn-big" style="width:100%;margin-top:8px;" onclick="saveAccountProfile()">Simpan Nama</button>
+      <div id="accountProfileMsg" style="display:none;color:var(--paper-dim);font-size:12.5px;margin-top:8px;"></div>
+    </div>
+    <button class="menu-btn secondary-link" onclick="doAccountSignOut()">Keluar dari Akun</button>
+  </div>
+
   <div style="height:70px"></div>
   <div class="sticky-bottom"><button class="btn-ghost" onclick="goToMenu()">Kembali</button></div>
 </div>
@@ -729,6 +767,143 @@ window.storage = {
     return { keys: (data||[]).map(r=>r.key), prefix, shared: !!shared };
   }
 };
+
+/* ============================================================
+   AKUN PEMAIN (Supabase Auth — Email + Password)
+   ------------------------------------------------------------
+   CATATAN: APK dibuat lewat "html to apk" (WebView polos), jadi
+   login OAuth (Google/GitHub dkk) TIDAK dipakai di sini karena
+   Google memblokir login-nya kalau dibuka dari WebView seperti
+   ini. Pakai Email+Password: sesi disimpan otomatis oleh
+   Supabase lewat localStorage bawaan WebView, jadi begitu login
+   sekali, tetap "ingat" tiap buka app lagi (sampai app di-uninstall
+   atau data app dihapus).
+   ============================================================ */
+let currentUser = null;      // { id, email } atau null
+let currentProfile = null;   // { display_name } atau null
+let accountTab = 'login';
+
+async function initAccountAuth(){
+  try{
+    const { data } = await sbClient.auth.getSession();
+    await applySession(data && data.session);
+  }catch(e){}
+  sbClient.auth.onAuthStateChange((_event, session)=>{ applySession(session); });
+}
+async function applySession(session){
+  currentUser = session && session.user ? { id: session.user.id, email: session.user.email } : null;
+  currentProfile = null;
+  if(currentUser){
+    try{
+      const res = await window.storage.get('profile_'+currentUser.id, true);
+      currentProfile = res ? JSON.parse(res.value) : { display_name:'' };
+    }catch(e){ currentProfile = { display_name:'' }; }
+  }
+  refreshAccountMenuStatus();
+  if(document.getElementById('screen-account').classList.contains('active')) renderAccountScreen();
+}
+function refreshAccountMenuStatus(){
+  const el = document.getElementById('accountMenuStatus');
+  if(!el) return;
+  if(currentUser){
+    const nm = (currentProfile && currentProfile.display_name) ? currentProfile.display_name : currentUser.email;
+    el.textContent = '👤 Masuk sebagai ' + nm;
+  } else {
+    el.textContent = 'Aturan bisa disesuaikan di layar berikutnya';
+  }
+}
+function goToAccount(){
+  showScreen('screen-account');
+  renderAccountScreen();
+}
+function renderAccountScreen(){
+  const authView = document.getElementById('accountAuthView');
+  const profileView = document.getElementById('accountProfileView');
+  if(currentUser){
+    authView.style.display = 'none';
+    profileView.style.display = 'block';
+    document.getElementById('accountEmailDisplay').textContent = currentUser.email;
+    document.getElementById('accountDisplayNameInput').value = (currentProfile && currentProfile.display_name) || '';
+    document.getElementById('accountProfileMsg').style.display = 'none';
+  } else {
+    authView.style.display = 'block';
+    profileView.style.display = 'none';
+    setAccountTab(accountTab);
+  }
+}
+function setAccountTab(tab){
+  accountTab = tab;
+  document.getElementById('accountTabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('accountTabRegister').classList.toggle('active', tab==='register');
+  document.getElementById('accountSubmitBtn').textContent = tab==='login' ? 'Masuk' : 'Daftar';
+  hideAccountError();
+}
+function showAccountError(msg){
+  const el = document.getElementById('accountError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideAccountError(){
+  const el = document.getElementById('accountError');
+  el.style.display = 'none';
+}
+async function submitAccountForm(){
+  const email = document.getElementById('accountEmailInput').value.trim();
+  const password = document.getElementById('accountPasswordInput').value;
+  hideAccountError();
+  if(!email || !password){ showAccountError('Isi email dan password dulu ya.'); return; }
+  if(password.length < 6){ showAccountError('Password minimal 6 karakter.'); return; }
+  const btn = document.getElementById('accountSubmitBtn');
+  btn.disabled = true;
+  const prevLabel = btn.textContent;
+  btn.textContent = 'Memproses...';
+  try{
+    if(accountTab==='login'){
+      const { error } = await sbClient.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+    } else {
+      const { data, error } = await sbClient.auth.signUp({ email, password });
+      if(error) throw error;
+      if(data && data.user && !data.session){
+        showAccountError('Akun dibuat! Cek email kamu untuk konfirmasi, lalu masuk lagi.');
+        setAccountTab('login');
+      }
+    }
+  }catch(e){
+    showAccountError(translateAuthError(e && e.message));
+  }finally{
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
+}
+function translateAuthError(msg){
+  msg = msg || '';
+  if(/already registered|already exists/i.test(msg)) return 'Email ini sudah terdaftar. Coba menu "Masuk".';
+  if(/invalid login credentials/i.test(msg)) return 'Email atau password salah.';
+  if(/user not found/i.test(msg)) return 'Akun belum terdaftar. Coba menu "Daftar".';
+  if(/rate limit/i.test(msg)) return 'Terlalu banyak percobaan, coba lagi sebentar lagi.';
+  return msg || 'Terjadi kesalahan, coba lagi.';
+}
+async function saveAccountProfile(){
+  if(!currentUser) return;
+  const name = document.getElementById('accountDisplayNameInput').value.trim().slice(0,14);
+  currentProfile = currentProfile || {};
+  currentProfile.display_name = name;
+  const msg = document.getElementById('accountProfileMsg');
+  try{
+    await window.storage.set('profile_'+currentUser.id, JSON.stringify(currentProfile), true);
+    msg.textContent = '✅ Nama tersimpan ke akun.';
+    msg.style.display = 'block';
+    refreshAccountMenuStatus();
+  }catch(e){
+    msg.textContent = 'Gagal menyimpan, coba lagi.';
+    msg.style.display = 'block';
+  }
+}
+async function doAccountSignOut(){
+  try{ await sbClient.auth.signOut(); }catch(e){}
+  renderAccountScreen();
+}
 
 /* ID unik per-perangkat, dipakai supaya setiap baris log punya id unik
    yang bisa digabung (merge) antar HP alih-alih saling menimpa. */
@@ -1283,6 +1458,12 @@ function goToOnline(){
   showScreen('screen-online');
   document.getElementById('onlineChooseView').style.display='block';
   document.getElementById('onlineLobbyView').style.display='none';
+  if(currentProfile && currentProfile.display_name){
+    const createInput = document.getElementById('createNameInput');
+    const joinInput = document.getElementById('joinNameInput');
+    if(createInput && !createInput.value) createInput.value = currentProfile.display_name;
+    if(joinInput && !joinInput.value) joinInput.value = currentProfile.display_name;
+  }
 }
 async function leaveOnline(){
   clearInterval(lobbyPollTimer); clearInterval(gamePollTimer);
@@ -1536,21 +1717,6 @@ async function pollGameState(){
 let remoteAnimQueue = [];
 let remoteAnimBusy = false;
 function applyRemoteState(payload){
-  // BUGFIX: kalau update ini adalah "gema" dari push kita SENDIRI (HP yang
-  // sama, mis. skenario "Mabar 1 HP" tempat 1 device jadi host sekaligus
-  // menjalankan semua bot), device ini SUDAH menampilkan gerakan/animasinya
-  // secara langsung saat aksinya terjadi (lihat animateWalk/moveSteps dsb).
-  // Kalau payload ini diproses lagi lewat jalur animasi "penonton jarak jauh"
-  // di bawah, hasilnya bidak jalan KEDUA KALINYA (kelihatan "dobel"/aneh),
-  // dan modal beli/lelang bisa sempat menampilkan state basi seolah giliran
-  // pemain lain adalah giliran kita. Jadi untuk gema dari diri sendiri,
-  // cukup selaraskan data (rev & gabungan log kalau ada baris baru dari
-  // device lain) TANPA antre animasi ulang.
-  if(payload.clientId && payload.clientId===CLIENT_ID){
-    state.rev = payload.rev;
-    state.log = mergeLogs(payload.log, state.log);
-    return;
-  }
   const prevOffer = state.pendingTradeOffer;
   const prevPlayers = (state.players||[]).map(p=>({id:p.id,pos:p.pos,bankrupt:p.bankrupt,money:p.money}));
   const prevLog = state.log || [];
@@ -1713,7 +1879,6 @@ function runNextRemoteAnim(){
 function serializeState(){
   return {
     rev: (state.rev||0)+1,
-    clientId: CLIENT_ID,
     rules: state.rules,
     players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,doublesCount:p.doublesCount,properties:p.properties||[],propsBought:p.propsBought||0,timesJailed:p.timesJailed||0,rentPaid:p.rentPaid||0,rentCollected:p.rentCollected||0,isBot:!!p.isBot,personality:p.personality||null})),
     currentIndex: state.currentIndex,
@@ -1760,17 +1925,7 @@ async function ensureFresh(){
     }
   }catch(e){}
 }
-// BUGFIX: dulu tanda "aksi ini sudah pernah dijalankan" (sig) di bawah
-// memakai state.rev, yang HANYA bertambah setelah syncPush() ke server
-// berhasil (async, butuh koneksi). Kalau koneksi lambat/gagal (kondisi
-// sinyal HP jelek), state.rev macet di angka lama -> sig aksi berikutnya
-// keliru dianggap "sudah dijalankan barusan" -> bot berhenti jalan sampai
-// 4 detik (BOT_RETRY_MS) per langkah, berulang di tiap langkah giliran,
-// dan dari luar terlihat seperti macet total. localRev bertambah LOKAL,
-// SEKETIKA, tiap commit(), tidak bergantung jaringan sama sekali.
-let localRev = 0;
 function commit(){
-  localRev++;
   renderAll();
   if(state.mode==='online') syncPush();
   else saveGameLocal();
@@ -1823,7 +1978,7 @@ function renderPlayerInputs(){
     const input=document.createElement('input');
     input.placeholder='Nama Pemain '+(i+1)+' ('+TOKEN_NAMES[i]+')';
     input.maxLength=14;
-    input.value = prevVals[i] || '';
+    input.value = prevVals[i] || (i===0 && currentProfile && currentProfile.display_name ? currentProfile.display_name : '');
     input.id='playerName'+i;
     row.appendChild(dot); row.appendChild(input);
     if(i>0){
@@ -2852,36 +3007,13 @@ function maybeShowAuctionModal(){
   auctionShownSig = sig;
   const bidder = state.players.find(p=>p.id===bidderId);
   const t = BOARD[a.idx];
-  const ps = state.propStates[a.idx];
-  // Tawaran minimum tetap harus naik dari tawaran tertinggi saat ini
-  // (kalau belum ada tawaran, minimum = harga awal lelang), tapi pemain
-  // BEBAS mengetik nominal lebih tinggi dari itu sesuai keinginan sendiri
-  // (dulu cuma bisa 1 nominal "kelipatan +5" yang disodorkan sistem).
-  const minBid = a.highBid>0 ? a.highBid + 1 : (a.startPrice||t.price);
-  const suggestedBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
-  const canBidAtAll = bidder.money >= minBid;
-  const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
+  const nextBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
+  const canBid = bidder.money >= nextBid;
   showModal({
     title:'🔨 Lelang: '+t.name,
-    desc:`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <div style="width:14px;height:14px;border-radius:4px;background:${swatchColor};flex:none;"></div>
-        <div><b style="color:var(--paper);">${t.name}</b> — harga normal ${fmt(t.price)}</div>
-      </div>
-      Tawaran tertinggi saat ini: <span class="hl">${fmt(a.highBid)}</span>${a.highBidderName?(' oleh '+a.highBidderName):' (belum ada)'}<br>
-      Giliran menawar: <b style="color:var(--paper);">${bidder.name}</b> (${fmt(bidder.money)})
-      ${propertyDetailsHTML(t, ps)}
-      <div style="margin-top:12px;">
-        <label style="font-size:12px;color:var(--paper-dim);display:block;margin-bottom:5px;">Jumlah tawaranmu — minimum ${fmt(minBid)}${canBidAtAll?(', uangmu '+fmt(bidder.money)):''}</label>
-        <input type="number" id="auctionCustomBid" value="${Math.min(suggestedBid,bidder.money)}" min="${minBid}" max="${bidder.money}" step="1"
-          style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid rgba(215,169,75,0.4);background:rgba(255,255,255,0.06);color:var(--paper);font-size:16px;font-family:'Space Mono',monospace;">
-      </div>`,
+    desc:`Tawaran tertinggi saat ini: <span class="hl">${fmt(a.highBid)}</span>${a.highBidderName?(' oleh '+a.highBidderName):' (belum ada)'}<br><br>Giliran menawar: <b>${bidder.name}</b> (${fmt(bidder.money)})`,
     buttons:[
-      {label:'Tawar', cls:'btn-yes', disabled: !canBidAtAll, onClick:()=>{
-        const inp = document.getElementById('auctionCustomBid');
-        const amount = Math.floor(Number(inp && inp.value));
-        auctionBid(amount);
-      }},
+      {label:`Tawar ${fmt(nextBid)}`, cls:'btn-yes', disabled: !canBid, onClick:()=>auctionBid(nextBid)},
       {label:'Lewati', cls:'btn-no', onClick:auctionPass},
     ]
   });
@@ -2891,13 +3023,7 @@ function auctionBid(amount){
   const a = state.auction; if(!a) return;
   const bidderId = a.remaining[a.pos % a.remaining.length];
   const bidder = state.players.find(p=>p.id===bidderId);
-  const t = BOARD[a.idx];
-  const minBid = a.highBid>0 ? a.highBid + 1 : (a.startPrice||t.price);
-  // Validasi nominal custom dari input pemain: harus bilangan bulat wajar,
-  // tetap harus MENAIKKAN tawaran tertinggi saat ini (bukan cuma menyamai
-  // atau lebih rendah), dan tidak melebihi uang yang dia punya.
-  amount = Math.floor(Number(amount));
-  if(!Number.isFinite(amount) || amount < minBid || amount > bidder.money) return;
+  if(bidder.money < amount) return;
   a.highBid = amount; a.highBidderId = bidderId; a.highBidderName = bidder.name;
   log(`${bidder.name} menawar ${fmt(amount)} untuk ${BOARD[a.idx].name}.`);
   closeModal();
@@ -3685,7 +3811,7 @@ function handleBotAutomation(){
   if(awaitingCardOke){
     const cp = currentPlayer();
     if(cp && cp.isBot){
-      const sig = 'cardoke:'+cp.id+':'+localRev+':'+(state.log?state.log.length:0);
+      const sig = 'cardoke:'+cp.id+':'+state.rev+':'+(state.log?state.log.length:0);
       scheduleBotAction(sig, 750, ()=>{
         const btn = document.querySelector('#modalBtns .btn-yes');
         if(btn) btn.click();
@@ -3722,7 +3848,7 @@ function handleBotAutomation(){
 
   // 7) Lempar dadu.
   if(state.turnPhase==='canRoll'){
-    const sig = 'roll:'+cp.id+':'+localRev+':'+cp.doublesCount;
+    const sig = 'roll:'+cp.id+':'+state.rev+':'+cp.doublesCount;
     scheduleBotAction(sig, 700, ()=>{ botDriving=true; try{ onRoll(); } finally { botDriving=false; } });
     return;
   }
@@ -3750,7 +3876,7 @@ function handleBotAutomation(){
       });
       return;
     }
-    const sig = 'end:'+cp.id+':'+localRev+':'+botBuildFingerprint(cp);
+    const sig = 'end:'+cp.id+':'+state.rev+':'+botBuildFingerprint(cp);
     scheduleBotAction(sig, 900, ()=>{ botDriving=true; try{ endTurn(); } finally { botDriving=false; } });
     return;
   }
@@ -3942,9 +4068,12 @@ function botEvaluateTradeOffer(cp, offer){
    ============================================================ */
 refreshResumeButton();
 initCustomSelects();
+initAccountAuth();
 </script>
 <script>
 const versiSaya = new URLSearchParams(location.search).get('v') || 1;
+const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+if(!isNativeApp){
 fetch('versi.json').then(r=>r.json()).then(data=>{
   if (parseInt(versiSaya) < data.terbaru) {
     // Dulu tombol "Download Update" tidak memberi respons visual apa pun
@@ -3985,6 +4114,7 @@ fetch('versi.json').then(r=>r.json()).then(data=>{
     <\/script>`;
   }
 }).catch(()=>{});
+}
 </script>
 </body>
 </html>
