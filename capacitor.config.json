@@ -1,0 +1,9 @@
+{
+  "appId": "com.anumpoly.monopolidunia",
+  "appName": "Monopoli Dunia",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}
