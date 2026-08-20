@@ -1,0 +1,17 @@
+{
+  "name": "monopoli-dunia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monopoli Dunia - native Android app via Capacitor",
+  "scripts": {
+    "build": "echo 'static site, no build step'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/app": "^6.0.1",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
