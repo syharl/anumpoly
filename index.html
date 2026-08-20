@@ -114,6 +114,26 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 }
 .menu-btn:active{transform:scale(0.97);}
 .menu-footer{margin-top:36px;font-size:11px;color:var(--gold-dim);letter-spacing:1px;padding-top:16px;border-top:1px solid rgba(215,169,75,0.15);width:min(220px,60vw);}
+
+/* ---------- TOMBOL KOTAK KECIL DI POJOK MENU (Akun & Cara Bermain) ----------
+   Menggantikan tombol memanjang "Akun"/"Cara Bermain" di tengah menu.
+   Bentuknya kotak kecil rounded, tetap pakai warna emas/gelap khas game
+   ini (bukan gaya hijau/abu2 template lain) supaya senada dengan .stamp
+   dan .menu-btn. */
+.menu-corner-btn{
+  position:absolute;top:18px;width:46px;height:46px;border-radius:14px;
+  border:2px solid var(--gold);background:rgba(255,255,255,0.05);
+  color:var(--gold);font-size:20px;display:flex;align-items:center;justify-content:center;
+  z-index:5;padding:0;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.25);
+}
+.menu-corner-btn:active{transform:scale(0.94);}
+.menu-corner-btn.corner-left{left:14px;}
+.menu-corner-btn.corner-right{right:14px;}
+.menu-corner-btn img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
+/* #screen-menu > * di atas memaksa position:relative ke semua anak
+   langsung (untuk lapisan glow) — timpa lagi khusus tombol pojok
+   supaya tetap absolute nempel di pojok layar. */
+#screen-menu > .menu-corner-btn{position:absolute;z-index:5;}
 .howto{max-width:420px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.3);border-radius:var(--radius);padding:16px 18px;margin-top:18px;font-size:13px;line-height:1.6;color:var(--paper-dim);display:none;}
 .howto.show{display:block;}
 .howto b{color:var(--gold);}
@@ -423,6 +443,8 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 
 <!-- ================= MENU ================= -->
 <div id="screen-menu" class="screen active">
+  <button class="menu-corner-btn corner-left" onclick="goToAccount()" id="btnAccountMenu" title="Akun" aria-label="Akun">👤</button>
+  <button class="menu-corner-btn corner-right" onclick="openHowToModal()" title="Cara Bermain" aria-label="Cara Bermain">📘</button>
   <div class="stamp">
     <span class="top">Est. Hari Ini</span>
     <span class="mid">MONOPOLI</span>
@@ -433,10 +455,8 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   <div class="menu-divider">✦ ✦ ✦</div>
   <button class="menu-btn primary" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
   <button class="menu-btn primary" onclick="goToModeSelect()">▶ Main</button>
-  <button class="menu-btn" onclick="openHowToModal()">📘 Cara Bermain</button>
   <button class="menu-btn secondary-link" onclick="openReferenceModal()">📖 Daftar Properti &amp; Kartu</button>
   <button class="menu-btn secondary-link" onclick="openWhatsNewModal()">🆕 Apa yang Baru</button>
-  <button class="menu-btn secondary-link" onclick="goToAccount()" id="btnAccountMenu">👤 Akun</button>
   <div class="menu-footer" id="accountMenuStatus">Aturan bisa disesuaikan di layar berikutnya</div>
 </div>
 
@@ -459,60 +479,65 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 </div>
 
 <!-- ================= AKUN (LOGIN/DAFTAR/PROFIL) ================= -->
-<div id="screen-account" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;background:#181818;min-height:100dvh;">
+<div id="screen-account" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
   <div style="display:flex;align-items:center;padding:18px 16px 6px;">
-    <button onclick="goToMenu()" style="background:none;border:none;color:#fff;font-size:22px;padding:6px 10px 6px 0;cursor:pointer;">←</button>
+    <button onclick="goToMenu()" style="background:none;border:none;color:var(--gold);font-size:22px;padding:6px 10px 6px 0;cursor:pointer;">←</button>
   </div>
   <div style="text-align:center;padding:8px 20px 4px;">
-    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:15px;letter-spacing:.5px;color:#8fbf6f;margin-bottom:26px;">🎩 Anumpoly<span style="color:#fff;">.com</span></div>
-    <h2 id="accountScreenTitle" style="color:#fff;font-family:'Inter',sans-serif;font-weight:800;font-size:28px;margin:0 0 22px;">Masuk</h2>
+    <div class="display" style="font-weight:800;font-size:15px;letter-spacing:2px;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px;">♟ Monopoli Dunia</div>
+    <h2 id="accountScreenTitle" style="color:var(--gold);font-family:'Playfair Display',serif;font-weight:800;font-size:28px;margin:0 0 22px;">Masuk</h2>
   </div>
 
   <!-- Belum login: form login/daftar -->
   <div id="accountAuthView" style="padding:0 18px;">
     <div style="max-width:420px;margin:0 auto;">
-      <div style="background:#2b2b2b;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <span style="opacity:.6;">👤</span>
-        <input id="accountEmailInput" type="email" placeholder="Email" autocomplete="email" style="flex:1;background:none;border:none;outline:none;color:#fff;font-size:15px;">
+      <div style="background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <span style="opacity:.7;color:var(--gold);">👤</span>
+        <input id="accountEmailInput" type="email" placeholder="Email" autocomplete="email" style="flex:1;background:none;border:none;outline:none;color:var(--paper);font-size:15px;">
       </div>
-      <div style="background:#2b2b2b;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-        <span style="opacity:.6;">🔒</span>
-        <input id="accountPasswordInput" type="password" placeholder="Kata sandi" autocomplete="current-password" style="flex:1;background:none;border:none;outline:none;color:#fff;font-size:15px;">
-        <span onclick="toggleAccountPasswordVisibility()" style="cursor:pointer;opacity:.6;font-size:15px;">👁️</span>
+      <div style="background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <span style="opacity:.7;color:var(--gold);">🔒</span>
+        <input id="accountPasswordInput" type="password" placeholder="Kata sandi" autocomplete="current-password" style="flex:1;background:none;border:none;outline:none;color:var(--paper);font-size:15px;">
+        <span onclick="toggleAccountPasswordVisibility()" style="cursor:pointer;opacity:.7;font-size:15px;">👁️</span>
       </div>
       <div id="accountError" style="display:none;color:#e8836b;font-size:12.5px;margin:6px 2px 0;line-height:1.5;"></div>
 
       <div style="display:flex;align-items:center;gap:12px;margin:22px 0;">
-        <div style="flex:1;height:1px;background:#3a3a3a;"></div>
-        <span style="color:#888;font-size:12px;letter-spacing:1px;">ATAU</span>
-        <div style="flex:1;height:1px;background:#3a3a3a;"></div>
+        <div style="flex:1;height:1px;background:rgba(215,169,75,0.2);"></div>
+        <span style="color:var(--gold-dim);font-size:12px;letter-spacing:1px;">ATAU</span>
+        <div style="flex:1;height:1px;background:rgba(215,169,75,0.2);"></div>
       </div>
 
-      <button type="button" onclick="signInWithGoogleNative()" style="width:100%;background:#2b2b2b;border:none;border-radius:12px;padding:15px 18px;display:flex;align-items:center;gap:14px;color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;margin-bottom:12px;">
+      <button type="button" onclick="signInWithGoogleNative()" style="width:100%;background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;gap:14px;color:var(--paper);font-weight:700;font-size:14.5px;cursor:pointer;margin-bottom:12px;">
         <span style="font-size:18px;">🔵</span> Masuk dengan Google
       </button>
-      <button type="button" onclick="hideAccountError();showAccountError('Login Facebook belum diaktifkan.')" style="width:100%;background:#2b2b2b;border:none;border-radius:12px;padding:15px 18px;display:flex;align-items:center;gap:14px;color:#fff;font-weight:700;font-size:14.5px;cursor:pointer;">
+      <button type="button" onclick="hideAccountError();showAccountError('Login Facebook belum diaktifkan.')" style="width:100%;background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;gap:14px;color:var(--paper);font-weight:700;font-size:14.5px;cursor:pointer;">
         <span style="font-size:18px;">🔷</span> Masuk dengan Facebook
       </button>
 
       <div style="text-align:center;margin-top:26px;">
-        <button type="button" onclick="setAccountTab(accountTab==='login'?'register':'login')" style="background:none;border:none;color:#8fbf6f;font-size:13.5px;font-weight:700;cursor:pointer;" id="accountTabToggle">Belum punya akun? Daftar</button>
+        <button type="button" onclick="setAccountTab(accountTab==='login'?'register':'login')" style="background:none;border:none;color:var(--gold);font-size:13.5px;font-weight:700;cursor:pointer;" id="accountTabToggle">Belum punya akun? Daftar</button>
       </div>
 
-      <button class="btn-big" id="accountSubmitBtn" style="width:100%;margin-top:22px;background:#8fbf6f;color:#12203A;border:none;" onclick="submitAccountForm()">Lanjutkan</button>
+      <button class="menu-btn primary" id="accountSubmitBtn" style="width:100%;margin-top:22px;" onclick="submitAccountForm()">Lanjutkan</button>
     </div>
   </div>
 
   <!-- Sudah login: profil -->
   <div id="accountProfileView" style="display:none;padding:0 18px;">
-    <div style="max-width:420px;margin:0 auto;background:#2b2b2b;border-radius:12px;padding:20px;">
-      <h3 style="color:#8fbf6f;margin:0 0 4px;">Masuk sebagai</h3>
-      <p id="accountEmailDisplay" style="font-family:'Space Mono',monospace;font-size:14px;color:#fff;word-break:break-all;margin:0 0 16px;"></p>
-      <div style="background:#1f1f1f;border-radius:10px;padding:14px 16px;">
-        <input id="accountDisplayNameInput" placeholder="Nama tampilan" maxlength="14" style="width:100%;background:none;border:none;outline:none;color:#fff;font-size:15px;">
+    <div style="max-width:420px;margin:0 auto;background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:20px;">
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:18px;">
+        <div id="accountAvatarPreview" onclick="document.getElementById('accountAvatarInput').click()" style="width:84px;height:84px;border-radius:50%;border:3px solid var(--gold);background:rgba(215,169,75,0.12);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--gold);cursor:pointer;overflow:hidden;position:relative;">♟</div>
+        <input id="accountAvatarInput" type="file" accept="image/*" style="display:none;" onchange="handleAccountAvatarChange(event)">
+        <button type="button" onclick="document.getElementById('accountAvatarInput').click()" style="background:none;border:none;color:var(--gold);font-size:12.5px;font-weight:700;margin-top:8px;cursor:pointer;">✏️ Ubah Foto Profil</button>
       </div>
-      <button class="btn-big" style="width:100%;margin-top:14px;background:#8fbf6f;color:#12203A;border:none;" onclick="saveAccountProfile()">Simpan Nama</button>
-      <div id="accountProfileMsg" style="display:none;color:#a9b3c4;font-size:12.5px;margin-top:10px;"></div>
+      <h3 style="color:var(--gold);margin:0 0 4px;font-family:'Playfair Display',serif;">Masuk sebagai</h3>
+      <p id="accountEmailDisplay" style="font-family:'Space Mono',monospace;font-size:14px;color:var(--paper);word-break:break-all;margin:0 0 16px;"></p>
+      <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(215,169,75,0.2);border-radius:8px;padding:14px 16px;">
+        <input id="accountDisplayNameInput" placeholder="Nama tampilan" maxlength="14" style="width:100%;background:none;border:none;outline:none;color:var(--paper);font-size:15px;">
+      </div>
+      <button class="menu-btn primary" style="width:100%;margin-top:14px;" onclick="saveAccountProfile()">Simpan Profil</button>
+      <div id="accountProfileMsg" style="display:none;color:var(--paper-dim);font-size:12.5px;margin-top:10px;"></div>
     </div>
     <div style="text-align:center;margin-top:18px;">
       <button type="button" onclick="doAccountSignOut()" style="background:none;border:none;color:#e8836b;font-size:13.5px;font-weight:700;cursor:pointer;">Keluar dari Akun</button>
@@ -831,17 +856,54 @@ async function applySession(session){
 }
 function refreshAccountMenuStatus(){
   const el = document.getElementById('accountMenuStatus');
-  if(!el) return;
-  if(currentUser){
-    const nm = (currentProfile && currentProfile.display_name) ? currentProfile.display_name : currentUser.email;
-    el.textContent = '👤 Masuk sebagai ' + nm;
-  } else {
-    el.textContent = 'Aturan bisa disesuaikan di layar berikutnya';
+  if(el){
+    if(currentUser){
+      const nm = (currentProfile && currentProfile.display_name) ? currentProfile.display_name : currentUser.email;
+      el.textContent = '👤 Masuk sebagai ' + nm;
+    } else {
+      el.textContent = 'Aturan bisa disesuaikan di layar berikutnya';
+    }
   }
+  refreshAccountCornerIcon();
+}
+/* Ikon kotak kecil "Akun" di pojok kiri-atas menu: tampilkan foto profil
+   kalau pemain sudah mengatur avatar, kalau belum tetap ikon 👤 gaya emas. */
+function refreshAccountCornerIcon(){
+  const btn = document.getElementById('btnAccountMenu');
+  if(!btn) return;
+  const avatar = currentProfile && currentProfile.avatar;
+  btn.innerHTML = avatar ? `<img src="${avatar}" alt="Foto profil">` : '👤';
 }
 function goToAccount(){
   showScreen('screen-account');
   renderAccountScreen();
+}
+/* Kompres & ubah foto yang dipilih pemain jadi dataURL kecil (avatar
+   bundar 128x128) sebelum disimpan, supaya hemat storage. */
+function handleAccountAvatarChange(evt){
+  const file = evt.target.files && evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const s = Math.min(img.width, img.height);
+      const sx = (img.width - s)/2, sy = (img.height - s)/2;
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      currentProfile = currentProfile || {};
+      currentProfile.avatar = dataUrl;
+      const preview = document.getElementById('accountAvatarPreview');
+      if(preview) preview.innerHTML = `<img src="${dataUrl}" alt="Foto profil" style="width:100%;height:100%;object-fit:cover;">`;
+      refreshAccountCornerIcon();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 function renderAccountScreen(){
   const authView = document.getElementById('accountAuthView');
@@ -851,6 +913,8 @@ function renderAccountScreen(){
     profileView.style.display = 'block';
     document.getElementById('accountEmailDisplay').textContent = currentUser.email;
     document.getElementById('accountDisplayNameInput').value = (currentProfile && currentProfile.display_name) || '';
+    const preview = document.getElementById('accountAvatarPreview');
+    if(preview) preview.innerHTML = (currentProfile && currentProfile.avatar) ? `<img src="${currentProfile.avatar}" alt="Foto profil" style="width:100%;height:100%;object-fit:cover;">` : '♟';
     document.getElementById('accountProfileMsg').style.display = 'none';
   } else {
     authView.style.display = 'block';
@@ -965,7 +1029,7 @@ async function saveAccountProfile(){
   const msg = document.getElementById('accountProfileMsg');
   try{
     await window.storage.set('profile_'+currentUser.id, JSON.stringify(currentProfile), true);
-    msg.textContent = '✅ Nama tersimpan ke akun.';
+    msg.textContent = '✅ Profil tersimpan ke akun.';
     msg.style.display = 'block';
     refreshAccountMenuStatus();
   }catch(e){
