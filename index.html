@@ -878,6 +878,15 @@ function toggleAccountPasswordVisibility(){
   const inp = document.getElementById('accountPasswordInput');
   inp.type = inp.type==='password' ? 'text' : 'password';
 }
+let socialLoginInitDone = false;
+async function ensureSocialLoginInit(){
+  if(socialLoginInitDone) return true;
+  try{
+    await window.Capacitor.Plugins.SocialLogin.initialize({});
+    socialLoginInitDone = true;
+    return true;
+  }catch(e){ return false; }
+}
 async function signInWithGoogleNative(){
   hideAccountError();
   if(!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())){
@@ -886,6 +895,10 @@ async function signInWithGoogleNative(){
   }
   if(!(window.Capacitor.Plugins && window.Capacitor.Plugins.SocialLogin)){
     showAccountError('Modul Google Sign-In belum aktif di build APK ini.');
+    return;
+  }
+  if(!(await ensureSocialLoginInit())){
+    showAccountError('Gagal menyiapkan modul Google Sign-In.');
     return;
   }
   try{
