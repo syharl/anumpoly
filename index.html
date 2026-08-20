@@ -958,20 +958,29 @@ function toggleAccountPasswordVisibility(){
 const GOOGLE_WEB_CLIENT_ID = '20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com';
 
 let socialLoginInitDone = false;
-async function ensureSocialLoginInit(){
-  if(socialLoginInitDone) return true;
-  if(GOOGLE_WEB_CLIENT_ID.indexOf('20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com') === 0){
-    showAccountError('Google Client ID belum di-setup. Lihat instruksi setup Google.');
-    return false;
-  }
-  try{
-    await window.Capacitor.Plugins.SocialLogin.initialize({
+let socialLoginInitPromise = null;
+function ensureSocialLoginInit(){
+  if(socialLoginInitDone) return Promise.resolve(true);
+  if(!socialLoginInitPromise){
+    socialLoginInitPromise = window.Capacitor.Plugins.SocialLogin.initialize({
       google: { webClientId: GOOGLE_WEB_CLIENT_ID, mode: 'online' }
+    }).then(function(){
+      socialLoginInitDone = true;
+      return true;
+    }).catch(function(e){
+      socialLoginInitPromise = null; // izinkan retry di percobaan berikutnya
+      return false;
     });
-    socialLoginInitDone = true;
-    return true;
-  }catch(e){ return false; }
+  }
+  return socialLoginInitPromise;
 }
+// Panggil sedini mungkin saat app siap, supaya init sudah kelar
+// sebelum pemain sempat tap tombol "Masuk dengan Google".
+document.addEventListener('deviceready', function(){
+  if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()){
+    ensureSocialLoginInit();
+  }
+});
 async function signInWithGoogleNative(){
   hideAccountError();
   if(!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())){
