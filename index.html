@@ -448,6 +448,14 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .changelog-entry .cl-tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;border-radius:4px;padding:1px 5px;margin-right:6px;}
 .changelog-entry .cl-tag.new{background:rgba(63,163,77,0.25);color:var(--green-ok);}
 .changelog-entry .cl-tag.fix{background:rgba(179,64,47,0.25);color:#e08b7a;}
+
+/* ---------- LELANG: info properti + stepper tawaran custom ---------- */
+.auction-status{margin-bottom:10px;}
+.bid-stepper{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;}
+.bid-stepper button{width:36px;height:36px;border-radius:9px;border:2px solid rgba(215,169,75,0.5);background:transparent;color:var(--gold);font-size:18px;font-weight:800;line-height:1;padding:0;flex:none;}
+.bid-stepper button:active{background:rgba(215,169,75,0.2);}
+.bid-stepper input{width:100px;text-align:center;font-family:'Space Mono',monospace;font-size:15px;font-weight:800;padding:8px 4px;border-radius:9px;border:2px solid rgba(215,169,75,0.4);background:rgba(255,255,255,0.05);color:var(--paper);}
+.bid-stepper input::-webkit-outer-spin-button,.bid-stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -1097,6 +1105,29 @@ function HC(group){
 function P(name, group, price, rent){ return {type:'property', name, group, price, rent, mortgage:Math.round(price/2)}; }
 function R(name, price){ return {type:'railroad', name, price, mortgage:Math.round(price/2), rent:[25,50,100,200]}; }
 function U(name, price){ return {type:'utility', name, price, mortgage:Math.round(price/2)}; }
+/* Ringkasan info properti (sewa tiap level, harga bangun, nilai gadai) —
+   dipakai bersama oleh modal Referensi dan modal Lelang supaya tidak
+   ada kode duplikat. */
+function tileSwatchHTML(t){
+  if(t.type==='property') return `<div class="ri-swatch" style="background:${GROUP_COLORS[t.group]}"></div>`;
+  if(t.type==='railroad') return `<div class="ri-swatch" style="background:#9aa3ad"></div>`;
+  if(t.type==='utility') return `<div class="ri-swatch" style="background:#6d7580"></div>`;
+  return '';
+}
+function tileDetailHTML(t){
+  if(t.type==='property'){
+    return `Sewa dasar <b>${fmt(t.rent[0])}</b> · dengan set warna penuh (tanpa rumah) <b>${fmt(t.rent[0]*2)}</b><br>
+    1 rumah <b>${fmt(t.rent[1])}</b> · 2 rumah <b>${fmt(t.rent[2])}</b> · 3 rumah <b>${fmt(t.rent[3])}</b> · 4 rumah <b>${fmt(t.rent[4])}</b> · Hotel <b>${fmt(t.rent[5])}</b><br>
+    Harga bangun rumah/hotel <b>${fmt(HC(t.group))}</b> · Nilai gadai <b>${fmt(t.mortgage)}</b>`;
+  }
+  if(t.type==='railroad'){
+    return `Sewa: kuasai 1 stasiun <b>${fmt(t.rent[0])}</b> · 2 stasiun <b>${fmt(t.rent[1])}</b> · 3 stasiun <b>${fmt(t.rent[2])}</b> · 4 stasiun <b>${fmt(t.rent[3])}</b><br>Nilai gadai <b>${fmt(t.mortgage)}</b>`;
+  }
+  if(t.type==='utility'){
+    return `Sewa: 4× jumlah mata dadu kalau baru kuasai 1 perusahaan · 10× jumlah mata dadu kalau kuasai keduanya<br>Nilai gadai <b>${fmt(t.mortgage)}</b>`;
+  }
+  return '';
+}
 
 const BOARD = [
   {type:'go', name:'MULAI'},
@@ -1142,22 +1173,22 @@ const BOARD = [
 ];
 
 const CHANCE_CARDS = [
-  {text:'Maju ke petak MULAI. Kumpulkan gajimu.', fn:p=>advanceTo(p,0,true)},
+  {text:'Maju ke petak MULAI. Kumpulkan gajimu.', moves:true, fn:(p,wasDouble)=>advanceTo(p,0,true,wasDouble)},
   {text:'Bank memberi dividen $50 untukmu.', fn:p=>pay(p,-50,'bank')},
   {text:'Kamu terpilih jadi ketua RT. Bayar $40.', fn:p=>pay(p,40,'bank')},
-  {text:'Maju ke Stasiun terdekat. Bayar sewa 2× lipat.', fn:p=>advanceToNearest(p,'railroad',true)},
-  {text:'Mundur 3 petak.', fn:p=>advanceBack(p,3)},
+  {text:'Maju ke Stasiun terdekat. Bayar sewa 2× lipat.', moves:true, fn:(p,wasDouble)=>advanceToNearest(p,'railroad',true,wasDouble)},
+  {text:'Mundur 3 petak.', moves:true, fn:(p,wasDouble)=>advanceBack(p,3,wasDouble)},
   {text:'Kartu Bebas dari Penjara. Simpan sampai dipakai.', fn:p=>{p.jailCards++; log(`${p.name} mendapat kartu bebas penjara.`);}},
   {text:'Kena tilang, langsung masuk Penjara.', fn:p=>goToJail(p)},
   {text:'Lakukan perbaikan rumah: bayar $25/rumah dan $100/hotel.', fn:p=>payRepairs(p,25,100)},
   {text:'Kamu menang lomba puisi, hadiah $20.', fn:p=>pay(p,-20,'bank')},
-  {text:'Maju ke Jepang. Jika lewat MULAI, kumpulkan gaji.', fn:p=>advanceTo(p, BOARD.findIndex(t=>t.name==='Jepang'), true)},
+  {text:'Maju ke Jepang. Jika lewat MULAI, kumpulkan gaji.', moves:true, fn:(p,wasDouble)=>advanceTo(p, BOARD.findIndex(t=>t.name==='Jepang'), true, wasDouble)},
   {text:'Bayar biaya sekolah $150.', fn:p=>pay(p,150,'bank')},
-  {text:'Maju ke Perusahaan Listrik terdekat.', fn:p=>advanceToNearest(p,'utility',true)},
+  {text:'Maju ke Perusahaan Listrik terdekat.', moves:true, fn:(p,wasDouble)=>advanceToNearest(p,'utility',true,wasDouble)},
   {text:'Kamu ditunjuk jadi juara RT, kumpulkan $100.', fn:p=>pay(p,-100,'bank')},
-  {text:'Maju 3 petak ke depan.', fn:p=>advanceTo(p, mod(p.pos+3,40), true)},
+  {text:'Maju 3 petak ke depan.', moves:true, fn:(p,wasDouble)=>advanceTo(p, mod(p.pos+3,40), true, wasDouble)},
   {text:'Bayar pajak jalan $15.', fn:p=>pay(p,15,'bank')},
-  {text:'Maju ke Stasiun Jakarta.', fn:p=>advanceTo(p, BOARD.findIndex(t=>t.name==='Stasiun Jakarta'), true)},
+  {text:'Maju ke Stasiun Jakarta.', moves:true, fn:(p,wasDouble)=>advanceTo(p, BOARD.findIndex(t=>t.name==='Stasiun Jakarta'), true, wasDouble)},
 ];
 const CHEST_CARDS = [
   {text:'Kesalahan bank, kamu menerima $200.', fn:p=>pay(p,-200,'bank')},
@@ -1166,7 +1197,7 @@ const CHEST_CARDS = [
   {text:'Jual saham, kumpulkan $45.', fn:p=>pay(p,-45,'bank')},
   {text:'Bayar uang sekolah $100.', fn:p=>pay(p,100,'bank')},
   {text:'Menang hadiah kecantikan, kumpulkan $10.', fn:p=>pay(p,-10,'bank')},
-  {text:'Maju ke petak MULAI. Kumpulkan gajimu.', fn:p=>advanceTo(p,0,true)},
+  {text:'Maju ke petak MULAI. Kumpulkan gajimu.', moves:true, fn:(p,wasDouble)=>advanceTo(p,0,true,wasDouble)},
   {text:'Kartu Bebas dari Penjara. Simpan sampai dipakai.', fn:p=>{p.jailCards++; log(`${p.name} mendapat kartu bebas penjara.`);}},
   {text:'Langsung masuk Penjara.', fn:p=>goToJail(p)},
   {text:'Bayar pajak penghasilan $75.', fn:p=>pay(p,75,'bank')},
@@ -1521,25 +1552,23 @@ function renderReferenceModal(){
     BOARD.forEach(t=>{
       if(t.type!=='property') return;
       listHTML += `<div class="ref-item">
-        <div class="ri-top"><div class="ri-swatch" style="background:${GROUP_COLORS[t.group]}"></div><div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
-        <div class="ri-detail">Sewa dasar <b>${fmt(t.rent[0])}</b> · dengan set warna penuh (tanpa rumah) <b>${fmt(t.rent[0]*2)}</b><br>
-        1 rumah <b>${fmt(t.rent[1])}</b> · 2 rumah <b>${fmt(t.rent[2])}</b> · 3 rumah <b>${fmt(t.rent[3])}</b> · 4 rumah <b>${fmt(t.rent[4])}</b> · Hotel <b>${fmt(t.rent[5])}</b><br>
-        Harga bangun rumah/hotel <b>${fmt(HC(t.group))}</b> · Nilai gadai <b>${fmt(t.mortgage)}</b></div>
+        <div class="ri-top">${tileSwatchHTML(t)}<div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
+        <div class="ri-detail">${tileDetailHTML(t)}</div>
       </div>`;
     });
   } else if(refTab==='station'){
     BOARD.forEach(t=>{
       if(t.type!=='railroad') return;
       listHTML += `<div class="ref-item">
-        <div class="ri-top"><div class="ri-swatch" style="background:#9aa3ad"></div><div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
-        <div class="ri-detail">Sewa: kuasai 1 stasiun <b>${fmt(t.rent[0])}</b> · 2 stasiun <b>${fmt(t.rent[1])}</b> · 3 stasiun <b>${fmt(t.rent[2])}</b> · 4 stasiun <b>${fmt(t.rent[3])}</b><br>Nilai gadai <b>${fmt(t.mortgage)}</b></div>
+        <div class="ri-top">${tileSwatchHTML(t)}<div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
+        <div class="ri-detail">${tileDetailHTML(t)}</div>
       </div>`;
     });
     BOARD.forEach(t=>{
       if(t.type!=='utility') return;
       listHTML += `<div class="ref-item">
-        <div class="ri-top"><div class="ri-swatch" style="background:#6d7580"></div><div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
-        <div class="ri-detail">Sewa: 4× jumlah mata dadu kalau baru kuasai 1 perusahaan · 10× jumlah mata dadu kalau kuasai keduanya<br>Nilai gadai <b>${fmt(t.mortgage)}</b></div>
+        <div class="ri-top">${tileSwatchHTML(t)}<div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
+        <div class="ri-detail">${tileDetailHTML(t)}</div>
       </div>`;
     });
   } else if(refTab==='chest'){
@@ -1559,6 +1588,20 @@ function renderReferenceModal(){
    ============================================================ */
 function openWhatsNewModal(){
   const html = `
+    <div class="changelog-entry">
+      <div class="cl-date">21 Agustus 2026 — Sinkron Saat Utang Belum Lunas</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Kalau seorang pemain singgah di properti pemain lain lalu uangnya kurang untuk bayar sewa, pemain lain sekarang langsung melihat token-nya sudah mendarat di petak itu — tidak perlu menunggu sampai dia menekan "Bayar Sekarang". Proses gadai/jual rumah yang dia lakukan sambil melunasi utang juga tetap kelihatan berjalan bertahap di layar pemain lain seperti biasa.</div>
+    </div>
+    <div class="changelog-entry">
+      <div class="cl-date">21 Agustus 2026 — Perbaikan Bug Giliran Ter-skip</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Bug giliran pemain kadang ter-skip setelah kartu Kesempatan/Dana Umum yang jalannya jauh (mis. "Maju ke petak MULAI", "Maju ke Stasiun Jakarta") sudah diperbaiki. Sebelumnya giliran bisa dianggap "selesai" sebelum animasi token benar-benar sampai, jadi kadang giliran maju sendiri dan pemain berikutnya terlewat.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Bonus lempar dadu lagi karena dobel sekarang tidak hilang lagi kalau kena kartu yang memindahkan posisi.</div>
+    </div>
+    <div class="changelog-entry">
+      <div class="cl-date">21 Agustus 2026 — Lelang Bisa Tawar Bebas</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Saat lelang, sekarang kamu bisa mengetik/atur sendiri nominal tawaran (pakai tombol −/+ atau ketik langsung), tidak cuma menaikkan sesuai kelipatan tetap seperti sebelumnya.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Modal lelang sekarang menampilkan info lengkap properti yang dilelang — sewa tiap level rumah/hotel (atau sewa stasiun/perusahaan), harga bangun rumah, nilai gadai, dan warna set — jadi tidak perlu buka menu Referensi dulu untuk mengecek.</div>
+    </div>
     <div class="changelog-entry">
       <div class="cl-date">20 Agustus 2026 — Update Dalam-Game &amp; Perbaikan Bot</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update aplikasi sekarang bisa di-download dan dipasang <b>langsung dari dalam game</b> — tidak perlu lagi keluar ke browser/GitHub dan install ulang manual. Begitu ada versi baru, muncul kartu "Update Tersedia" dengan progress bar asli saat mengunduh, lalu tinggal tekan "Pasang Sekarang".</div>
@@ -2727,21 +2770,21 @@ function moveSteps(p, steps, wasDouble){
     landOnTile(p, wasDouble);
   });
 }
-function advanceTo(p, idx, paySalaryIfPass){
+function advanceTo(p, idx, paySalaryIfPass, wasDouble){
   let steps = mod(idx-p.pos,40);
   if(steps===0 && paySalaryIfPass) steps=40;
   state.lastMoveMeta = {id:p.id, backward:false};
   animateWalk(p, steps, paySalaryIfPass, ()=>{
-    landOnTile(p, false, true);
+    landOnTile(p, !!wasDouble, true);
   });
 }
-function advanceBack(p, n){
+function advanceBack(p, n, wasDouble){
   state.lastMoveMeta = {id:p.id, backward:true};
   animateWalkBack(p, n, ()=>{
-    landOnTile(p, false, true);
+    landOnTile(p, !!wasDouble, true);
   });
 }
-function advanceToNearest(p, type, doubleRent){
+function advanceToNearest(p, type, doubleRent, wasDouble){
   let idx = p.pos;
   for(let step=1;step<=40;step++){
     const cand = mod(p.pos+step,40);
@@ -2750,7 +2793,7 @@ function advanceToNearest(p, type, doubleRent){
   const steps = mod(idx-p.pos,40);
   state.lastMoveMeta = {id:p.id, backward:false};
   animateWalk(p, steps, true, ()=>{
-    landOnTile(p, false, true, doubleRent);
+    landOnTile(p, !!wasDouble, true, doubleRent);
   });
 }
 
@@ -2884,7 +2927,19 @@ function chargePlayer(p, amount, toId, onDone){
     // walau uang sudah cukup, karena mengacu ke data pemain yang basi).
     state.pendingDebt = {playerId:p.id, amount, toId, onDone};
     stopTurnTimer();
-    renderAll();
+    // PENTING: pakai commit() (bukan sekadar renderAll()) di sini supaya
+    // posisi token yang baru mendarat + info utang ini langsung
+    // tersinkron ke pemain lain SEKARANG JUGA. Sebelumnya cuma
+    // renderAll() (lokal doang) — akibatnya pemain lain baru melihat
+    // kemajuan pemain yang berutang (posisi token, uang, properti yang
+    // digadai/dijual) setelah dia benar-benar menekan "Bayar Sekarang"
+    // atau dinyatakan bangkrut, padahal proses gadai/jual rumah (yang
+    // sudah lebih dulu commit() sendiri per aksi) seharusnya kelihatan
+    // berjalan bertahap di layar pemain lain. state.pendingDebt sendiri
+    // sengaja TIDAK dikirim lewat sync (lihat serializeState) karena
+    // berisi referensi fungsi onDone yang tidak bisa di-serialize —
+    // itu hanya dipakai secara lokal oleh pemain yang berutang.
+    commit();
     openDebtModal();
   }
 }
@@ -3145,22 +3200,59 @@ function maybeShowAuctionModal(){
   auctionShownSig = sig;
   const bidder = state.players.find(p=>p.id===bidderId);
   const t = BOARD[a.idx];
-  const nextBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
-  const canBid = bidder.money >= nextBid;
+  const minBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
+  const maxBid = bidder.money;
+  const canBid = maxBid >= minBid;
+  const desc = `
+    <div class="ref-item" style="margin-bottom:10px;">
+      <div class="ri-top">${tileSwatchHTML(t)}<div class="ri-name">${t.name}</div><div class="ri-price">${fmt(t.price)}</div></div>
+      <div class="ri-detail">${tileDetailHTML(t)}</div>
+    </div>
+    <div class="auction-status">Tawaran tertinggi saat ini: <span class="hl">${fmt(a.highBid)}</span>${a.highBidderName?(' oleh '+a.highBidderName):' (belum ada)'}<br><br>Giliran menawar: <b>${bidder.name}</b> (${fmt(bidder.money)})</div>
+    ${canBid ? `<div class="bid-stepper">
+      <button type="button" onclick="adjustAuctionBid(-5)">−</button>
+      <input type="number" id="auctionCustomBid" value="${minBid}" min="${minBid}" max="${maxBid}" step="5">
+      <button type="button" onclick="adjustAuctionBid(5)">+</button>
+    </div>` : `<div class="auction-status" style="color:var(--paper-dim);">Saldo tidak cukup untuk menawar minimal ${fmt(minBid)}.</div>`}
+  `;
   showModal({
     title:'🔨 Lelang: '+t.name,
-    desc:`Tawaran tertinggi saat ini: <span class="hl">${fmt(a.highBid)}</span>${a.highBidderName?(' oleh '+a.highBidderName):' (belum ada)'}<br><br>Giliran menawar: <b>${bidder.name}</b> (${fmt(bidder.money)})`,
+    desc,
     buttons:[
-      {label:`Tawar ${fmt(nextBid)}`, cls:'btn-yes', disabled: !canBid, onClick:()=>auctionBid(nextBid)},
+      {label:'Tawar', cls:'btn-yes', disabled: !canBid, onClick:auctionBidCustom},
       {label:'Lewati', cls:'btn-no', onClick:auctionPass},
     ]
   });
+}
+function adjustAuctionBid(delta){
+  const el = document.getElementById('auctionCustomBid');
+  if(!el) return;
+  const min = parseInt(el.min,10)||0, max = parseInt(el.max,10)||0;
+  let v = parseInt(el.value,10); if(isNaN(v)) v = min;
+  v = Math.min(max, Math.max(min, v+delta));
+  el.value = v;
+}
+function auctionBidCustom(){
+  const el = document.getElementById('auctionCustomBid');
+  if(!el) return;
+  const min = parseInt(el.min,10)||0, max = parseInt(el.max,10)||0;
+  let amount = parseInt(el.value,10);
+  if(isNaN(amount)) return;
+  amount = Math.min(max, Math.max(min, amount));
+  auctionBid(amount);
 }
 function auctionBid(amount){
   if(!auctionTurnOK()) return;
   const a = state.auction; if(!a) return;
   const bidderId = a.remaining[a.pos % a.remaining.length];
   const bidder = state.players.find(p=>p.id===bidderId);
+  const t = BOARD[a.idx];
+  const minBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
+  amount = Math.round(amount);
+  // Jaga-jaga: tawaran custom dari input tidak boleh di bawah minimum
+  // sah atau melebihi saldo pemain, meski UI sudah membatasi lewat
+  // atribut min/max pada input number.
+  if(amount < minBid) amount = minBid;
   if(bidder.money < amount) return;
   a.highBid = amount; a.highBidderId = bidderId; a.highBidderName = bidder.name;
   log(`${bidder.name} menawar ${fmt(amount)} untuk ${BOARD[a.idx].name}.`);
@@ -3233,7 +3325,24 @@ function drawCard(p, type, wasDouble){
       title: type==='chance' ? '❓ Kesempatan' : '💰 Dana Umum',
       desc: card.text,
       buttons:[
-        {label:'Oke', cls:'btn-yes', onClick:()=>{ awaitingCardOke=false; closeModal(); card.fn(p); setTimeout(()=>{ if(!state.pendingDebt) finishLanding(p, wasDouble); },50); }},
+        {label:'Oke', cls:'btn-yes', onClick:()=>{
+          awaitingCardOke=false; closeModal();
+          card.fn(p, wasDouble);
+          // Kartu yang memindahkan posisi pemain (mis. "Maju ke MULAI",
+          // "Maju ke Stasiun Jakarta") sudah punya animasi jalan + alur
+          // mendarat sendiri (landOnTile -> ... -> finishLanding) yang
+          // baru selesai setelah animasi berhenti. Kalau finishLanding
+          // dipanggil lagi di sini lewat setTimeout 50ms, itu keburu
+          // duluan sebelum animasi selesai (animasi jalan jauh bisa
+          // > 1 detik) — giliran jadi ditandai "selesai" padahal token
+          // belum sampai/proses mendarat belum kelar. Efeknya giliran
+          // bisa maju sendiri secara diam-diam dan pemain berikutnya
+          // ke-skip. Jadi untuk kartu jenis ini, biarkan animasinya
+          // sendiri yang menutup giliran.
+          if(!card.moves){
+            setTimeout(()=>{ if(!state.pendingDebt) finishLanding(p, wasDouble); },50);
+          }
+        }},
       ]
     });
     handleBotAutomation();
