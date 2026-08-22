@@ -73,7 +73,7 @@ jobs:
         # (bukan untuk browser HP secara umum), jadi musik boleh langsung
         # autoplay begitu game dibuka.
         run: |
-          APP_ID=$(node -p "require('./capacitor_config.json').appId")
+          APP_ID=$(node -p "require('./capacitor.config.json').appId")
           PKG_PATH=$(echo "$APP_ID" | tr '.' '/')
           MAIN_ACTIVITY="android/app/src/main/java/$PKG_PATH/MainActivity.java"
           cat > "$MAIN_ACTIVITY" << EOF
