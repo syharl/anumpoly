@@ -201,8 +201,25 @@ jobs:
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan, tidak perlu commit baru."
           else
+            # PENTING: dulu di sini pakai "git pull --rebase origin main" lalu
+            # "git push". Masalahnya: kalau origin/main sudah berubah duluan
+            # (mis. ada commit [bot-publish] lain yang lebih baru masuk),
+            # rebase akan coba menggabungkan anumpoly.apk versi lama (commit
+            # ini) dengan versi baru di origin/main — dan karena APK itu file
+            # BINARY, git sama sekali tidak bisa menggabungkan isinya, jadi
+            # selalu CONFLICT dan build gagal (exit code 1).
+            #
+            # Fix: fetch origin/main lalu "reset --soft" ke situ. Ini
+            # menaruh HEAD ke commit main paling baru TANPA membuang file
+            # hasil build yang sudah di-stage (anumpoly.apk, dist.zip,
+            # versi.json tetap ada di working directory/index). Jadi commit
+            # publish ini dibuat ulang di atas fondasi main yang paling
+            # mutakhir - bukan digabung dengan riwayat lama - sehingga tidak
+            # pernah ada conflict merge/rebase di file binary lagi.
+            git fetch origin main
+            git reset --soft origin/main
+            git add anumpoly.apk dist.zip versi.json
             git commit -m "chore: publikasikan anumpoly.apk v${{ steps.versi.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [bot-publish]"
-            git pull --rebase origin main
-            git push
+            git push origin HEAD:main
           fi
 
