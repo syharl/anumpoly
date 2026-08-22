@@ -114,6 +114,38 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 }
 .menu-btn:active{transform:scale(0.97);}
 .menu-footer{margin-top:36px;font-size:11px;color:var(--gold-dim);letter-spacing:1px;padding-top:16px;border-top:1px solid rgba(215,169,75,0.15);width:min(220px,60vw);}
+.menu-version-footer{margin-top:10px;font-size:10px;color:var(--gold-dim);letter-spacing:.4px;line-height:1.7;opacity:.75;}
+
+/* ---------- WELCOME (layar login awal untuk pemain baru) ----------
+   Muncul sekali sebelum masuk ke #screen-menu, khusus pemain baru yang
+   belum pernah pilih "Main saja" / belum pernah login. Tema tetap emas
+   gelap khas Anumpoly, bukan gaya hijau di referensi. */
+#screen-welcome{justify-content:center;padding:24px 16px;text-align:center;position:relative;overflow:hidden;}
+#screen-welcome::after{
+  content:"";position:absolute;left:50%;top:8%;width:280px;height:280px;
+  background:radial-gradient(circle, rgba(215,169,75,0.16) 0%, transparent 70%);
+  transform:translateX(-50%);pointer-events:none;z-index:0;
+  animation:menuGlow 5s ease-in-out infinite;
+}
+#screen-welcome > *{position:relative;z-index:1;}
+.welcome-tag{color:var(--paper-dim);font-size:14px;margin:2px 0 30px;letter-spacing:0.5px;}
+.welcome-google-btn{
+  width:min(320px,80vw);padding:15px 18px;margin:0 0 20px;border-radius:999px;
+  border:2px solid var(--gold);background:rgba(255,255,255,0.05);color:var(--paper);
+  font-weight:700;font-size:14.5px;letter-spacing:.3px;display:flex;align-items:center;
+  justify-content:center;gap:12px;transition:all .15s ease;
+}
+.welcome-google-btn:active{transform:scale(0.97);}
+.welcome-divider{display:flex;align-items:center;gap:12px;width:min(320px,80vw);margin:0 0 18px;}
+.welcome-divider .line{flex:1;height:1px;background:rgba(215,169,75,0.25);}
+.welcome-divider span{color:var(--gold-dim);font-size:12px;letter-spacing:1px;}
+.welcome-guest-label{color:var(--paper-dim);font-size:13px;margin:0 0 8px;letter-spacing:.5px;}
+.welcome-help{margin-top:38px;font-size:12px;color:var(--gold-dim);letter-spacing:.5px;line-height:1.7;}
+.welcome-kontak-btn{
+  margin-top:12px;padding:10px 26px;border-radius:999px;border:2px solid var(--gold);
+  background:rgba(255,255,255,0.03);color:var(--gold);font-weight:700;font-size:13px;letter-spacing:.5px;
+}
+.welcome-kontak-btn:active{transform:scale(0.96);}
 
 /* ---------- TOMBOL KOTAK KECIL DI POJOK MENU (Akun & Cara Bermain) ----------
    Menggantikan tombol memanjang "Akun"/"Cara Bermain" di tengah menu.
@@ -462,8 +494,32 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 <body>
 <div id="appBg" aria-hidden="true"></div>
 
+<!-- ================= WELCOME (login awal, khusus pemain baru) ================= -->
+<div id="screen-welcome" class="screen active">
+  <div class="stamp">
+    <span class="top">Selamat Datang</span>
+    <span class="mid">ANUMPOLY</span>
+    <span class="bot">Monopoli Dunia Edition</span>
+  </div>
+  <div class="welcome-tag">Mabar offline maupun online, 2–4 pemain</div>
+
+  <button type="button" class="welcome-google-btn" onclick="welcomeSignInWithGoogle()">
+    <span style="font-size:18px;">🔵</span> Masuk dengan Google
+  </button>
+
+  <div class="welcome-divider"><div class="line"></div><span>ATAU...</span><div class="line"></div></div>
+
+  <div class="welcome-guest-label">Bermain tanpa akun</div>
+  <button type="button" class="menu-btn primary" onclick="welcomeContinueAsGuest()">Main saja</button>
+
+  <div class="welcome-help">
+    Butuh bantuan?<br>Hubungi dukungan kami
+    <div><button type="button" class="welcome-kontak-btn" onclick="openWelcomeSupport()">Kontak</button></div>
+  </div>
+</div>
+
 <!-- ================= MENU ================= -->
-<div id="screen-menu" class="screen active">
+<div id="screen-menu" class="screen">
   <button class="menu-corner-btn corner-left" onclick="goToAccount()" id="btnAccountMenu" title="Akun" aria-label="Akun">👤</button>
   <button class="menu-corner-btn corner-right" onclick="openHowToModal()" title="Cara Bermain" aria-label="Cara Bermain">📘</button>
   <div class="stamp">
@@ -479,6 +535,11 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   <button class="menu-btn secondary-link" onclick="openReferenceModal()">📖 Daftar Properti &amp; Kartu</button>
   <button class="menu-btn secondary-link" onclick="openWhatsNewModal()">🆕 Apa yang Baru</button>
   <div class="menu-footer" id="accountMenuStatus">Aturan bisa disesuaikan di layar berikutnya</div>
+  <!-- Info versi + tanggal/jam rilis + dev, diisi otomatis oleh CI (build-android.yml)
+       lewat sed ke placeholder __ANUMPOLY_*__ di bawah setiap kali APK dibuild.
+       Kalau file ini dibuka mentah (belum lewat CI), placeholder-nya akan
+       tampil apa adanya — itu tandanya bukan hasil build resmi. -->
+  <div class="menu-version-footer">v__ANUMPOLY_VERSION__ · build __ANUMPOLY_BUILD__<br>Rilis __ANUMPOLY_RELEASE_AT__<br>Dev: syharl</div>
 </div>
 
 <!-- ================= MODE SELECT ================= -->
@@ -871,9 +932,37 @@ async function applySession(session){
       const res = await window.storage.get('profile_'+currentUser.id, true);
       currentProfile = res ? JSON.parse(res.value) : { display_name:'' };
     }catch(e){ currentProfile = { display_name:'' }; }
+    markWelcomeSeen();
+    if(document.getElementById('screen-welcome').classList.contains('active')) showScreen('screen-menu');
   }
   refreshAccountMenuStatus();
   if(document.getElementById('screen-account').classList.contains('active')) renderAccountScreen();
+}
+/* ---------- WELCOME (layar login awal untuk pemain baru) ----------
+   Ditandai "sudah dilihat" di localStorage begitu pemain pilih "Main
+   saja" atau memulai proses masuk akun, supaya di kunjungan berikutnya
+   langsung ke #screen-menu seperti biasa (bukan cuma pemain baru). */
+const WELCOME_SEEN_KEY = 'anumpoly_welcomed';
+const SUPPORT_WHATSAPP_URL = 'https://chat.whatsapp.com/DJws2BNJ0Gs1BPTvEoStwu';
+function markWelcomeSeen(){
+  try{ localStorage.setItem(WELCOME_SEEN_KEY, '1'); }catch(e){}
+}
+function skipWelcomeIfAlreadySeen(){
+  try{
+    if(localStorage.getItem(WELCOME_SEEN_KEY)==='1') showScreen('screen-menu');
+  }catch(e){}
+}
+function welcomeContinueAsGuest(){
+  markWelcomeSeen();
+  showScreen('screen-menu');
+}
+function welcomeSignInWithGoogle(){
+  markWelcomeSeen();
+  goToAccount();
+  signInWithGoogleNative();
+}
+function openWelcomeSupport(){
+  window.open(SUPPORT_WHATSAPP_URL, '_blank');
 }
 function refreshAccountMenuStatus(){
   const el = document.getElementById('accountMenuStatus');
@@ -4446,6 +4535,7 @@ function botEvaluateTradeOffer(cp, offer){
 /* ============================================================
    INIT
    ============================================================ */
+skipWelcomeIfAlreadySeen();
 refreshResumeButton();
 initCustomSelects();
 initAccountAuth();
