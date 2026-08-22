@@ -66,6 +66,23 @@ jobs:
           echo "terbaru=$TERBARU" >> "$GITHUB_OUTPUT"
           echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
+      - name: Hitung tanggal & jam rilis (WIB)
+        # Dipakai untuk tampilan versi di menu awal (index.html) DAN untuk
+        # field "tanggal_rilis" di versi.json. Dihitung sekali di sini biar
+        # kedua tempat itu konsisten memakai jam yang persis sama, bukan
+        # dua kali panggil "now" yang bisa beda beberapa detik.
+        # Ditulis manual (bukan Intl locale id-ID) supaya tidak bergantung
+        # pada data locale Indonesia yang mungkin tidak lengkap di runner CI.
+        id: rilis
+        run: |
+          TANGGAL=$(node -e "
+            const bulan=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            const now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Jakarta'}));
+            const pad = n => String(n).padStart(2,'0');
+            console.log(pad(now.getDate())+' '+bulan[now.getMonth()]+' '+now.getFullYear()+', '+pad(now.getHours())+':'+pad(now.getMinutes())+' WIB');
+          ")
+          echo "tanggal=$TANGGAL" >> "$GITHUB_OUTPUT"
+
       - name: Tulis versionCode/versionName ke project Android
         # npx cap add android di atas selalu membuat ulang build.gradle
         # dengan versionCode 1 bawaan template.
@@ -82,6 +99,19 @@ jobs:
         run: |
           sed -i "s/versionCode 1/versionCode ${{ steps.versi.outputs.build }}/" android/app/build.gradle
           sed -i "s/versionName \"1.0\"/versionName \"${{ steps.versi.outputs.terbaru }}\"/" android/app/build.gradle
+
+      - name: Isi info versi & tanggal rilis di tampilan menu awal (index.html)
+        # index.html sudah ikut ter-sync ke android/app/src/main/assets/public/
+        # di langkah "Sinkron file web ke project Android" di atas. Placeholder
+        # __ANUMPOLY_*__ di index.html SENGAJA tidak pernah diganti di file
+        # sumber (repo) — hanya diganti di SALINAN hasil sync ini, jadi tiap
+        # kali workflow jalan lagi, placeholder-nya selalu ada lagi untuk
+        # diisi dengan angka build terbaru.
+        run: |
+          ASSET=android/app/src/main/assets/public/index.html
+          sed -i "s/__ANUMPOLY_VERSION__/${{ steps.versi.outputs.terbaru }}/" "$ASSET"
+          sed -i "s/__ANUMPOLY_BUILD__/${{ steps.versi.outputs.build }}/" "$ASSET"
+          sed -i "s/__ANUMPOLY_RELEASE_AT__/${{ steps.rilis.outputs.tanggal }}/" "$ASSET"
 
       - name: Build APK (release, ditandatangani)
         working-directory: android
@@ -132,13 +162,18 @@ jobs:
         # dipakai APLIKASI untuk membandingkan "versi saya vs versi
         # terbaru", BUKAN teks "terbaru" (yang bebas ditulis developer,
         # mis. "1.8.14"). Jadi developer cukup edit "terbaru" manual tiap
-        # rilis; "terbaruBuild" beres sendiri di sini.
+        # rilis; "terbaruBuild" beres sendiri di sini. Field "tanggal_rilis"
+        # juga dicatat di sini (dari step "Hitung tanggal & jam rilis (WIB)"
+        # di atas) — dipakai kalau suatu saat ingin ditampilkan lewat
+        # versi.json juga (mis. sebelum pemain update), terpisah dari info
+        # versi yang sudah tercetak langsung di dalam APK itu sendiri.
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
           node -e "
             const fs = require('fs');
             const v = JSON.parse(fs.readFileSync('versi.json','utf8'));
             v.terbaruBuild = ${{ steps.versi.outputs.build }};
+            v.tanggal_rilis = '${{ steps.rilis.outputs.tanggal }}';
             fs.writeFileSync('versi.json', JSON.stringify(v, null, 2) + '\n');
           "
           git config user.name "github-actions[bot]"
