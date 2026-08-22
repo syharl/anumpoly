@@ -492,6 +492,11 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
+<!-- BGM kustom. Ganti kapan saja: cukup timpa file "anumpoly-bgm.mp3" di
+     root repo dengan file baru (nama sama), atau ubah nilai BGM_SRC di
+     script bawah kalau mau pakai nama file lain. Tidak perlu ubah apapun
+     di alur CI/build-android.yml. -->
+<audio id="bgmAudio" loop preload="auto"></audio>
 <div id="appBg" aria-hidden="true"></div>
 
 <!-- ================= WELCOME (login awal, khusus pemain baru) ================= -->
@@ -1388,11 +1393,54 @@ function playSound(kind){
       case 'win':
         [523,659,784,1046].forEach((f,i)=>beep(f,0.22,'sine',0.14,i*0.15));
         break;
+      case 'click':
+        beep(950, 0.035, 'square', 0.045);
+        break;
     }
   }
   if(VIBRATION_PATTERNS[kind]) vibrate(VIBRATION_PATTERNS[kind]);
 }
-document.addEventListener('click', ()=>{ ensureAudio(); }, {once:true});
+
+/* ------------------------------------------------------------
+   BGM (musik latar) — pakai file audio kustom (anumpoly-bgm.mp3),
+   diputar loop lewat elemen <audio> di atas. Volumenya sengaja
+   tidak terlalu keras (BGM_VOLUME) biar tetap di belakang, tidak
+   menutupi efek suara (dadu, beli properti, dll).
+
+   GANTI MUSIK KAPAN SAJA: timpa file "anumpoly-bgm.mp3" di root
+   repo dengan file baru (nama file sama persis) lalu build ulang
+   seperti biasa — tidak perlu sentuh baris kode manapun di bawah
+   ini. Kalau mau pakai nama file lain, tinggal ubah BGM_SRC saja. */
+let musicMuted = false;
+const BGM_SRC = 'anumpoly-bgm.mp3';
+const BGM_VOLUME = 0.5;
+function getBgmAudio(){
+  const audio = document.getElementById('bgmAudio');
+  if(audio && !audio.getAttribute('src')){
+    audio.src = BGM_SRC;
+    audio.volume = BGM_VOLUME;
+  }
+  return audio;
+}
+function startBgm(){
+  if(musicMuted) return;
+  const audio = getBgmAudio();
+  if(!audio) return;
+  const p = audio.play();
+  if(p && p.catch) p.catch(()=>{ /* browser masih block autoplay, dicoba lagi di klik berikutnya */ });
+}
+function stopBgm(){
+  const audio = document.getElementById('bgmAudio');
+  if(audio) audio.pause();
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden) stopBgm(); else if(!musicMuted) startBgm();
+});
+document.addEventListener('click', (e)=>{
+  ensureAudio();
+  startBgm();
+  if(e.target.closest('button')) playSound('click');
+});
 
 /* ============================================================
    PENGATURAN (SUARA / GETAR / GRAFIK) + SAVE-RESUME LOKAL
@@ -1406,11 +1454,12 @@ let appSettings = { vibration:true, reducedMotion:false };
       if(typeof s.vibration==='boolean') appSettings.vibration = s.vibration;
       if(typeof s.reducedMotion==='boolean') appSettings.reducedMotion = s.reducedMotion;
       if(typeof s.sound==='boolean') soundMuted = !s.sound;
+      if(typeof s.music==='boolean') musicMuted = !s.music;
     }
   }catch(e){}
 })();
 function saveSettings(){
-  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion })); }catch(e){}
+  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion })); }catch(e){}
 }
 function vibrate(pattern){
   if(!appSettings.vibration) return;
@@ -1420,6 +1469,11 @@ function onToggleSound(checked){
   soundMuted = !checked;
   const btn = document.getElementById('btnMute');
   if(btn) btn.textContent = soundMuted ? '🔇' : '🔊';
+  saveSettings();
+}
+function onToggleMusic(checked){
+  musicMuted = !checked;
+  if(musicMuted) stopBgm(); else startBgm();
   saveSettings();
 }
 function onToggleVibration(checked){ appSettings.vibration = checked; saveSettings(); }
@@ -1461,6 +1515,8 @@ function openSettingsMenu(){
     <div style="display:flex;flex-direction:column;text-align:left;">
       <div class="rule-row"><div class="rule-label">Suara</div>
         <label class="switch"><input type="checkbox" id="setSound" ${soundMuted?'':'checked'} onchange="onToggleSound(this.checked)"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Musik latar</div>
+        <label class="switch"><input type="checkbox" id="setMusic" ${musicMuted?'':'checked'} onchange="onToggleMusic(this.checked)"><span class="slider"></span></label></div>
       <div class="rule-row"><div class="rule-label">Getar (vibration)<small>Getar singkat saat lempar dadu, bayar, dll (HP saja)</small></div>
         <label class="switch"><input type="checkbox" id="setVibration" ${appSettings.vibration?'checked':''} onchange="onToggleVibration(this.checked)"><span class="slider"></span></label></div>
       <div class="rule-row"><div class="rule-label">Animasi ringan<small>Bidak langsung pindah tanpa animasi jalan, lebih ringan di HP lawas</small></div>
