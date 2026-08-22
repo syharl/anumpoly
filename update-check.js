@@ -65,14 +65,19 @@ async function checkForUpdate(){
     const versiSaya = await getVersiTerpasang();
     const res = await fetch(REMOTE_VERSI_URL, { cache: 'no-store' });
     const data = await res.json();
-    // PENTING: perbandingan "ada update atau tidak" pakai terbaruBuild
-    // (angka bulat yang selalu naik, otomatis diisi CI dari nomor build —
-    // lihat build-android.yml), BUKAN field "terbaru" yang sekarang berupa
-    // teks bebas seperti "1.8.14" untuk ditampilkan ke pemain saja. Android
-    // sendiri mewajibkan versionCode berupa angka bulat naik terus,
-    // sementara teks versi (1.8.14 -> 1.8.24 -> 1.9.00 -> 2.0.01, dst)
-    // murni kosmetik dan bebas dipilih developer.
-    if(data && data.terbaruBuild && versiSaya < data.terbaruBuild){
+    // PENTING: perbandingan "ada update APK atau tidak" pakai "nativeBuild"
+    // — BUKAN "contentBuild" (dulu namanya "terbaruBuild"). Ini yang
+    // memperbaiki masalah update dobel: nativeBuild HANYA naik kalau rilis
+    // itu benar-benar mengubah sesuatu yang butuh APK baru (plugin/
+    // dependency/config native — lihat step "Deteksi perubahan native" di
+    // build-android.yml). Rilis konten biasa (index.html/asset) TIDAK
+    // menaikkan nativeBuild, jadi kalau native shell yang kepasang di HP
+    // sudah setara dengan nativeBuild terbaru, kartu update APK ini TIDAK
+    // akan muncul lagi — cukup hot-update konten (checkForContentUpdate)
+    // yang jalan. versiSaya sendiri (dari App.getInfo().build) adalah
+    // versionCode APK yang kepasang, yang selalu naik tiap build apapun,
+    // jadi perbandingan "versiSaya < data.nativeBuild" tetap valid.
+    if(data && data.nativeBuild && versiSaya < data.nativeBuild){
       showUpdateCard(data);
     }
   }catch(e){ /* offline / gagal cek — biarkan pemain lanjut main seperti biasa */ }
@@ -218,8 +223,13 @@ async function checkForContentUpdate(){
   try{
     const res = await fetch(REMOTE_VERSI_URL, { cache: 'no-store' });
     const data = await res.json();
-    if(!data || !data.terbaruBuild || !data.link_bundle) return false;
-    const buildTerbaru = String(data.terbaruBuild);
+    // Dulu pakai "terbaruBuild" (nomor yang sama dipakai update APK juga —
+    // ini sumber masalah update dobel). Sekarang pakai "contentBuild",
+    // nomor terpisah yang naik tiap rilis apapun (isi konten selalu ikut
+    // ter-update lewat sini), independen dari "nativeBuild" yang dipakai
+    // checkForUpdate() di atas.
+    if(!data || !data.contentBuild || !data.link_bundle) return false;
+    const buildTerbaru = String(data.contentBuild);
     let sudahDipakai = null;
     try{ sudahDipakai = localStorage.getItem(CONTENT_VERSION_KEY); }catch(e){}
     if(sudahDipakai === buildTerbaru) return false; // sudah paling baru, tidak perlu apa-apa
