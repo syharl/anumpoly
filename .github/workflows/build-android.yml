@@ -56,6 +56,43 @@ jobs:
       - name: Tambah platform Android
         run: npx cap add android
 
+      - name: Izinkan audio autoplay tanpa perlu tap dulu (MainActivity.java)
+        # npx cap add android SELALU membuat ulang MainActivity.java dari
+        # template kosong bawaan Capacitor setiap kali workflow ini jalan
+        # (folder android/ tidak disimpan di repo, jadi tidak bisa
+        # diedit manual sekali lalu dianggap permanen — harus ditimpa
+        # ulang di sini setiap build, sama seperti versionCode/versionName
+        # di langkah sed di bawah).
+        #
+        # Alasan perlu ini: Android WebView (sama seperti Chrome) secara
+        # default MEWAJIBKAN gesture pengguna (tap/klik) sebelum boleh
+        # memutar audio yang ada suaranya — makanya musik latar
+        # (anumpoly-bgm.mp3) baru bunyi setelah pemain tap sesuatu di
+        # layar. Baris setMediaPlaybackRequiresUserGesture(false) di
+        # bawah mematikan aturan itu KHUSUS untuk WebView aplikasi ini
+        # (bukan untuk browser HP secara umum), jadi musik boleh langsung
+        # autoplay begitu game dibuka.
+        run: |
+          APP_ID=$(node -p "require('./capacitor_config.json').appId")
+          PKG_PATH=$(echo "$APP_ID" | tr '.' '/')
+          MAIN_ACTIVITY="android/app/src/main/java/$PKG_PATH/MainActivity.java"
+          cat > "$MAIN_ACTIVITY" << EOF
+          package $APP_ID;
+
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  if (getBridge() != null && getBridge().getWebView() != null) {
+                      getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
+                  }
+              }
+          }
+          EOF
+
       - name: Sinkron file web ke project Android
         run: npx cap sync android
 
