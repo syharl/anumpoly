@@ -45,20 +45,29 @@ jobs:
       - name: Sinkron file web ke project Android
         run: npx cap sync android
 
-      - name: Baca nomor versi dari versi.json
+      - name: Baca info versi dari versi.json
         id: versi
         run: |
           TERBARU=$(node -p "require('./versi.json').terbaru")
           echo "terbaru=$TERBARU" >> "$GITHUB_OUTPUT"
+          echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
       - name: Tulis versionCode/versionName ke project Android
         # npx cap add android di atas selalu membuat ulang build.gradle
-        # dengan versionCode 1 bawaan template — di sini kita timpa
-        # dengan angka dari versi.json supaya App.getInfo() di dalam
-        # game melaporkan versi yang benar untuk fitur update dalam-game.
+        # dengan versionCode 1 bawaan template.
+        # - versionCode (angka bulat) HARUS selalu naik tiap rilis, ini
+        #   aturan Android sendiri (kalau tidak, HP menolak update). Jadi
+        #   ini dipakai dari nomor build CI (github.run_number) yang
+        #   otomatis naik sendiri tiap kali workflow ini jalan — developer
+        #   tidak perlu memikirkan angka ini sama sekali.
+        # - versionName (teks bebas, mis. "1.8.14") dipakai dari field
+        #   "terbaru" di versi.json apa adanya, sesuai skema penomoran
+        #   yang developer pilih sendiri (1.8.14 -> 1.8.24 -> 1.9.00 ->
+        #   2.0.01, dst) — ini murni kosmetik, tidak wajib naik berurutan
+        #   secara matematis, Android tidak mengecek teks ini sama sekali.
         run: |
-          sed -i "s/versionCode 1/versionCode ${{ steps.versi.outputs.terbaru }}/" android/app/build.gradle
-          sed -i "s/versionName \"1.0\"/versionName \"v${{ steps.versi.outputs.terbaru }}\"/" android/app/build.gradle
+          sed -i "s/versionCode 1/versionCode ${{ steps.versi.outputs.build }}/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"${{ steps.versi.outputs.terbaru }}\"/" android/app/build.gradle
 
       - name: Build APK (release, ditandatangani)
         working-directory: android
@@ -93,25 +102,38 @@ jobs:
           gh release delete "v${{ steps.versi.outputs.terbaru }}" --yes --cleanup-tag || true
           gh release create "v${{ steps.versi.outputs.terbaru }}" anumpoly.apk \
             --title "Monopoli Dunia v${{ steps.versi.outputs.terbaru }}" \
-            --notes "Update otomatis dari CI. Lihat riwayat commit untuk detail perubahan."
+            --notes "Update otomatis dari CI (build #${{ steps.versi.outputs.build }}). Lihat riwayat commit untuk detail perubahan."
 
-      - name: Publikasikan APK ke GitHub Pages untuk update dalam-game
+      - name: Publikasikan APK & catat nomor build ke GitHub Pages
         # Fitur update dalam-game mengunduh APK lewat fetch() di dalam
         # WebView aplikasi — alamat GitHub Pages (domain *.github.io) yang
         # sudah kepakai untuk versi.json TERBUKTI lolos CORS (itu sebabnya
         # deteksi versi baru berhasil), jadi APK-nya juga ditaruh di sini,
         # bukan di GitHub Release yang diblokir CORS. Nama file selalu sama
         # (anumpoly.apk) supaya link_apk di versi.json tidak perlu berubah
-        # tiap rilis, cukup angka "terbaru" saja yang di-bump manual.
+        # tiap rilis.
+        #
+        # Field "terbaruBuild" di versi.json juga ditulis ulang otomatis di
+        # sini (nomor build CI, angka bulat yang selalu naik) — inilah yang
+        # dipakai APLIKASI untuk membandingkan "versi saya vs versi
+        # terbaru", BUKAN teks "terbaru" (yang bebas ditulis developer,
+        # mis. "1.8.14"). Jadi developer cukup edit "terbaru" manual tiap
+        # rilis; "terbaruBuild" beres sendiri di sini.
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
+          node -e "
+            const fs = require('fs');
+            const v = JSON.parse(fs.readFileSync('versi.json','utf8'));
+            v.terbaruBuild = ${{ steps.versi.outputs.build }};
+            fs.writeFileSync('versi.json', JSON.stringify(v, null, 2) + '\n');
+          "
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add anumpoly.apk
+          git add anumpoly.apk versi.json
           if git diff --cached --quiet; then
-            echo "APK tidak berubah, tidak perlu commit baru."
+            echo "Tidak ada perubahan, tidak perlu commit baru."
           else
-            git commit -m "chore: publikasikan anumpoly.apk v${{ steps.versi.outputs.terbaru }} [skip ci]"
+            git commit -m "chore: publikasikan anumpoly.apk v${{ steps.versi.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [skip ci]"
             git pull --rebase origin main
             git push
           fi
