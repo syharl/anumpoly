@@ -49,65 +49,20 @@ jobs:
       - name: Install Capacitor deps
         run: npm install
 
-      - name: Kumpulkan file web ke folder www/
-        run: |
-          mkdir -p www
-          rsync -a \
-            --exclude='www' --exclude='android' --exclude='node_modules' \
-            --exclude='.git' --exclude='.github' --exclude='package.json' \
-            --exclude='package-lock.json' --exclude='capacitor.config.json' \
-            --exclude='plugins' --exclude='anumpoly.apk' \
-            ./ www/
-
-      - name: Tambah platform Android
-        run: npx cap add android
-
-      - name: Izinkan audio autoplay tanpa perlu tap dulu (MainActivity.java)
-        # npx cap add android SELALU membuat ulang MainActivity.java dari
-        # template kosong bawaan Capacitor setiap kali workflow ini jalan
-        # (folder android/ tidak disimpan di repo, jadi tidak bisa
-        # diedit manual sekali lalu dianggap permanen — harus ditimpa
-        # ulang di sini setiap build, sama seperti versionCode/versionName
-        # di langkah sed di bawah).
-        #
-        # Alasan perlu ini: Android WebView (sama seperti Chrome) secara
-        # default MEWAJIBKAN gesture pengguna (tap/klik) sebelum boleh
-        # memutar audio yang ada suaranya — makanya musik latar
-        # (anumpoly-bgm.mp3) baru bunyi setelah pemain tap sesuatu di
-        # layar. Baris setMediaPlaybackRequiresUserGesture(false) di
-        # bawah mematikan aturan itu KHUSUS untuk WebView aplikasi ini
-        # (bukan untuk browser HP secara umum), jadi musik boleh langsung
-        # autoplay begitu game dibuka.
-        run: |
-          APP_ID=$(node -p "require('./capacitor.config.json').appId")
-          PKG_PATH=$(echo "$APP_ID" | tr '.' '/')
-          MAIN_ACTIVITY="android/app/src/main/java/$PKG_PATH/MainActivity.java"
-          cat > "$MAIN_ACTIVITY" << EOF
-          package $APP_ID;
-
-          import android.os.Bundle;
-          import com.getcapacitor.BridgeActivity;
-
-          public class MainActivity extends BridgeActivity {
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  if (getBridge() != null && getBridge().getWebView() != null) {
-                      getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
-                  }
-              }
-          }
-          EOF
-
-      - name: Sinkron file web ke project Android
-        run: npx cap sync android
-
       - name: Baca info versi lama dari versi.json
         # "build" (nomor build CI mentah, github.run_number) dipakai buat
         # versionCode Android — WAJIB naik terus tiap rilis apapun jenisnya
         # (aturan Android sendiri, kalau tidak HP menolak update APK).
         # nativeBuild/lastBuildCommit lama dibaca dulu di sini, nanti
         # dipakai/ditimpa oleh step "Deteksi perubahan native" di bawah.
+        #
+        # PENTING: step ini (dan 2 step setelahnya: Hitung tanggal/versi,
+        # Deteksi native, Tambah entri Apa Yang Baru) SENGAJA dipindah ke
+        # SEBELUM "Kumpulkan file web ke folder www/" — karena step
+        # "Tambah entri Apa Yang Baru" perlu MENGUBAH index.html (source,
+        # di root repo) SEBELUM index.html itu di-rsync ke www/, supaya
+        # entri changelog baru ikut kebawa ke build APK & dist.zip rilis
+        # ini juga (bukan baru muncul di rilis berikutnya).
         id: versi
         run: |
           echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
@@ -192,6 +147,121 @@ jobs:
             echo "nativeBuild=${{ steps.versi.outputs.nativeBuildLama }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Tambah entri "Apa yang Baru" otomatis ke index.html
+        # Setiap rilis (SEKALIPUN kecil, lewat hot-update konten saja)
+        # otomatis dapat entri baru di menu "🆕 Apa yang Baru" — supaya
+        # pemain selalu tahu ada perubahan, bukan cuma pas developer
+        # sempat nulis changelog manual yang panjang seperti entri-entri
+        # lama di bawahnya.
+        #
+        # Sumber isinya: pesan commit (git log) dari commit terakhir yang
+        # berhasil di-build (lastBuildCommit) sampai commit sekarang.
+        # Tiap baris pesan commit jadi satu bullet; tag "Baru"/"Perbaikan"
+        # ditebak dari kata kunci di pesannya (mengandung fix/bug/perbaik
+        # -> Perbaikan, selain itu -> Baru). Commit dengan tag
+        # "[bot-publish]" (commit balik CI sendiri) dilewati, tidak ikut
+        # jadi bullet.
+        #
+        # Kalau suatu saat developer mau nulis entri yang lebih rapi &
+        # deskriptif untuk rilis penting (seperti entri-entri lama di
+        # bawah), tetap bisa: edit index.html manual dulu SEBELUM push
+        # (tambah <div class="changelog-entry"> sendiri tepat di bawah
+        # marker) — commit itu ikut ke-diff normal seperti commit lain,
+        # tidak ditimpa oleh step ini.
+        #
+        # Entri baru disisipkan TEPAT SETELAH marker
+        # <!-- __ANUMPOLY_CHANGELOG_AUTO__ --> di index.html SOURCE (root
+        # repo, BUKAN salinan sync ke android/) — supaya permanen
+        # tersimpan di repo & ikut kebawa ke rilis-rilis berikutnya, sama
+        # seperti entri-entri lama. Makanya step ini WAJIB jalan SEBELUM
+        # "Kumpulkan file web ke folder www/" di bawah.
+        run: |
+          node -e "
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            const lastCommit = '${{ steps.versi.outputs.lastBuildCommit }}';
+            let pesanPesan = [];
+            try {
+              const range = lastCommit ? (lastCommit + '..HEAD') : 'HEAD';
+              const log = execSync('git log ' + range + ' --no-merges --pretty=format:%s', {encoding:'utf8'});
+              pesanPesan = log.split('\n').map(s => s.trim()).filter(s => s && !s.includes('[bot-publish]'));
+            } catch (e) { pesanPesan = []; }
+            if (pesanPesan.length === 0) pesanPesan = ['Pembaruan kecil (perbaikan internal/teknis).'];
+
+            const escapeHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const kataFix = /(fix|bug|perbaik|betulin|benerin)/i;
+            const bullets = pesanPesan.map(p => {
+              const tag = kataFix.test(p)
+                ? '<span class=\"cl-tag fix\">Perbaikan</span>'
+                : '<span class=\"cl-tag new\">Baru</span>';
+              return '      <div style=\"font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;\">' + tag + escapeHtml(p) + '</div>';
+            }).join('\n');
+
+            const entry = '    <div class=\"changelog-entry\">\n' +
+              '      <div class=\"cl-date\">${{ steps.rilis.outputs.tanggal }} — v${{ steps.rilis.outputs.terbaru }}</div>\n' +
+              bullets + '\n' +
+              '    </div>';
+
+            const marker = '<!-- __ANUMPOLY_CHANGELOG_AUTO__ -->';
+            let html = fs.readFileSync('index.html', 'utf8');
+            if (!html.includes(marker)) throw new Error('Marker __ANUMPOLY_CHANGELOG_AUTO__ tidak ditemukan di index.html');
+            html = html.replace(marker, marker + '\n' + entry);
+            fs.writeFileSync('index.html', html);
+          "
+
+      - name: Kumpulkan file web ke folder www/
+        run: |
+          mkdir -p www
+          rsync -a \
+            --exclude='www' --exclude='android' --exclude='node_modules' \
+            --exclude='.git' --exclude='.github' --exclude='package.json' \
+            --exclude='package-lock.json' --exclude='capacitor.config.json' \
+            --exclude='plugins' --exclude='anumpoly.apk' \
+            ./ www/
+
+      - name: Tambah platform Android
+        run: npx cap add android
+
+      - name: Izinkan audio autoplay tanpa perlu tap dulu (MainActivity.java)
+        # npx cap add android SELALU membuat ulang MainActivity.java dari
+        # template kosong bawaan Capacitor setiap kali workflow ini jalan
+        # (folder android/ tidak disimpan di repo, jadi tidak bisa
+        # diedit manual sekali lalu dianggap permanen — harus ditimpa
+        # ulang di sini setiap build, sama seperti versionCode/versionName
+        # di langkah sed di bawah).
+        #
+        # Alasan perlu ini: Android WebView (sama seperti Chrome) secara
+        # default MEWAJIBKAN gesture pengguna (tap/klik) sebelum boleh
+        # memutar audio yang ada suaranya — makanya musik latar
+        # (anumpoly-bgm.mp3) baru bunyi setelah pemain tap sesuatu di
+        # layar. Baris setMediaPlaybackRequiresUserGesture(false) di
+        # bawah mematikan aturan itu KHUSUS untuk WebView aplikasi ini
+        # (bukan untuk browser HP secara umum), jadi musik boleh langsung
+        # autoplay begitu game dibuka.
+        run: |
+          APP_ID=$(node -p "require('./capacitor.config.json').appId")
+          PKG_PATH=$(echo "$APP_ID" | tr '.' '/')
+          MAIN_ACTIVITY="android/app/src/main/java/$PKG_PATH/MainActivity.java"
+          cat > "$MAIN_ACTIVITY" << EOF
+          package $APP_ID;
+
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  if (getBridge() != null && getBridge().getWebView() != null) {
+                      getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
+                  }
+              }
+          }
+          EOF
+
+      - name: Sinkron file web ke project Android
+        run: npx cap sync android
+
       - name: Tulis versionCode/versionName ke project Android
         # npx cap add android di atas selalu membuat ulang build.gradle
         # dengan versionCode 1 bawaan template.
@@ -229,9 +299,20 @@ jobs:
         # Android. Di-zip dari SALINAN yang sudah diisi placeholder versi
         # di atas, jadi isinya persis sama dengan yang terpasang di APK
         # native rilis ini (bukan file sumber mentah di repo).
+        #
+        # PENGECUALIAN: anumpoly-bgm.mp3 SENGAJA tidak ikut di-zip ke sini.
+        # File musik itu jarang berubah tapi ukurannya jauh lebih besar
+        # dari index.html sendiri, jadi kalau ikut dibawa di SETIAP
+        # hot-update, unduhannya jadi berat & gampang timeout di jaringan
+        # lambat — padahal isinya nyaris selalu sama dengan yang sudah ada
+        # di HP. File ini tetap ikut dibundel penuh di APK biasa (lihat
+        # step "Build APK" di bawah, yang pakai seluruh isi assets/public
+        # apa adanya, TERMASUK mp3-nya). Di sisi game (index.html), audio
+        # otomatis fallback ambil dari GitHub Pages kalau salinan lokalnya
+        # tidak ketemu (mis. abis hot-update) — lihat getBgmAudio().
         run: |
           cd android/app/src/main/assets/public
-          zip -r "$GITHUB_WORKSPACE/dist.zip" .
+          zip -r "$GITHUB_WORKSPACE/dist.zip" . -x "anumpoly-bgm.mp3"
 
       - name: Build APK (release, ditandatangani)
         working-directory: android
@@ -312,7 +393,7 @@ jobs:
           "
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add anumpoly.apk dist.zip versi.json
+          git add anumpoly.apk dist.zip versi.json index.html
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan, tidak perlu commit baru."
           else
@@ -333,7 +414,7 @@ jobs:
             # pernah ada conflict merge/rebase di file binary lagi.
             git fetch origin main
             git reset --soft origin/main
-            git add anumpoly.apk dist.zip versi.json
+            git add anumpoly.apk dist.zip versi.json index.html
             git commit -m "chore: publikasikan anumpoly.apk v${{ steps.rilis.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [bot-publish]"
             git push origin HEAD:main
           fi
