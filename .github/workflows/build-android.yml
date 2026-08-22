@@ -28,6 +28,12 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          # PENTING: fetch-depth 0 (bukan default 1/shallow) supaya step
+          # "Deteksi perubahan native" di bawah bisa git diff sampai ke
+          # commit lama (lastBuildCommit di versi.json), bukan cuma commit
+          # paling akhir.
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -96,29 +102,95 @@ jobs:
       - name: Sinkron file web ke project Android
         run: npx cap sync android
 
-      - name: Baca info versi dari versi.json
+      - name: Baca info versi lama dari versi.json
+        # "build" (nomor build CI mentah, github.run_number) dipakai buat
+        # versionCode Android — WAJIB naik terus tiap rilis apapun jenisnya
+        # (aturan Android sendiri, kalau tidak HP menolak update APK).
+        # nativeBuild/lastBuildCommit lama dibaca dulu di sini, nanti
+        # dipakai/ditimpa oleh step "Deteksi perubahan native" di bawah.
         id: versi
         run: |
-          TERBARU=$(node -p "require('./versi.json').terbaru")
-          echo "terbaru=$TERBARU" >> "$GITHUB_OUTPUT"
           echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "nativeBuildLama=$(node -p "require('./versi.json').nativeBuild || 0")" >> "$GITHUB_OUTPUT"
+          echo "lastBuildCommit=$(node -p "require('./versi.json').lastBuildCommit || ''")" >> "$GITHUB_OUTPUT"
 
-      - name: Hitung tanggal & jam rilis (WIB)
-        # Dipakai untuk tampilan versi di menu awal (index.html) DAN untuk
-        # field "tanggal_rilis" di versi.json. Dihitung sekali di sini biar
-        # kedua tempat itu konsisten memakai jam yang persis sama, bukan
-        # dua kali panggil "now" yang bisa beda beberapa detik.
-        # Ditulis manual (bukan Intl locale id-ID) supaya tidak bergantung
-        # pada data locale Indonesia yang mungkin tidak lengkap di runner CI.
+      - name: Hitung tanggal, jam rilis & nomor versi otomatis (WITA)
+        # GANTI dari WIB ke WITA (Asia/Makassar, UTC+8) sesuai permintaan.
+        #
+        # "terbaru" (versionName, teks yg tampil ke pemain) SEKARANG dihitung
+        # OTOMATIS dari tanggal & jam rilis, bukan diketik manual lagi di
+        # versi.json. Formatnya: {tahunKe}.{bulan}.{tanggal}.{jamMenit}
+        #   - tahunKe   = tahun kalender sekarang dikurangi GAME_LAUNCH_YEAR
+        #                 lalu +1. Jadi ini BUKAN tahun kalender asli,
+        #                 melainkan "game ini sudah jalan tahun ke berapa".
+        #                 GAME_LAUNCH_YEAR di-set manual sekali di bawah
+        #                 (2026 = tahun game ini mulai jalan) — ubah cuma
+        #                 kalau ternyata tahun mulainya beda.
+        #   - bulan     = angka bulan apa adanya (1-12, TIDAK di-pad 0),
+        #                 mis. Agustus = 8, bukan 08.
+        #   - tanggal   = tanggal 2 digit (di-pad 0 kalau perlu), mis. 05.
+        #   - jamMenit  = jam+menit digabung 4 digit (HHmm, di-pad 0), mis.
+        #                 23:30 -> 2330, 09:05 -> 0905.
+        #   Contoh: rilis 22 Agustus 2026 jam 23:30 WITA -> "1.8.22.2330".
+        #           rilis 23 Agustus 2026 jam 10:30 WITA -> "1.8.23.1030".
         id: rilis
+        env:
+          GAME_LAUNCH_YEAR: 2026
         run: |
-          TANGGAL=$(node -e "
-            const bulan=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-            const now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Jakarta'}));
-            const pad = n => String(n).padStart(2,'0');
-            console.log(pad(now.getDate())+' '+bulan[now.getMonth()]+' '+now.getFullYear()+', '+pad(now.getHours())+':'+pad(now.getMinutes())+' WIB');
-          ")
-          echo "tanggal=$TANGGAL" >> "$GITHUB_OUTPUT"
+          node -e "
+            const bulanNama=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            const now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Makassar'}));
+            const pad2 = n => String(n).padStart(2,'0');
+            const launchYear = parseInt(process.env.GAME_LAUNCH_YEAR, 10);
+            const tahunKe = now.getFullYear() - launchYear + 1;
+            const bulan = now.getMonth() + 1;
+            const tanggal = pad2(now.getDate());
+            const jamMenit = pad2(now.getHours()) + pad2(now.getMinutes());
+            const versi = tahunKe + '.' + bulan + '.' + tanggal + '.' + jamMenit;
+            const tanggalTampil = pad2(now.getDate())+' '+bulanNama[now.getMonth()]+' '+now.getFullYear()+', '+pad2(now.getHours())+':'+pad2(now.getMinutes())+' WITA';
+            const fs = require('fs');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'terbaru='+versi+'\n'+'tanggal='+tanggalTampil+'\n');
+          "
+
+      - name: Deteksi perubahan native (plugin/dependency)
+        # Ini yang MEMISAHKAN "update konten" (hot-update, tidak perlu APK
+        # baru) dari "update native" (WAJIB APK baru lewat dialog Install).
+        #
+        # Dibandingkan file-file yang berubah dari commit terakhir yang
+        # SUKSES di-build (lastBuildCommit, disimpan di versi.json) sampai
+        # commit sekarang, KHUSUS untuk path yang benar-benar mempengaruhi
+        # native shell: package.json/package-lock.json (dependency Capacitor
+        # baru/berubah), capacitor.config.json (config native), dan folder
+        # plugins/ (kode plugin custom kayak capacitor-apk-installer).
+        # Perubahan di index.html/asset lain TIDAK masuk hitungan ini,
+        # karena itu cukup lewat hot-update konten saja.
+        #
+        # Kalau ADA perubahan di path itu -> nativeBuild dinaikkan ke nomor
+        # build sekarang (dipakai app buat mewajibkan full APK update).
+        # Kalau TIDAK ADA -> nativeBuild dibiarkan sama seperti sebelumnya,
+        # jadi HP yang native shell-nya sudah setara tidak akan ditawari
+        # APK baru lagi walau contentBuild terus naik di rilis-rilis
+        # berikutnya (ini yang memperbaiki masalah "update dobel").
+        id: native
+        run: |
+          LAMA="${{ steps.versi.outputs.lastBuildCommit }}"
+          if [ -z "$LAMA" ] || ! git cat-file -e "$LAMA" 2>/dev/null; then
+            # Belum pernah tercatat (rilis pertama kali pakai skema ini)
+            # atau commit lama sudah tidak ada di histori -> anggap native
+            # berubah, biar aman (nativeBuild ikut naik sekali di awal).
+            BERUBAH=1
+          else
+            if git diff --name-only "$LAMA" HEAD -- package.json package-lock.json capacitor.config.json plugins/ | grep -q .; then
+              BERUBAH=1
+            else
+              BERUBAH=0
+            fi
+          fi
+          if [ "$BERUBAH" = "1" ]; then
+            echo "nativeBuild=${{ steps.versi.outputs.build }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "nativeBuild=${{ steps.versi.outputs.nativeBuildLama }}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Tulis versionCode/versionName ke project Android
         # npx cap add android di atas selalu membuat ulang build.gradle
@@ -135,7 +207,7 @@ jobs:
         #   secara matematis, Android tidak mengecek teks ini sama sekali.
         run: |
           sed -i "s/versionCode 1/versionCode ${{ steps.versi.outputs.build }}/" android/app/build.gradle
-          sed -i "s/versionName \"1.0\"/versionName \"${{ steps.versi.outputs.terbaru }}\"/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"${{ steps.rilis.outputs.terbaru }}\"/" android/app/build.gradle
 
       - name: Isi info versi & tanggal rilis di tampilan menu awal (index.html)
         # index.html sudah ikut ter-sync ke android/app/src/main/assets/public/
@@ -146,7 +218,7 @@ jobs:
         # diisi dengan angka build terbaru.
         run: |
           ASSET=android/app/src/main/assets/public/index.html
-          sed -i "s/__ANUMPOLY_VERSION__/${{ steps.versi.outputs.terbaru }}/" "$ASSET"
+          sed -i "s/__ANUMPOLY_VERSION__/${{ steps.rilis.outputs.terbaru }}/" "$ASSET"
           sed -i "s/__ANUMPOLY_BUILD__/${{ steps.versi.outputs.build }}/" "$ASSET"
           sed -i "s/__ANUMPOLY_RELEASE_AT__/${{ steps.rilis.outputs.tanggal }}/" "$ASSET"
 
@@ -191,9 +263,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
-          gh release delete "v${{ steps.versi.outputs.terbaru }}" --yes --cleanup-tag || true
-          gh release create "v${{ steps.versi.outputs.terbaru }}" anumpoly.apk \
-            --title "Monopoli Dunia v${{ steps.versi.outputs.terbaru }}" \
+          gh release delete "v${{ steps.rilis.outputs.terbaru }}" --yes --cleanup-tag || true
+          gh release create "v${{ steps.rilis.outputs.terbaru }}" anumpoly.apk \
+            --title "Monopoli Dunia v${{ steps.rilis.outputs.terbaru }}" \
             --notes "Update otomatis dari CI (build #${{ steps.versi.outputs.build }}). Lihat riwayat commit untuk detail perubahan."
 
       - name: Publikasikan APK & catat nomor build ke GitHub Pages
@@ -205,31 +277,37 @@ jobs:
         # (anumpoly.apk) supaya link_apk di versi.json tidak perlu berubah
         # tiap rilis.
         #
-        # Field "terbaruBuild" di versi.json juga ditulis ulang otomatis di
-        # sini (nomor build CI, angka bulat yang selalu naik) — inilah yang
-        # dipakai APLIKASI untuk membandingkan "versi saya vs versi
-        # terbaru", BUKAN teks "terbaru" (yang bebas ditulis developer,
-        # mis. "1.8.14"). Jadi developer cukup edit "terbaru" manual tiap
-        # rilis; "terbaruBuild" beres sendiri di sini. Field "tanggal_rilis"
-        # juga dicatat di sini (dari step "Hitung tanggal & jam rilis (WIB)"
-        # di atas) — dipakai kalau suatu saat ingin ditampilkan lewat
-        # versi.json juga (mis. sebelum pemain update), terpisah dari info
-        # versi yang sudah tercetak langsung di dalam APK itu sendiri.
-        #
-        # Field "link_bundle" nunjuk ke dist.zip (dibuat di step "Bikin
-        # dist.zip..." di atas) — ini yang dibaca fitur hot update konten
-        # (ala MLBB/PUBG/FF) di update-check.js, TERPISAH dari "link_apk"
-        # yang dipakai jalur update APK penuh (dialog Install Android).
-        # Nama file selalu sama (dist.zip) supaya link ini juga tidak
-        # perlu berubah tiap rilis, sama seperti anumpoly.apk.
+        # Field versi di versi.json ditulis ulang otomatis di sini, DIPECAH
+        # jadi dua nomor build (ini yang memperbaiki masalah "update dobel"):
+        #   - contentBuild = nomor build CI sekarang, SELALU naik tiap rilis
+        #     apapun. Dipakai fitur hot-update KONTEN (update-check.js) buat
+        #     tahu ada bundle baru atau tidak.
+        #   - nativeBuild = dari step "Deteksi perubahan native" di atas.
+        #     Cuma naik kalau rilis ini benar-benar mengubah sesuatu yang
+        #     butuh APK baru (plugin/dependency/config native). Dipakai
+        #     fitur update APK PENUH buat tahu native shell yang kepasang
+        #     di HP masih setara atau tidak — kalau masih setara, APK baru
+        #     tidak akan ditawarkan lagi walau contentBuild terus naik.
+        #   - lastBuildCommit = SHA commit sekarang, disimpan supaya build
+        #     berikutnya tahu dari titik mana harus mulai diff pas
+        #     "Deteksi perubahan native".
+        # "terbaru" sekarang OTOMATIS dari step "Hitung tanggal, jam rilis
+        # & nomor versi otomatis (WITA)" di atas, tidak diedit manual lagi.
+        # Field "tanggal_rilis" & "link_bundle" (dist.zip, buat hot-update)
+        # tetap seperti sebelumnya.
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
+          COMMIT_SEKARANG=$(git rev-parse HEAD)
           node -e "
             const fs = require('fs');
             const v = JSON.parse(fs.readFileSync('versi.json','utf8'));
-            v.terbaruBuild = ${{ steps.versi.outputs.build }};
+            v.terbaru = '${{ steps.rilis.outputs.terbaru }}';
+            v.contentBuild = ${{ steps.versi.outputs.build }};
+            v.nativeBuild = ${{ steps.native.outputs.nativeBuild }};
+            v.lastBuildCommit = '$COMMIT_SEKARANG';
             v.tanggal_rilis = '${{ steps.rilis.outputs.tanggal }}';
             v.link_bundle = 'https://syharl.github.io/anumpoly/dist.zip';
+            delete v.terbaruBuild; // field lama, sudah digantikan contentBuild/nativeBuild
             fs.writeFileSync('versi.json', JSON.stringify(v, null, 2) + '\n');
           "
           git config user.name "github-actions[bot]"
@@ -256,7 +334,7 @@ jobs:
             git fetch origin main
             git reset --soft origin/main
             git add anumpoly.apk dist.zip versi.json
-            git commit -m "chore: publikasikan anumpoly.apk v${{ steps.versi.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [bot-publish]"
+            git commit -m "chore: publikasikan anumpoly.apk v${{ steps.rilis.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [bot-publish]"
             git push origin HEAD:main
           fi
 
