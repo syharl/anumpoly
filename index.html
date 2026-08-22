@@ -161,6 +161,7 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .menu-corner-btn:active{transform:scale(0.94);}
 .menu-corner-btn.corner-left{left:14px;}
 .menu-corner-btn.corner-right{right:14px;}
+.menu-corner-btn.corner-right-2{right:14px;top:74px;}
 .menu-corner-btn img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
 /* #screen-menu > * di atas memaksa position:relative ke semua anak
    langsung (untuk lapisan glow) — timpa lagi khusus tombol pojok
@@ -391,6 +392,8 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .modal .price-tag{font-family:'Space Mono',monospace;font-size:22px;color:var(--gold);font-weight:700;margin-bottom:14px;}
 .modal-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
 .modal-actions button{flex:1;min-width:110px;padding:13px;border-radius:10px;border:none;font-weight:800;font-size:14px;}
+.modal-actions.vertical{flex-direction:column;flex-wrap:nowrap;}
+.modal-actions.vertical button{width:100%;}
 .btn-yes{background:var(--gold);color:var(--ink2);}
 .btn-no{background:transparent;border:2px solid rgba(215,169,75,0.4)!important;color:var(--paper);}
 .btn-danger{background:var(--red);color:#fff;}
@@ -527,6 +530,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 <div id="screen-menu" class="screen">
   <button class="menu-corner-btn corner-left" onclick="goToAccount()" id="btnAccountMenu" title="Akun" aria-label="Akun">👤</button>
   <button class="menu-corner-btn corner-right" onclick="openHowToModal()" title="Cara Bermain" aria-label="Cara Bermain">📘</button>
+  <button class="menu-corner-btn corner-right-2" onclick="openMainMenuSettings()" title="Pengaturan" aria-label="Pengaturan">⚙️</button>
   <div class="stamp">
     <span class="top">Est. Hari Ini</span>
     <span class="mid">MONOPOLI</span>
@@ -1325,6 +1329,10 @@ function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
    ============================================================ */
 let audioCtx = null;
 let soundMuted = false;
+// Level volume efek suara, 1-10. Default 5 = persis gain asli tiap efek
+// (tidak dikalikan apa-apa), jadi kalau developer belum pernah menyentuh
+// slider ini, suaranya sama persis seperti sebelum fitur level ini ada.
+let sfxVolume = 5;
 function ensureAudio(){
   if(audioCtx) return audioCtx;
   try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
@@ -1344,8 +1352,12 @@ function beep(freq, dur, type, vol, delay){
   const gain = ctx.createGain();
   osc.type = type||'sine';
   osc.frequency.setValueAtTime(freq, t0);
+  // sfxVolume 1-10, default 5 -> pengali 1.0 (gain asli tiap efek tidak
+  // berubah di level default). Di-clamp ke 1.0 supaya tidak clipping kalau
+  // pemain set level 10.
+  const effectiveVol = Math.min(1, (vol||0.12) * (sfxVolume/5));
   gain.gain.setValueAtTime(0, t0);
-  gain.gain.linearRampToValueAtTime(vol||0.12, t0+0.01);
+  gain.gain.linearRampToValueAtTime(effectiveVol, t0+0.01);
   gain.gain.exponentialRampToValueAtTime(0.001, t0+dur);
   osc.connect(gain); gain.connect(ctx.destination);
   osc.start(t0); osc.stop(t0+dur+0.02);
@@ -1413,13 +1425,17 @@ function playSound(kind){
    ini. Kalau mau pakai nama file lain, tinggal ubah BGM_SRC saja. */
 let musicMuted = false;
 const BGM_SRC = 'anumpoly-bgm.mp3';
-const BGM_VOLUME = 0.5;
+// Volume BGM di level 10 (maksimum slider). Level musicVolume lain
+// (1-10) tinggal proporsional dari sini: audio.volume = BGM_MAX_VOLUME *
+// (musicVolume/10). Default musicVolume=3 -> 0.15.
+const BGM_MAX_VOLUME = 0.5;
+let musicVolume = 3;
 function getBgmAudio(){
   const audio = document.getElementById('bgmAudio');
   if(audio && !audio.getAttribute('src')){
     audio.src = BGM_SRC;
-    audio.volume = BGM_VOLUME;
   }
+  if(audio) audio.volume = BGM_MAX_VOLUME * (musicVolume/10);
   return audio;
 }
 function startBgm(){
@@ -1455,11 +1471,13 @@ let appSettings = { vibration:true, reducedMotion:false };
       if(typeof s.reducedMotion==='boolean') appSettings.reducedMotion = s.reducedMotion;
       if(typeof s.sound==='boolean') soundMuted = !s.sound;
       if(typeof s.music==='boolean') musicMuted = !s.music;
+      if(typeof s.sfxVolume==='number') sfxVolume = Math.max(1, Math.min(10, s.sfxVolume));
+      if(typeof s.musicVolume==='number') musicVolume = Math.max(1, Math.min(10, s.musicVolume));
     }
   }catch(e){}
 })();
 function saveSettings(){
-  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion })); }catch(e){}
+  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion, sfxVolume, musicVolume })); }catch(e){}
 }
 function vibrate(pattern){
   if(!appSettings.vibration) return;
@@ -1478,6 +1496,52 @@ function onToggleMusic(checked){
 }
 function onToggleVibration(checked){ appSettings.vibration = checked; saveSettings(); }
 function onToggleReducedMotion(checked){ appSettings.reducedMotion = checked; saveSettings(); }
+function onSfxVolumeChange(val){
+  sfxVolume = Math.max(1, Math.min(10, parseInt(val,10)||5));
+  const label = document.getElementById('sfxVolLabel'); if(label) label.textContent = sfxVolume;
+  saveSettings();
+  playSound('click'); // langsung kasih contoh bunyi di level barunya
+}
+function onMusicVolumeChange(val){
+  musicVolume = Math.max(1, Math.min(10, parseInt(val,10)||3));
+  const label = document.getElementById('musicVolLabel'); if(label) label.textContent = musicVolume;
+  const audio = document.getElementById('bgmAudio');
+  if(audio) audio.volume = BGM_MAX_VOLUME * (musicVolume/10);
+  saveSettings();
+}
+/* ------------------------------------------------------------
+   Panel pengaturan (dipakai bareng: submenu ☰ Pengaturan saat main,
+   DAN tombol ⚙️ di menu utama sebelum main dimulai) */
+function settingsPanelHTML(){
+  return `
+    <div style="display:flex;flex-direction:column;text-align:left;">
+      <div class="rule-row"><div class="rule-label">Suara (efek)</div>
+        <label class="switch"><input type="checkbox" id="setSound" ${soundMuted?'':'checked'} onchange="onToggleSound(this.checked)"><span class="slider"></span></label></div>
+      <div class="rule-row" style="display:block;">
+        <div class="rule-label">Volume efek suara<small>Level <span id="sfxVolLabel">${sfxVolume}</span>/10</small></div>
+        <input type="range" min="1" max="10" step="1" value="${sfxVolume}" style="width:100%;margin-top:6px;"
+          oninput="document.getElementById('sfxVolLabel').textContent=this.value" onchange="onSfxVolumeChange(this.value)">
+      </div>
+      <div class="rule-row"><div class="rule-label">Musik latar</div>
+        <label class="switch"><input type="checkbox" id="setMusic" ${musicMuted?'':'checked'} onchange="onToggleMusic(this.checked)"><span class="slider"></span></label></div>
+      <div class="rule-row" style="display:block;">
+        <div class="rule-label">Volume musik latar<small>Level <span id="musicVolLabel">${musicVolume}</span>/10</small></div>
+        <input type="range" min="1" max="10" step="1" value="${musicVolume}" style="width:100%;margin-top:6px;"
+          oninput="document.getElementById('musicVolLabel').textContent=this.value" onchange="onMusicVolumeChange(this.value)">
+      </div>
+      <div class="rule-row"><div class="rule-label">Getar (vibration)<small>Getar singkat saat lempar dadu, bayar, dll (HP saja)</small></div>
+        <label class="switch"><input type="checkbox" id="setVibration" ${appSettings.vibration?'checked':''} onchange="onToggleVibration(this.checked)"><span class="slider"></span></label></div>
+      <div class="rule-row"><div class="rule-label">Animasi ringan<small>Bidak langsung pindah tanpa animasi jalan, lebih ringan di HP lawas</small></div>
+        <label class="switch"><input type="checkbox" id="setReduced" ${appSettings.reducedMotion?'checked':''} onchange="onToggleReducedMotion(this.checked)"><span class="slider"></span></label></div>
+    </div>`;
+}
+function openMainMenuSettings(){
+  showModal({
+    title:'⚙️ Pengaturan',
+    desc: settingsPanelHTML(),
+    buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]
+  });
+}
 
 function saveGameLocal(){
   if(!state || state.mode!=='hotseat') return;
@@ -1511,26 +1575,22 @@ function resumeSavedGame(){
    MENU (☰) — pengaturan, riwayat, menyerah, keluar
    ============================================================ */
 function openSettingsMenu(){
-  const html = `
-    <div style="display:flex;flex-direction:column;text-align:left;">
-      <div class="rule-row"><div class="rule-label">Suara</div>
-        <label class="switch"><input type="checkbox" id="setSound" ${soundMuted?'':'checked'} onchange="onToggleSound(this.checked)"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Musik latar</div>
-        <label class="switch"><input type="checkbox" id="setMusic" ${musicMuted?'':'checked'} onchange="onToggleMusic(this.checked)"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Getar (vibration)<small>Getar singkat saat lempar dadu, bayar, dll (HP saja)</small></div>
-        <label class="switch"><input type="checkbox" id="setVibration" ${appSettings.vibration?'checked':''} onchange="onToggleVibration(this.checked)"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Animasi ringan<small>Bidak langsung pindah tanpa animasi jalan, lebih ringan di HP lawas</small></div>
-        <label class="switch"><input type="checkbox" id="setReduced" ${appSettings.reducedMotion?'checked':''} onchange="onToggleReducedMotion(this.checked)"><span class="slider"></span></label></div>
-    </div>`;
   showModal({
     title:'☰ Menu Permainan',
-    desc: html,
     buttons:[
-      {label:'📜 Riwayat', cls:'btn-no', onClick:()=>{ closeModal(); openHistory(); }},
       {label:'▶️ Lanjut Game', cls:'btn-yes', onClick:closeModal},
+      {label:'⚙️ Pengaturan', cls:'btn-no', onClick:openInGameSettingsPanel},
       {label:'🏳️ Menyerah', cls:'btn-danger', onClick:confirmSurrender},
       {label:'🚪 Keluar ke Menu', cls:'btn-no', onClick:confirmQuit},
-    ]
+    ],
+    vertical:true
+  });
+}
+function openInGameSettingsPanel(){
+  showModal({
+    title:'⚙️ Pengaturan',
+    desc: settingsPanelHTML(),
+    buttons:[{label:'← Kembali', cls:'btn-no', onClick:openSettingsMenu}]
   });
 }
 function confirmSurrender(){
@@ -2575,6 +2635,17 @@ function confirmQuit(){
         stopTurnTimer();
         if(isHotseat) saveGameLocal();
         clearInterval(gamePollTimer);
+        // PENTING: sebelumnya di sini cuma clearInterval(gamePollTimer),
+        // TAPI channel Supabase Realtime (gameRealtimeChannel) tidak
+        // pernah dilepas. Akibatnya walau sudah kembali ke menu utama,
+        // channel itu tetap aktif mendengarkan perubahan state room dan
+        // terus memanggil pollGameState() -> applyRemoteState() setiap
+        // ada pemain/bot lain jalan, termasuk memutar efek suaranya -
+        // makanya masih kedengeran padahal sudah "keluar". Sekarang
+        // channel-nya dilepas + state di-null-kan supaya benar-benar
+        // putus dari room, bukan cuma pindah layar.
+        try{ if(gameRealtimeChannel){ sbClient.removeChannel(gameRealtimeChannel); gameRealtimeChannel=null; } }catch(e){}
+        state = null;
         goToMenu();
         refreshResumeButton();
       }}
@@ -3720,9 +3791,9 @@ function confirmPass(){
 /* ============================================================
    GENERIC MODAL
    ============================================================ */
-function showModal({title, desc, priceTag, buttons}){
+function showModal({title, desc, priceTag, buttons, vertical}){
   const box = document.getElementById('modalBox');
-  box.innerHTML = `<h3>${title}</h3><div class="desc">${desc||''}</div>${priceTag?`<div class="price-tag">${priceTag}</div>`:''}<div class="modal-actions" id="modalBtns"></div>`;
+  box.innerHTML = `<h3>${title}</h3><div class="desc">${desc||''}</div>${priceTag?`<div class="price-tag">${priceTag}</div>`:''}<div class="modal-actions${vertical?' vertical':''}" id="modalBtns"></div>`;
   const btnWrap = document.getElementById('modalBtns');
   buttons.forEach(b=>{
     const el=document.createElement('button');
