@@ -11,6 +11,20 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # PENTING: workflow ini commit balik anumpoly.apk + versi.json ke main
+    # di step terakhir (supaya update dalam-game bisa jalan). Commit balik
+    # itu sendiri akan memicu event "push" lagi ke main, yang tanpa guard
+    # ini akan menjalankan build-android.yml LAGI tanpa henti (infinite
+    # loop). Sebelumnya dicegah pakai tag "[skip ci]" di pesan commit —
+    # TERNYATA tag itu levelnya GLOBAL di GitHub: bukan cuma mematikan
+    # workflow INI, tapi ikut mematikan SEMUA workflow lain yang harusnya
+    # jalan di commit yang sama, termasuk "pages build and deployment"
+    # (workflow bawaan GitHub Pages) — akibatnya versi.json yang baru
+    # tidak pernah benar-benar terpublish ke internet walau build sukses.
+    # Sekarang pakai tanda kita sendiri ("[bot-publish]", bukan konvensi
+    # skip-ci resmi GitHub) supaya HANYA job build ini yang di-skip,
+    # sementara workflow Pages tetap jalan normal seperti biasa.
+    if: "!contains(github.event.head_commit.message, '[bot-publish]')"
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -133,7 +147,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan, tidak perlu commit baru."
           else
-            git commit -m "chore: publikasikan anumpoly.apk v${{ steps.versi.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [skip ci]"
+            git commit -m "chore: publikasikan anumpoly.apk v${{ steps.versi.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [bot-publish]"
             git pull --rebase origin main
             git push
           fi
