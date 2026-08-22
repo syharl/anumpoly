@@ -1589,6 +1589,19 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <div class="changelog-entry">
+      <div class="cl-date">22 Agustus 2026 — Lelang Lebih Nekat &amp; Bisa Kelola Properti Dulu</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Lelang sekarang dimulai dari <b>harga beli normal</b> properti itu di papan (sebelumnya dimulai dari 10% harga, kadang bikin properti mahal jatuh ke tangan orang dengan harga terlalu murah).</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Bot sekarang jauh lebih berani menawar di lelang — tidak lagi gampang menyerah di bawah harga normal. Bot juga menilai properti lebih tinggi kalau itu melengkapi satu set warna yang sudah ia kuasai sebagian (mendekati atau berhasil monopoli), plus ada sedikit faktor acak tiap kali menawar supaya tidak selalu menyerah persis di angka yang sama.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>3 gaya main (personality) bot baru: <b>Kolektor Set</b> (rela bayar lebih demi melengkapi warna), <b>Spekulan</b> (paling berani menawar dari semua gaya, kadang di atas harga normal), dan <b>Konglomerat</b> (modal besar, tetap kalem tapi cukup kompetitif) — total sekarang ada 8 gaya main bot yang berbeda-beda.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Sekarang bisa menekan tombol "🏠 Kelola Dulu" saat kartu lelang muncul di giliran menawarmu — untuk cek/gadai/jual rumah dulu (misal butuh tambahan uang tunai) sebelum memutuskan tawar atau lewati. Kartu lelangnya muncul lagi otomatis setelah selesai.</div>
+    </div>
+    <div class="changelog-entry">
+      <div class="cl-date">22 Agustus 2026 — Giliran Tidak Lagi Macet Saat Ada yang Bangkrut</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Dulu, kalau seorang pemain dinyatakan bangkrut (klik "Nyatakan Bangkrut" saat tidak sanggup bayar), giliran tidak otomatis pindah ke pemain berikutnya — permainan jadi macet menunggu pemain yang sudah bangkrut itu sendiri, padahal dia sudah tidak bisa berbuat apa-apa lagi. Sekarang giliran langsung lanjut ke pemain berikutnya yang masih hidup, persis seperti saat ada yang menyerah lewat menu ☰.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Bug posisi token yang kadang "kembali" ke petak sebelumnya (mis. tampak masih di Dana Umum padahal barusan sudah jalan ke petak lain, lalu giliran berikutnya dadu malah dihitung dari petak lama) sudah diperbaiki. Penyebabnya: saat dua HP menyimpan data hampir bersamaan, HP yang datanya belum ter-update bisa menimpa balik posisi HP lain yang sudah lebih dulu jalan. Sekarang sebelum menyimpan, tiap HP menyamakan dulu datanya dengan yang paling baru di server sebelum menimpa apa pun.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Animasi token kedip-kedip/lompat-lompat saat ada pemain yang dikirim ke Penjara (mis. kena kartu, dobel 3× berturut-turut, atau menginjak petak "Masuk Penjara") sudah diperbaiki. Dikirim ke penjara sekarang langsung memindahkan token ke sana di layar semua pemain, bukan dianimasikan jalan kaki mengelilingi papan dulu.</div>
+    </div>
+    <div class="changelog-entry">
       <div class="cl-date">21 Agustus 2026 — Sinkron Saat Utang Belum Lunas</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Kalau seorang pemain singgah di properti pemain lain lalu uangnya kurang untuk bayar sewa, pemain lain sekarang langsung melihat token-nya sudah mendarat di petak itu — tidak perlu menunggu sampai dia menekan "Bayar Sekarang". Proses gadai/jual rumah yang dia lakukan sambil melunasi utang juga tetap kelihatan berjalan bertahap di layar pemain lain seperti biasa.</div>
     </div>
@@ -1912,7 +1925,8 @@ function applyRemoteState(payload){
       // jauh (mis. hampir muter satu papan penuh) tapi kebetulan mundur
       // lebih pendek, tebakan jarak-terpendek akan salah arah.
       const backward = !!(payload.lastMoveMeta && payload.lastMoveMeta.id===np.id && payload.lastMoveMeta.backward);
-      movedEntries.push({id:np.id, from:op.pos, to:np.pos, backward});
+      const teleport = !!(payload.lastMoveMeta && payload.lastMoveMeta.id===np.id && payload.lastMoveMeta.teleport);
+      movedEntries.push({id:np.id, from:op.pos, to:np.pos, backward, teleport});
     }
   });
   const rolledNew = payload.lastRoll && (!prevLastRoll || prevLastRoll[0]!==payload.lastRoll[0] || prevLastRoll[1]!==payload.lastRoll[1]);
@@ -2012,6 +2026,14 @@ function runNextRemoteAnim(){
   }
 
   function animateMoveFor(entry, cb){
+    // Kartu/aturan "dikirim ke Penjara" itu TELEPORT, bukan jalan kaki
+    // (tidak lewat MULAI, tidak dapat gaji, tidak singgah di petak lain).
+    // Kalau tetap dianimasikan sebagai jalan panjang mengelilingi papan
+    // (bisa puluhan petak), token jadi terlihat lompat-lompat/kedip-kedip
+    // selama animasi itu berjalan (apalagi kalau layar sempat terkunci/
+    // browser nge-throttle timer di tengah animasi panjangnya). Jadi untuk
+    // teleport, langsung pindahkan ke tujuan tanpa animasi jalan bertahap.
+    if(entry.teleport){ renderTokensAndHouses(); cb(); return; }
     const overridePos = {};
     let cur = entry.from;
     const fwd = mod(entry.to-entry.from,40);
@@ -2069,14 +2091,68 @@ function serializeState(){
 async function syncPush(){
   try{
     // Tarik data terbaru dari server tepat sebelum menulis, supaya baris log
-    // dari HP lain yang barusan masuk (dan belum sempat kita poll) tidak
-    // ikut hilang tertimpa oleh push kita.
+    // DAN perubahan dari HP lain yang barusan masuk (dan belum sempat kita
+    // poll) tidak ikut hilang tertimpa oleh push kita.
+    //
+    // PENTING (bug lama: "token pemain balik lagi ke petak sebelumnya"):
+    // dulu di sini HANYA baris log yang digabung — field lain (players,
+    // propStates, currentIndex, dst) TIDAK ikut diperbarui walau server
+    // ternyata sudah lebih baru (mis. HP lain barusan menggadaikan properti
+    // atau merespons tawaran dagang duluan). Akibatnya payload yang kita
+    // kirim di bawah ini memakai data pemain LAIN yang sudah basi di HP
+    // kita, lalu MENIMPA BALIK posisi/perubahan asli mereka di server —
+    // padahal rev yang kita kirim lebih besar sehingga dianggap paling
+    // baru oleh semua HP (termasuk HP pemain yang sebenarnya sudah
+    // benar itu sendiri, lewat poll berikutnya). Contoh nyata: pemain A
+    // baru saja jalan dari Dana Umum ke Thailand dan ke-commit lebih
+    // dulu, tapi HP B kebetulan push tepat setelah itu dengan data lama
+    // (A masih di Dana Umum) — hasilnya posisi A di server (dan di HP A
+    // sendiri setelah poll berikutnya!) kembali ke Dana Umum.
+    //
+    // Sekarang: kalau server ternyata sudah lebih baru, kita ADOPSI DULU
+    // seluruh datanya (bukan cuma log) sebagai dasar, lalu data milik KITA
+    // sendiri (pemain yang sedang giliran jalan di HP ini + pemain lokal
+    // kita) yang baru saja berubah tetap dipertahankan di atas dasar itu,
+    // supaya aksi yang baru saja kita lakukan tidak ikut hilang tapi juga
+    // tidak menimpa balik perubahan pemain lain yang sudah lebih dulu terjadi.
     try{
       const res = await window.storage.get('mpstate_'+state.roomCode, true);
       if(res){
         const remote = JSON.parse(res.value);
         state.log = mergeLogs(remote.log, state.log);
-        if(remote.rev > (state.rev||0)) state.rev = remote.rev;
+        if(remote.rev > (state.rev||0)){
+          const myIds = new Set([state.currentIndex, myOnlineSlot].filter(x=>x!=null));
+          const localPlayersSnap = {};
+          myIds.forEach(id=>{
+            const lp = (state.players||[]).find(pl=>pl.id===id);
+            if(lp) localPlayersSnap[id] = lp;
+          });
+          const localPropSnap = {};
+          Object.keys(state.propStates||{}).forEach(k=>{
+            const ps = state.propStates[k];
+            if(ps && myIds.has(ps.owner)) localPropSnap[k] = ps;
+          });
+          state.rev = remote.rev;
+          state.rules = remote.rules;
+          state.players = remote.players;
+          state.currentIndex = remote.currentIndex;
+          state.freeParkingPot = remote.freeParkingPot;
+          state.turnPhase = remote.turnPhase;
+          state.propStates = remote.propStates;
+          state.lastRoll = remote.lastRoll;
+          state.chanceDeckIds = remote.chanceDeckIds;
+          state.chestDeckIds = remote.chestDeckIds;
+          state.pendingTradeOffer = remote.pendingTradeOffer||null;
+          state.auction = remote.auction||null;
+          state.lastMoveMeta = remote.lastMoveMeta||null;
+          myIds.forEach(id=>{
+            if(localPlayersSnap[id]){
+              const idx = state.players.findIndex(pl=>pl.id===id);
+              if(idx>=0) state.players[idx] = localPlayersSnap[id];
+            }
+          });
+          Object.keys(localPropSnap).forEach(k=>{ state.propStates[k] = localPropSnap[k]; });
+        }
       }
     }catch(e){}
     const payload = serializeState();
@@ -3043,9 +3119,24 @@ function declareBankrupt(){
   closeModal();
   closeManage();
   checkGameOver();
-  beginPlayerTurn();
-  state.turnPhase='canEndTurn';
-  commit();
+  if(document.getElementById('winnerOverlay').classList.contains('show')){
+    commit();
+  } else if(p.id===currentPlayer().id){
+    // Yang baru dinyatakan bangkrut BIASANYA memang lagi giliran jalan
+    // (utang muncul saat sedang mendarat/bayar sewa/pajak) -> giliran
+    // HARUS otomatis lanjut ke pemain berikutnya yang belum bangkrut,
+    // sama seperti saat menyerah lewat menu ☰. Sebelumnya di sini
+    // giliran tidak pernah dipindahkan (cuma set turnPhase='canEndTurn'
+    // lalu diam), jadi permainan macet menunggu pemain yang sudah
+    // bangkrut itu sendiri "menyelesaikan giliran" padahal dia sudah
+    // tidak bisa berbuat apa-apa lagi.
+    forceEndTurn();
+  } else {
+    // Kasus jarang: pemain yang bangkrut BUKAN yang sedang giliran jalan
+    // (mis. lewat proses lain di luar giliran) -> jangan sentuh giliran
+    // yang sedang berjalan, cukup sinkronkan status bangkrutnya saja.
+    commit();
+  }
 }
 function checkGameOver(){
   if(state.timeAttackEndedShown) return; // permainan sudah selesai lewat Time Attack
@@ -3173,12 +3264,12 @@ function startAuction(idx, wasDouble, includeMover){
     return;
   }
   const t = BOARD[idx];
-  // Lelang dimulai dari harga nominal rendah (bukan langsung harga penuh)
-  // supaya ada ruang tawar-menawar sungguhan dan bot dengan gaya main
-  // hati-hati (auctionFactor<1) tetap bisa ikut menawar dari awal.
-  const startPrice = Math.max(10, Math.round(t.price*0.1));
+  // Lelang dimulai dari harga beli aslinya (bukan dipotong 10% seperti
+  // sebelumnya) — permintaan pemain: harga awal lelang = harga normal
+  // properti itu di papan, bukan nominal rendah.
+  const startPrice = t.price;
   state.auction = { idx, remaining: activeIds, pos:0, highBid:0, highBidderId:null, highBidderName:null, wasDouble, startPrice, increment: 5 };
-  log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(startPrice)}, naik ${fmt(5)} tiap tawaran.`);
+  log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(startPrice)} (harga normalnya).`);
   auctionShownSig = null;
   commit();
 }
@@ -3220,6 +3311,16 @@ function maybeShowAuctionModal(){
     desc,
     buttons:[
       {label:'Tawar', cls:'btn-yes', disabled: !canBid, onClick:auctionBidCustom},
+      {label:'🏠 Kelola Dulu', cls:'btn-no', onClick:()=>{
+        // Tutup kartu lelang SEMENTARA (bukan melewati/menawar) supaya
+        // pemain bisa gadai/jual rumah dulu kalau mau nambah uang tunai
+        // sebelum memutuskan tawaran. auctionShownSig di-reset supaya
+        // kartu lelang ini muncul lagi otomatis setelah panel Kelola
+        // Properti ditutup (lihat closeManage()).
+        auctionShownSig = null;
+        closeModal();
+        openManage();
+      }},
       {label:'Lewati', cls:'btn-no', onClick:auctionPass},
     ]
   });
@@ -3380,8 +3481,12 @@ function goToJail(p){
   p.jailTurns = 0;
   p.timesJailed = (p.timesJailed||0)+1;
   // "Dikirim" ke penjara itu teleport, bukan kartu "mundur" — pastikan
-  // penanda arah gerak sebelumnya tidak ikut kebawa ke sini.
-  state.lastMoveMeta = {id:p.id, backward:false};
+  // penanda arah gerak sebelumnya tidak ikut kebawa ke sini. Ditandai
+  // teleport:true supaya di HP pemain LAIN token-nya langsung dipindah
+  // (bukan dianimasikan "jalan jauh" melingkari papan dulu baru sampai
+  // penjara — itu yang dulu bikin token terlihat kedip-kedip/lompat-lompat
+  // di antara posisi lama dan penjara selama animasi panjangnya berjalan).
+  state.lastMoveMeta = {id:p.id, backward:false, teleport:true};
   renderTokensAndHouses();
   log(`${p.name} dikirim ke Penjara.`);
 }
@@ -3526,7 +3631,12 @@ function openManage(){
 function closeManage(){
   document.getElementById('manageOverlay').classList.remove('show');
   const debt = state.pendingDebt;
-  if(debt && debt.playerId===localPlayer().id){ openDebtModal(); }
+  if(debt && debt.playerId===localPlayer().id){ openDebtModal(); return; }
+  // Kalau tadi Kelola Properti dibuka lewat tombol "🏠 Kelola Dulu" saat
+  // giliran menawar lelang, munculkan lagi kartu lelangnya di sini —
+  // supaya pemain bisa lanjut memutuskan tawar/lewati setelah selesai
+  // gadai/jual rumah.
+  if(state.auction && auctionTurnOK()) maybeShowAuctionModal();
 }
 function propertyDetailsHTML(t, ps){
   const rowLevels = ['Tanah kosong','1 rumah','2 rumah','3 rumah','4 rumah','Hotel'];
@@ -3961,11 +4071,14 @@ function pickBotName(existingNames){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 const BOT_PERSONALITIES = {
-  saver:     { label:'Penabung',        buyBuffer:400, houseBuffer:420, buildBias:0.32, tradeMinProfit:1.3,  auctionFactor:0.6 },
-  stable250: { label:'Jaga Saldo $250+',buyBuffer:250, houseBuffer:250, buildBias:0.55, tradeMinProfit:1.1,  auctionFactor:0.8 },
-  stable500: { label:'Jaga Saldo $500+',buyBuffer:500, houseBuffer:500, buildBias:0.65, tradeMinProfit:1.1,  auctionFactor:0.85 },
-  reckless:  { label:'Nekat',           buyBuffer:20,  houseBuffer:20,  buildBias:0.92, tradeMinProfit:1.0,  auctionFactor:1.0 },
-  builder:   { label:'Gemar Membangun', buyBuffer:150, houseBuffer:90,  buildBias:0.9,  tradeMinProfit:1.15, auctionFactor:0.75 },
+  saver:     { label:'Penabung',        buyBuffer:400, houseBuffer:420, buildBias:0.32, tradeMinProfit:1.3,  auctionFactor:0.85 },
+  stable250: { label:'Jaga Saldo $250+',buyBuffer:250, houseBuffer:250, buildBias:0.55, tradeMinProfit:1.1,  auctionFactor:0.95 },
+  stable500: { label:'Jaga Saldo $500+',buyBuffer:500, houseBuffer:500, buildBias:0.65, tradeMinProfit:1.1,  auctionFactor:1.0 },
+  reckless:  { label:'Nekat',           buyBuffer:20,  houseBuffer:20,  buildBias:0.92, tradeMinProfit:1.0,  auctionFactor:1.3 },
+  builder:   { label:'Gemar Membangun', buyBuffer:150, houseBuffer:90,  buildBias:0.9,  tradeMinProfit:1.15, auctionFactor:0.95 },
+  collector: { label:'Kolektor Set',    buyBuffer:180, houseBuffer:200, buildBias:0.5,  tradeMinProfit:1.05, auctionFactor:1.1 },
+  gambler:   { label:'Spekulan',        buyBuffer:60,  houseBuffer:150, buildBias:0.7,  tradeMinProfit:0.95, auctionFactor:1.4 },
+  richOwner: { label:'Konglomerat',     buyBuffer:600, houseBuffer:300, buildBias:0.7,  tradeMinProfit:1.2,  auctionFactor:1.05 },
 };
 function pickBotPersonality(){
   const keys = Object.keys(BOT_PERSONALITIES);
@@ -4176,7 +4289,25 @@ function botResolveDebt(cp){
   } finally { botDriving = false; }
 }
 /* Tawar lelang: batas kemauan menawar mengikuti gaya main (auctionFactor
-   dari kepribadian bot), selama masih sisa buffer uang, kalau tidak lewati. */
+   dari kepribadian bot), dikalikan lagi dengan nilai strategis properti
+   (properti yang melengkapi satu set warna dinilai jauh lebih berharga —
+   di dunia nyata orang juga rela bayar lebih demi monopoli) dan sedikit
+   faktor acak tiap giliran menawar (kadang lebih berani, kadang lebih
+   ragu) supaya bot tidak selalu menyerah persis di angka yang sama dan
+   lelang terasa lebih hidup/menantang. */
+function botAuctionValueMultiplier(bidder, t){
+  if(t.type!=='property') return 1;
+  const groupTiles = BOARD.map((x,i)=>({x,i})).filter(o=>o.x.type==='property' && o.x.group===t.group);
+  const ownedByBidder = groupTiles.filter(o=>(bidder.properties||[]).includes(o.i)).length;
+  const heldByOthers = groupTiles.some(o=>{
+    const owner = state.propStates[o.i].owner;
+    return owner!=null && owner!==bidder.id;
+  });
+  if(heldByOthers) return 1; // set ini sudah kepegang orang lain, mustahil monopoli lagi
+  if(ownedByBidder>=groupTiles.length-1) return 1.9; // ini yang TERAKHIR buat lengkap satu set penuh!
+  if(ownedByBidder>0) return 1.35;
+  return 1;
+}
 function botAuctionAct(){
   if(!state || !state.auction) return;
   const a = state.auction;
@@ -4187,10 +4318,13 @@ function botAuctionAct(){
   const t = BOARD[a.idx];
   const per = botPersonalityOf(bidder);
   const nextBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
-  const maxWillingness = Math.round(t.price*per.auctionFactor);
+  const valueMult = botAuctionValueMultiplier(bidder, t);
+  const randomMult = 0.88 + Math.random()*0.34; // ± sekitar 0.88–1.22, biar tidak monoton
+  const maxWillingness = Math.round(t.price * per.auctionFactor * valueMult * randomMult);
+  const safetyBuffer = per.buyBuffer * 0.15;
   botDriving = true;
   try{
-    if(bidder.money>=nextBid && nextBid<=maxWillingness && (bidder.money-nextBid)>=per.buyBuffer*0.3){
+    if(bidder.money>=nextBid && nextBid<=maxWillingness && (bidder.money-nextBid)>=safetyBuffer){
       auctionBid(nextBid);
     } else {
       auctionPass();
@@ -4360,7 +4494,14 @@ async function checkForUpdate(){
     const versiSaya = await getVersiTerpasang();
     const res = await fetch(REMOTE_VERSI_URL, { cache: 'no-store' });
     const data = await res.json();
-    if(data && data.terbaru && versiSaya < data.terbaru){
+    // PENTING: perbandingan "ada update atau tidak" pakai terbaruBuild
+    // (angka bulat yang selalu naik, otomatis diisi CI dari nomor build —
+    // lihat build-android.yml), BUKAN field "terbaru" yang sekarang berupa
+    // teks bebas seperti "1.8.14" untuk ditampilkan ke pemain saja. Android
+    // sendiri mewajibkan versionCode berupa angka bulat naik terus,
+    // sementara teks versi (1.8.14 -> 1.8.24 -> 1.9.00 -> 2.0.01, dst)
+    // murni kosmetik dan bebas dipilih developer.
+    if(data && data.terbaruBuild && versiSaya < data.terbaruBuild){
       showUpdateCard(data);
     }
   }catch(e){ /* offline / gagal cek — biarkan pemain lanjut main seperti biasa */ }
