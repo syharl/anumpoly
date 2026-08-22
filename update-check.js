@@ -246,6 +246,10 @@ function showContentUpdateCard(data, buildTerbaru){
       <div class="upd-icon">✨</div>
       <h2>Update Kecil Tersedia</h2>
       <p>Ada pembaruan ringan Anumpoly${data.terbaru?(' (v'+data.terbaru+')'):''} — perbaikan/tampilan, unduhan kecil, TANPA install ulang.</p>
+      <div id="contentProgressWrap" style="display:none;">
+        <div class="upd-bar-track"><div id="contentProgressBar" class="upd-bar-fill"></div></div>
+        <div id="contentProgressLabel" class="upd-progress-label">0%</div>
+      </div>
       <button id="btnContentUpdateAction" class="upd-btn-main">⬇️ Perbarui Sekarang</button>
       <div id="contentUpdateStatus" class="upd-status"></div>
     </div>`;
@@ -253,15 +257,45 @@ function showContentUpdateCard(data, buildTerbaru){
   document.getElementById('btnContentUpdateAction').onclick = ()=> startContentUpdate(data, buildTerbaru);
 }
 
-async function startContentUpdate(data, buildTerbaru){
+// Berapa kali coba ulang otomatis kalau unduhan gagal (mis. putus sesaat di
+// jaringan lambat) SEBELUM benar-benar menampilkan pesan gagal ke pemain.
+// Percobaan ulang otomatis ini yang tadinya tidak ada — dulu sekali gagal
+// (mis. cuma putus sebentar) langsung tampil "Gagal memperbarui" walau
+// jaringannya sebenarnya masih hidup.
+const CONTENT_UPDATE_MAX_RETRY = 2;
+
+async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
   const btn = document.getElementById('btnContentUpdateAction');
   const status = document.getElementById('contentUpdateStatus');
+  const progressWrap = document.getElementById('contentProgressWrap');
+  const progressBar = document.getElementById('contentProgressBar');
+  const progressLabel = document.getElementById('contentProgressLabel');
   if(btn.dataset.busy==='1') return;
   btn.dataset.busy = '1';
   btn.textContent = '⏳ Mengunduh...';
+  progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
+  progressLabel.textContent = '0%';
   status.textContent = 'Mengunduh pembaruan, mohon tunggu...';
+
+  // Dengerin event progress asli dari plugin CapacitorUpdater (bukan
+  // animasi palsu) — inilah yang tadinya hilang, makanya progress bar
+  // hot-update tidak pernah jalan padahal update APK di atas sudah punya.
+  // Listener WAJIB dilepas lagi di finally, supaya tidak numpuk kalau
+  // fungsi ini dipanggil ulang (coba lagi / update berikutnya).
+  let downloadListener = null;
+  if(CapUpdater.addListener){
+    downloadListener = await CapUpdater.addListener('download', (info)=>{
+      const pct = Math.min(100, Math.round(info && info.percent || 0));
+      progressBar.style.width = pct+'%';
+      progressLabel.textContent = pct+'%';
+    });
+  }
+
   try{
     const bundle = await CapUpdater.download({ version: buildTerbaru, url: data.link_bundle });
+    progressBar.style.width = '100%';
+    progressLabel.textContent = '100%';
     status.textContent = 'Menerapkan pembaruan...';
     if(CapPlugins.SplashScreen) { try{ await CapPlugins.SplashScreen.show(); }catch(e){} }
     try{ localStorage.setItem(CONTENT_VERSION_KEY, buildTerbaru); }catch(e){}
@@ -269,11 +303,24 @@ async function startContentUpdate(data, buildTerbaru){
     // tempat — baris setelah ini biasanya tidak sempat kejalan lagi.
     await CapUpdater.set(bundle);
   }catch(err){
+    if(downloadListener) { try{ await downloadListener.remove(); }catch(e){} }
+    // Gagal (paling sering: timeout di jaringan lambat/putus sesaat) —
+    // coba ulang otomatis dulu beberapa kali sebelum benar-benar
+    // mengaku gagal ke pemain.
+    if(percobaanKe < CONTENT_UPDATE_MAX_RETRY){
+      status.textContent = 'Unduhan sempat gagal, mencoba lagi... ('+percobaanKe+'/'+CONTENT_UPDATE_MAX_RETRY+')';
+      btn.dataset.busy = '0';
+      setTimeout(()=> startContentUpdate(data, buildTerbaru, percobaanKe+1), 1500);
+      return;
+    }
     if(CapPlugins.SplashScreen) { try{ await CapPlugins.SplashScreen.hide(); }catch(e){} }
     status.textContent = '❌ Gagal memperbarui: '+(err && err.message ? err.message : err)+'. Coba lagi, atau main dulu — nanti ditawari lagi saat buka berikutnya.';
     btn.textContent = '🔁 Coba Lagi';
     btn.dataset.busy = '0';
+    btn.onclick = ()=> startContentUpdate(data, buildTerbaru, 1);
+    return;
   }
+  if(downloadListener) { try{ await downloadListener.remove(); }catch(e){} }
 }
 
 // Hot update konten dicek DULUAN (ringan, tidak ganggu) — kalau memang

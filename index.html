@@ -529,8 +529,6 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 <!-- ================= MENU ================= -->
 <div id="screen-menu" class="screen">
   <button class="menu-corner-btn corner-left" onclick="goToAccount()" id="btnAccountMenu" title="Akun" aria-label="Akun">👤</button>
-  <button class="menu-corner-btn corner-right" onclick="openHowToModal()" title="Cara Bermain" aria-label="Cara Bermain">📘</button>
-  <button class="menu-corner-btn corner-right-2" onclick="openMainMenuSettings()" title="Pengaturan" aria-label="Pengaturan">⚙️</button>
   <div class="stamp">
     <span class="top">Est. Hari Ini</span>
     <span class="mid">MONOPOLI</span>
@@ -542,6 +540,12 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   <button class="menu-btn primary" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
   <button class="menu-btn primary" onclick="goToModeSelect()">▶ Main</button>
   <button class="menu-btn secondary-link" onclick="openReferenceModal()">📖 Daftar Properti &amp; Kartu</button>
+  <!-- Cara Bermain & Pengaturan: dulu tombol kotak kecil di pojok atas
+       (.menu-corner-btn corner-right / corner-right-2), sekarang
+       dipindah ke sini sebagai tombol daftar biasa, tepat di atas
+       "Apa yang Baru" -->
+  <button class="menu-btn secondary-link" onclick="openHowToModal()">📘 Cara Bermain</button>
+  <button class="menu-btn secondary-link" onclick="openMainMenuSettings()">⚙️ Pengaturan</button>
   <button class="menu-btn secondary-link" onclick="openWhatsNewModal()">🆕 Apa yang Baru</button>
   <div class="menu-footer" id="accountMenuStatus">Aturan bisa disesuaikan di layar berikutnya</div>
   <!-- Info versi + tanggal/jam rilis + dev, diisi otomatis oleh CI (build-android.yml)
@@ -1425,6 +1429,14 @@ function playSound(kind){
    ini. Kalau mau pakai nama file lain, tinggal ubah BGM_SRC saja. */
 let musicMuted = false;
 const BGM_SRC = 'anumpoly-bgm.mp3';
+// Fallback kalau salinan lokal tidak ketemu — ini bisa kejadian abis
+// hot-update konten (lihat build-android.yml, step "Bikin dist.zip"):
+// file musik SENGAJA tidak ikut dibawa di paket hot-update (ukurannya
+// jauh lebih besar dari sisanya & jarang berubah, jadi cukup ambil dari
+// GitHub Pages kalau memang perlu). Kalau device sedang offline saat itu,
+// audio cuma diam saja (sama seperti browser blokir autoplay) — bukan
+// error yang mengganggu permainan.
+const BGM_SRC_FALLBACK = 'https://syharl.github.io/anumpoly/anumpoly-bgm.mp3';
 // Volume BGM di level 10 (maksimum slider). Level musicVolume lain
 // (1-10) tinggal proporsional dari sini: audio.volume = BGM_MAX_VOLUME *
 // (musicVolume/10). Default musicVolume=3 -> 0.15.
@@ -1434,6 +1446,17 @@ function getBgmAudio(){
   const audio = document.getElementById('bgmAudio');
   if(audio && !audio.getAttribute('src')){
     audio.src = BGM_SRC;
+    // Kalau file lokal gagal dimuat (mis. abis hot-update, mp3-nya
+    // memang tidak ikut di paket itu), pindah otomatis ke salinan di
+    // GitHub Pages — sekali coba saja (biar tidak muter-muter kalau
+    // fallback-nya juga gagal karena offline).
+    audio.addEventListener('error', function onBgmError(){
+      audio.removeEventListener('error', onBgmError);
+      if(audio.src.indexOf(BGM_SRC_FALLBACK) === -1){
+        audio.src = BGM_SRC_FALLBACK;
+        if(!musicMuted) { const p = audio.play(); if(p && p.catch) p.catch(()=>{}); }
+      }
+    }, { once:true });
   }
   if(audio) audio.volume = BGM_MAX_VOLUME * (musicVolume/10);
   return audio;
@@ -1801,6 +1824,12 @@ function renderReferenceModal(){
    ============================================================ */
 function openWhatsNewModal(){
   const html = `
+    <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
+    <!-- Baris di atas ini JANGAN dihapus/dipindah — CI (build-android.yml,
+         step "Tambah entri Apa Yang Baru") menyisipkan entri rilis baru
+         TEPAT SETELAH marker itu secara otomatis, tiap kali ada rilis
+         (sekalipun kecil). Entri-entri lama di bawah ini tetap seperti
+         biasa, ditulis manual oleh developer untuk rilis-rilis penting. -->
     <div class="changelog-entry">
       <div class="cl-date">22 Agustus 2026 — Lelang Lebih Nekat &amp; Bisa Kelola Properti Dulu</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Lelang sekarang dimulai dari <b>harga beli normal</b> properti itu di papan (sebelumnya dimulai dari 10% harga, kadang bikin properti mahal jatuh ke tangan orang dengan harga terlalu murah).</div>
