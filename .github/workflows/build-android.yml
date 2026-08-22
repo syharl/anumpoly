@@ -113,6 +113,17 @@ jobs:
           sed -i "s/__ANUMPOLY_BUILD__/${{ steps.versi.outputs.build }}/" "$ASSET"
           sed -i "s/__ANUMPOLY_RELEASE_AT__/${{ steps.rilis.outputs.tanggal }}/" "$ASSET"
 
+      - name: Bikin dist.zip untuk hot update konten (bukan APK)
+        # Ini yang dipakai fitur "update dalam-game" ala MLBB/PUBG/FF di
+        # update-check.js (lewat plugin @capgo/capacitor-updater) — beda
+        # dari anumpoly.apk di bawah yang WAJIB lewat dialog Install
+        # Android. Di-zip dari SALINAN yang sudah diisi placeholder versi
+        # di atas, jadi isinya persis sama dengan yang terpasang di APK
+        # native rilis ini (bukan file sumber mentah di repo).
+        run: |
+          cd android/app/src/main/assets/public
+          zip -r "$GITHUB_WORKSPACE/dist.zip" .
+
       - name: Build APK (release, ditandatangani)
         working-directory: android
         env:
@@ -167,6 +178,13 @@ jobs:
         # di atas) — dipakai kalau suatu saat ingin ditampilkan lewat
         # versi.json juga (mis. sebelum pemain update), terpisah dari info
         # versi yang sudah tercetak langsung di dalam APK itu sendiri.
+        #
+        # Field "link_bundle" nunjuk ke dist.zip (dibuat di step "Bikin
+        # dist.zip..." di atas) — ini yang dibaca fitur hot update konten
+        # (ala MLBB/PUBG/FF) di update-check.js, TERPISAH dari "link_apk"
+        # yang dipakai jalur update APK penuh (dialog Install Android).
+        # Nama file selalu sama (dist.zip) supaya link ini juga tidak
+        # perlu berubah tiap rilis, sama seperti anumpoly.apk.
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
           node -e "
@@ -174,11 +192,12 @@ jobs:
             const v = JSON.parse(fs.readFileSync('versi.json','utf8'));
             v.terbaruBuild = ${{ steps.versi.outputs.build }};
             v.tanggal_rilis = '${{ steps.rilis.outputs.tanggal }}';
+            v.link_bundle = 'https://syharl.github.io/anumpoly/dist.zip';
             fs.writeFileSync('versi.json', JSON.stringify(v, null, 2) + '\n');
           "
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add anumpoly.apk versi.json
+          git add anumpoly.apk dist.zip versi.json
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan, tidak perlu commit baru."
           else
