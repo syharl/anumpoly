@@ -1476,6 +1476,14 @@ let appSettings = { vibration:true, reducedMotion:false };
     }
   }catch(e){}
 })();
+// Coba langsung mainkan musik latar begitu game dibuka, tanpa menunggu klik
+// pertama. Ini baru berhasil kalau WebView aplikasi TIDAK mewajibkan gesture
+// pengguna untuk memutar audio (lihat MainActivity.java native, di-set lewat
+// setMediaPlaybackRequiresUserGesture(false) di build-android.yml) — kalau
+// masih diblokir (mis. dibuka di browser Chrome biasa saat development),
+// listener 'click' di atas tetap jadi fallback otomatis begitu ada
+// interaksi pertama.
+if(!musicMuted) startBgm();
 function saveSettings(){
   try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion, sfxVolume, musicVolume })); }catch(e){}
 }
