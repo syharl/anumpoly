@@ -2208,18 +2208,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 12:12 WITA — v1.8.23.1212</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 11:55 WITA — v1.8.23.1155</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 11:34 WITA — v1.8.23.1134</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <!-- Baris di atas ini JANGAN dihapus/dipindah — CI (build-android.yml,
          step "Tambah entri Apa Yang Baru") menyisipkan entri rilis baru
          TEPAT SETELAH marker itu secara otomatis, tiap kali ada rilis
@@ -5195,6 +5183,42 @@ skipWelcomeIfAlreadySeen();
 refreshResumeButton();
 initCustomSelects();
 initAccountAuth();
+</script>
+<script>
+/* ============================================================
+   window.ANUMPOLY_BUILD — nomor build konten yang SEDANG BENERAN
+   AKTIF di layar ini sekarang, dibaca langsung dari __ANUMPOLY_BUILD__
+   (placeholder yang sama yang dipakai footer versi di atas, diisi CI
+   saat build — lihat build-android.yml).
+   ============================================================
+   KENAPA INI DITAMBAHKAN (memperbaiki bug "update maju-mundur/tidak
+   selesai-selesai" walau APK terbaru sudah dipasang manual):
+
+   Sebelumnya, update-check.js menandai "sudah update ke build X" HANYA
+   lewat localStorage (ditulis cuma di dalam startContentUpdate() setelah
+   hot-update BERHASIL). Masalahnya: kalau pemain pasang APK BARU dari
+   awal (baik lewat Play Store/manual install APK dari GitHub Release,
+   maupun uninstall+install ulang), localStorage ini KOSONG lagi —
+   padahal APK yang baru dipasang itu SUDAH membawa versi konten
+   terbaru sejak awal (index.html di dalamnya sudah dari build yang
+   sama). Karena localStorage kosong, aplikasi mengira "belum pernah
+   update" dan minta hot-update LAGI ke build yang SAMA PERSIS dengan
+   yang sudah terpasang — inilah kenapa kartu update terus muncul
+   berulang-ulang ("maju-mundur") walau sudah pasang versi terbaru
+   secara manual, dan juga jadi salah satu penyebab pemborosan
+   penyimpanan/kuota dari percobaan download yang sebenarnya tidak
+   perlu sama sekali.
+
+   window.ANUMPOLY_BUILD di sini SELALU cocok dengan isi index.html
+   yang BENAR-BENAR sedang jalan saat ini — baik itu index.html bawaan
+   APK (fresh install) MAUPUN index.html hasil hot-update sebelumnya
+   (karena dist.zip ikut membawa index.html dengan placeholder yang
+   sudah diisi build yang sama, lihat step "Bikin dist.zip" di
+   build-android.yml). Jadi update-check.js sekarang cukup bandingkan
+   angka ini ke contentBuild dari versi.json — tidak perlu localStorage
+   terpisah lagi yang bisa lupa/kosong.
+*/
+window.ANUMPOLY_BUILD = '__ANUMPOLY_BUILD__';
 </script>
 <script>
 /* ============================================================

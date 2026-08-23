@@ -9,12 +9,15 @@
   "plugins": {
     "SocialLogin": {
       "google": {
-        "webClientId": "20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com"
+        "webClientId": "GANTI_DENGAN_WEB_CLIENT_ID_DARI_GOOGLE_CLOUD_CONSOLE"
       }
     },
     "CapacitorUpdater": {
       "autoUpdate": "off",
-      "responseTimeout": 60
+      "responseTimeout": 60,
+      "autoDeleteFailed": true,
+      "autoDeletePrevious": true,
+      "resetWhenUpdate": true
     }
   }
 }

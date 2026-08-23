@@ -208,7 +208,7 @@ function blobToBase64(blob){
    APK penuh di atas.
 */
 const CapUpdater = CapPlugins.CapacitorUpdater;
-const CONTENT_VERSION_KEY = 'anumpoly_content_version'; // nomor build konten yang SEDANG aktif di HP ini
+const CONTENT_VERSION_KEY = 'anumpoly_content_version'; // dipertahankan sebagai fallback lama, TIDAK dipakai lagi sebagai sumber utama (lihat catatan di checkForContentUpdate)
 
 // Dipanggil setiap sesi jalan (bukan cuma pas ada update) — ini wajib
 // per dokumentasi plugin: menandai ke plugin bahwa versi yang sedang
@@ -217,6 +217,28 @@ const CONTENT_VERSION_KEY = 'anumpoly_content_version'; // nomor build konten ya
 if(isNativeApp && CapUpdater && CapUpdater.notifyAppReady){
   CapUpdater.notifyAppReady().catch(()=>{});
 }
+
+// Bersihkan bundle hot-update lama/gagal yang mungkin tertinggal di
+// penyimpanan HP — jaring pengaman TAMBAHAN di atas autoDeleteFailed/
+// autoDeletePrevious plugin (lihat capacitor_config.json), untuk kasus
+// di mana banyak percobaan update yang gagal berulang-ulang (mis. dulu
+// sebelum dist.zip diperbaiki) sempat menumpuk bundle yang tidak
+// terpakai. Cuma menyisakan bundle yang SEDANG AKTIF — semua yang lain
+// dihapus. Aman dijalankan tiap kali aplikasi dibuka; kalau memang
+// sudah bersih, tidak akan menemukan apa-apa untuk dihapus.
+async function bersihkanBundleLama(){
+  if(!isNativeApp || !CapUpdater || !CapUpdater.list || !CapUpdater.current || !CapUpdater.delete) return;
+  try{
+    const { bundle: aktif } = await CapUpdater.current();
+    const { bundles } = await CapUpdater.list();
+    for(const b of bundles){
+      if(b.id !== aktif.id){
+        try{ await CapUpdater.delete({ id: b.id }); }catch(e){ /* satu gagal, lanjut ke berikutnya */ }
+      }
+    }
+  }catch(e){ /* gagal cek/bersihkan — tidak fatal, coba lagi sesi berikutnya */ }
+}
+bersihkanBundleLama();
 
 async function checkForContentUpdate(){
   if(!isNativeApp || !CapUpdater) return false; // fitur ini cuma ada di APK asli, bukan browser preview
@@ -230,9 +252,25 @@ async function checkForContentUpdate(){
     // checkForUpdate() di atas.
     if(!data || !data.contentBuild || !data.link_bundle) return false;
     const buildTerbaru = String(data.contentBuild);
-    let sudahDipakai = null;
-    try{ sudahDipakai = localStorage.getItem(CONTENT_VERSION_KEY); }catch(e){}
-    if(sudahDipakai === buildTerbaru) return false; // sudah paling baru, tidak perlu apa-apa
+
+    // PENTING — inilah perbaikan untuk bug "update maju-mundur / tidak
+    // selesai-selesai walau APK terbaru sudah dipasang manual":
+    // Sumber kebenaran "build konten yang sedang aktif SEKARANG" adalah
+    // window.ANUMPOLY_BUILD (dibaca dari index.html yang BENAR-BENAR
+    // sedang jalan saat ini — lihat penjelasan lengkap di index.html,
+    // dekat baris window.ANUMPOLY_BUILD di-set). Ini SELALU sinkron,
+    // baik untuk APK fresh install (index.html bawaan APK) maupun
+    // setelah hot-update sebelumnya (index.html dari dist.zip) —
+    // berbeda dari localStorage lama yang kosong lagi tiap fresh
+        // install/uninstall walau kontennya sebenarnya sudah paling baru.
+    const buildAktif = (window.ANUMPOLY_BUILD || '').replace(/[^0-9]/g, '');
+    if(buildAktif && buildAktif === buildTerbaru){
+      // Sinkronkan localStorage juga (fallback lama) biar konsisten,
+      // walau sekarang bukan yang dipakai untuk keputusan utama.
+      try{ localStorage.setItem(CONTENT_VERSION_KEY, buildTerbaru); }catch(e){}
+      return false; // build konten yang aktif SUDAH sama dengan yang terbaru, tidak perlu apa-apa
+    }
+
     showContentUpdateCard(data, buildTerbaru);
     return true;
   }catch(e){ return false; /* offline / gagal cek — biarkan pemain lanjut main seperti biasa */ }
@@ -262,7 +300,7 @@ function showContentUpdateCard(data, buildTerbaru){
 // Percobaan ulang otomatis ini yang tadinya tidak ada — dulu sekali gagal
 // (mis. cuma putus sebentar) langsung tampil "Gagal memperbarui" walau
 // jaringannya sebenarnya masih hidup.
-const CONTENT_UPDATE_MAX_RETRY = 4;
+const CONTENT_UPDATE_MAX_RETRY = 2;
 
 async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
   const btn = document.getElementById('btnContentUpdateAction');
@@ -310,7 +348,7 @@ async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
     if(percobaanKe < CONTENT_UPDATE_MAX_RETRY){
       status.textContent = 'Unduhan sempat gagal, mencoba lagi... ('+percobaanKe+'/'+CONTENT_UPDATE_MAX_RETRY+')';
       btn.dataset.busy = '0';
-      setTimeout(()=> startContentUpdate(data, buildTerbaru, percobaanKe+1), 3000);
+      setTimeout(()=> startContentUpdate(data, buildTerbaru, percobaanKe+1), 1500);
       return;
     }
     if(CapPlugins.SplashScreen) { try{ await CapPlugins.SplashScreen.hide(); }catch(e){} }
