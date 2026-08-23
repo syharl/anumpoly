@@ -399,7 +399,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 
 /* ---------- GAME ---------- */
 #screen-game{width:100%;padding:10px 10px 12px;align-items:center;}
-.topbar{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 6px 10px;}
+.topbar{width:100%;max-width:700px;display:flex;justify-content:flex-end;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 6px 10px;}
 .topbar .title{font-size:14px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:700;}
 .icon-btn{background:transparent;border:1px solid rgba(47,111,168,0.4);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:12px;}
 
@@ -601,9 +601,11 @@ html[data-theme="dark"] .fp-summary{background:rgba(255,255,255,0.05);}
 .fp-count{font-family:'Space Mono',monospace;font-size:12px;color:var(--paper-dim);font-weight:700;white-space:nowrap;}
 .fp-arrow{display:inline-block;margin-left:4px;transition:transform 0.2s;}
 details[open]>.fp-summary .fp-arrow{transform:rotate(180deg);}
-.fp-offer-row{display:flex;gap:6px;}
+.fp-offer-row{display:flex;gap:6px;margin-top:8px;}
 .fp-offer-row input{flex:1;min-width:0;padding:7px 8px;border-radius:6px;border:1px solid rgba(47,111,168,0.4);background:var(--modal-bg);color:var(--paper);font-size:12px;font-family:'Space Mono',monospace;}
 .fp-offer-row button{padding:7px 10px;border-radius:6px;border:none;background:var(--teal);color:#fff;font-weight:700;font-size:11px;white-space:nowrap;}
+.fp-tawar-btn{flex:none;padding:7px 10px;border-radius:6px;border:none;background:var(--teal);color:#fff;font-weight:700;font-size:11px;white-space:nowrap;margin-left:8px;}
+.modal.fp-fixed{height:75vh;}
 
 .deed-details{
   display:flex;flex-direction:column;gap:2px;
@@ -1052,7 +1054,6 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
 <!-- ================= GAME ================= -->
 <div id="screen-game" class="screen">
   <div class="topbar">
-    <div class="title" id="topTitle">Monopoli Dunia</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="room-badge" id="roomBadge" style="display:none;"></div>
       <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
@@ -1381,6 +1382,10 @@ async function doAccountSignOut(){
    yang bisa digabung (merge) antar HP alih-alih saling menimpa. */
 const CLIENT_ID = Math.random().toString(36).slice(2,9);
 let logSeq = 0;
+/* True selagi modal "Riwayat Permainan" sedang terbuka — dipakai supaya
+   log() bisa langsung menyegarkan isi modal itu setiap ada kejadian baru,
+   tanpa pemain perlu tutup-buka modalnya lagi. */
+let historyModalOpen = false;
 
 /* ============================================================
    DATA PAPAN
@@ -2181,10 +2186,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 21:18 WITA — v1.8.23.2118</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -3115,9 +3116,7 @@ function buildBoardDOM(){
   board.innerHTML='';
   const center = document.createElement('div');
   center.className='center-area';
-  center.innerHTML = `<div class="sub">Bidak &amp; Sewa • Gantian di 1 HP</div>
-    <h1>MONOPOLI<br>DUNIA</h1>
-    <div class="dice-box" id="diceBox">${diceHTML(1)}${diceHTML(1)}</div>
+  center.innerHTML = `<div class="dice-box" id="diceBox">${diceHTML(1)}${diceHTML(1)}</div>
     <div class="board-log" id="toastStack"></div>`;
   board.appendChild(center);
 
@@ -3242,6 +3241,7 @@ function showMoneyFx(playerId, delta){
 function log(msg){
   state.log.push({id: Date.now()+'-'+CLIENT_ID+'-'+(logSeq++), msg});
   showToast(msg);
+  refreshHistoryIfOpen();
 }
 /* Gabungkan log lokal dengan log dari server berdasarkan id unik,
    supaya baris log dari HP lain tidak hilang tertimpa saat kita push. */
@@ -3298,14 +3298,11 @@ function updateTurnBanner(){
     if(btnFriendPropsEl) btnFriendPropsEl.disabled = false;
   }
   const badge = document.getElementById('roomBadge');
-  const topTitle = document.getElementById('topTitle');
   if(state.mode==='online'){
     badge.style.display='inline-block';
     badge.textContent = 'Room '+state.roomCode+(myOnlineSlot!=null?' • Kamu: '+state.players[myOnlineSlot].name:'');
-    topTitle.textContent = 'Monopoli Dunia';
   } else {
     badge.style.display='none';
-    topTitle.textContent = 'Monopoli Dunia';
   }
   updateTimerDisplay();
 }
@@ -4085,6 +4082,16 @@ function drawCard(p, type, wasDouble){
   // Kalau tidak, token pemain ini akan terlihat "diam saja" / tidak jalan
   // di layar pemain lain sampai dia menutup modal kartunya sendiri.
   commit();
+  // Bot: selesaikan kartu langsung tanpa animasi/modal apa pun di layar —
+  // sama seperti keputusan bot lain (beli, lelang, dsb) yang juga tidak
+  // pernah menampilkan modal ke pemain manusia yang cuma menonton.
+  if(p.isBot){
+    card.fn(p, wasDouble);
+    if(!card.moves){
+      setTimeout(()=>{ if(!state.pendingDebt) finishLanding(p, wasDouble); },50);
+    }
+    return;
+  }
   playCardDrawAnimation(type, ()=>{
     awaitingCardOke = true;
     showModal({
@@ -4242,8 +4249,10 @@ function confirmPass(){
 /* ============================================================
    GENERIC MODAL
    ============================================================ */
-function showModal({title, desc, priceTag, buttons, vertical}){
+function showModal({title, desc, priceTag, buttons, vertical, fixedHeight, historyMode}){
   const box = document.getElementById('modalBox');
+  box.classList.toggle('fp-fixed', !!fixedHeight);
+  historyModalOpen = !!historyMode;
   buttons = buttons || [];
   // Kalau salah satu tombol memang cuma "tutup tanpa melakukan apa-apa"
   // (onClick-nya persis closeModal / closeModalMaybeReturnToDebt), pindahkan
@@ -4281,17 +4290,138 @@ function showModal({title, desc, priceTag, buttons, vertical}){
   }
   document.getElementById('modalOverlay').classList.add('show');
 }
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); historyModalOpen=false; }
 
 /* ============================================================
    RIWAYAT LENGKAP
    ============================================================ */
-function openHistory(){
-  const entries = (state.log||[]).slice().reverse();
-  const html = entries.length===0
+/* Riwayat mentah (state.log) mencatat SETIAP kejadian kecil sebagai baris
+   terpisah (lempar dadu, lewat MULAI, mendarat, bayar sewa, dst) — perlu
+   ini apa adanya untuk toast real-time di papan. Tapi kalau ditampilkan
+   satu-satu di modal Riwayat, hasilnya jadi sangat panjang/spam untuk satu
+   giliran yang sama. Fungsi di bawah menggabungkan rangkaian baris yang
+   berasal dari SATU aksi jalan (lempar dadu → lewat MULAI → mendarat →
+   bayar sewa/beli/dll) jadi satu kalimat ringkas, tanpa mengubah cara
+   log() menyimpan atau menampilkan toast (jadi tidak berisiko mengubah
+   perilaku permainan, cuma tampilan riwayatnya saja yang dirapikan).
+   Baris yang tidak cocok pola dikenal (trade, bangun rumah, bangkrut,
+   dsb) tetap ditampilkan apa adanya. */
+function summarizeHistory(entriesAsc){
+  const P = {
+    roll:        /^(.+?) melempar dadu: <span class="hl">(\d+) \+ (\d+)<\/span>(?: \(Dobel!\))?$/,
+    dobelFlag:   / \(Dobel!\)$/,
+    passGo:      /^(.+?) melewati MULAI, kumpulkan (.+?)\.$/,
+    land:        /^(.+?) mendarat di <b>(.+?)<\/b>\.$/,
+    rent:        /^(.+?) harus bayar sewa (.+?) ke (.+?)\.$/,
+    buy:         /^(.+?) membeli (.+?) seharga (.+?)\.$/,
+    declineBuy:  /^(.+?) memilih tidak membeli (.+?), properti akan dilelang!$/,
+    unowned:     /^.+? belum ada pemilik\. .+$/,
+    parkBonus:   /^(.+?) mengambil (.+?) di Parkir Bebas!$/,
+    rollAgain:   /^(.+?) dapat lempar dadu lagi \(dobel\)\.$/i,
+    card:        /^(.+?) membuka kartu (.+?): "(.+?)"$/,
+    mortNoRent:  /^Properti ini sedang digadai, tidak ada sewa\.$/,
+    canBuild:    /^(.+?) boleh membangun di (.+?) sekarang\.$/,
+    dobel3Jail:  /^(.+?) dobel 3× berturut-turut\. Langsung masuk penjara!$/,
+    sentToJail:  /^(.+?) dikirim ke Penjara\.$/,
+    jailRoll:    /^(.+?) melempar dadu di penjara: (\d+) \+ (\d+)\.$/,
+    jailFree:    /^(.+?) dobel! Bebas dari penjara\.$/,
+    jailFail3:   /^(.+?) sudah 3× gagal, wajib bayar \$50 dan keluar\.$/,
+    jailStay:    /^(.+?) tidak dobel, tetap di penjara\.$/,
+  };
+  const groups = [];
+  let cur = null;
+  function close(){ if(cur){ groups.push(cur); cur=null; } }
+  entriesAsc.forEach(e=>{
+    const msg = e && e.msg!=null ? e.msg : e;
+    if(typeof msg!=='string'){ close(); groups.push({raw:msg, id:e&&e.id}); return; }
+    let m;
+    if((m=msg.match(P.roll))){
+      close();
+      cur = {kind:'roll', player:m[1], id:e.id, dice:`${m[2]}+${m[3]}`, dobel:P.dobelFlag.test(msg)};
+      return;
+    }
+    if((m=msg.match(P.jailRoll))){
+      close();
+      cur = {kind:'jailRoll', player:m[1], id:e.id, dice:`${m[2]}+${m[3]}`};
+      return;
+    }
+    if(cur && (cur.kind==='roll' || cur.kind==='jailRoll')){
+      if((m=msg.match(P.passGo)) && m[1]===cur.player){ cur.passGo=m[2]; return; }
+      if((m=msg.match(P.land)) && m[1]===cur.player){ cur.land=m[2]; return; }
+      if((m=msg.match(P.rent)) && m[1]===cur.player){ cur.rent={amt:m[2],to:m[3]}; return; }
+      if((m=msg.match(P.buy)) && m[1]===cur.player){ cur.buy={amt:m[3]}; return; }
+      if((m=msg.match(P.declineBuy)) && m[1]===cur.player){ cur.declineBuy=true; return; }
+      if(P.unowned.test(msg)){ cur.unowned=true; return; }
+      if((m=msg.match(P.parkBonus)) && m[1]===cur.player){ cur.parkBonus=m[2]; return; }
+      if((m=msg.match(P.card)) && m[1]===cur.player){ cur.card=m[3]; return; }
+      if(P.mortNoRent.test(msg)){ cur.mortNoRent=true; return; }
+      if((m=msg.match(P.canBuild)) && m[1]===cur.player){ cur.canBuild=true; return; }
+      if((m=msg.match(P.dobel3Jail)) && m[1]===cur.player){ cur.dobel3Jail=true; return; }
+      if((m=msg.match(P.sentToJail)) && m[1]===cur.player){ cur.sentToJail=true; return; }
+      if((m=msg.match(P.jailFree)) && m[1]===cur.player){ cur.jailFree=true; close(); return; }
+      if((m=msg.match(P.jailFail3)) && m[1]===cur.player){ cur.jailFail3=true; close(); return; }
+      if((m=msg.match(P.jailStay)) && m[1]===cur.player){ cur.jailStay=true; close(); return; }
+      if((m=msg.match(P.rollAgain)) && m[1]===cur.player){ cur.rollAgain=true; close(); return; }
+    }
+    close();
+    groups.push({raw:msg, id:e&&e.id});
+  });
+  close();
+  return groups;
+}
+function renderHistoryGroup(g, isLatest){
+  if(g.raw!=null) return g.raw;
+  if(g.kind==='jailRoll'){
+    let s = `<b>${g.player}</b> lempar dadu di penjara (${g.dice})`;
+    if(g.jailFree) s+=', dobel — bebas dari penjara';
+    else if(g.jailFail3) s+=', 3× gagal — bayar $50 dan keluar';
+    else if(g.jailStay) s+=', tidak dobel — tetap di penjara';
+    else if(isLatest) s+=' <i style="color:var(--paper-dim);">…</i>';
+    return s+'.';
+  }
+  let s = `<b>${g.player}</b> jalan (${g.dice}${g.dobel?', dobel':''})`;
+  if(g.passGo) s += `, lewat MULAI dapat ${g.passGo}`;
+  if(g.dobel3Jail) return s+`, tapi dobel 3× berturut-turut → langsung masuk penjara.`;
+  if(g.land) s += `, mendarat di <b>${g.land}</b>`;
+  if(g.card) s += `, kartu: "${g.card}"`;
+  if(g.rent) s += `, bayar ${g.rent.amt} ke ${g.rent.to}`;
+  if(g.buy) s += `, beli seharga ${g.buy.amt}`;
+  if(g.declineBuy) s += `, tidak beli (dilelang)`;
+  else if(g.unowned && !g.buy){
+    s += isLatest ? `, tanah kosong <i style="color:var(--paper-dim);">(menunggu keputusan beli…)</i>` : `, tanah kosong (nunggu keputusan beli)`;
+  }
+  if(g.parkBonus) s += `, dapat bonus Parkir Bebas ${g.parkBonus}`;
+  if(g.mortNoRent) s += `, properti digadai (tidak ada sewa)`;
+  if(g.canBuild) s += `, boleh membangun sekarang`;
+  if(g.sentToJail) s += `, dikirim ke Penjara`;
+  if(g.rollAgain) s += ` — dobel, lempar lagi`;
+  if(!g.land && !g.dobel3Jail && isLatest) s += ' <i style="color:var(--paper-dim);">…</i>';
+  return s+'.';
+}
+/* Bangun ulang isi daftar Riwayat dari state.log terkini (dipakai baik
+   saat modal pertama dibuka maupun saat disegarkan otomatis). */
+function historyListHTML(){
+  const groups = summarizeHistory((state.log||[]).slice()).reverse();
+  return groups.length===0
     ? '<div style="color:var(--paper-dim);font-size:12px;">Belum ada kejadian.</div>'
-    : `<div class="deed-list" style="max-height:380px;">${entries.map(m=>`<div style="padding:7px 9px;border-bottom:1px solid rgba(18,52,86,0.06);font-size:12px;line-height:1.4;">${m&&m.msg!=null?m.msg:m}</div>`).join('')}</div>`;
-  showModal({ title:'📜 Riwayat Permainan', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
+    : `<div class="deed-list" style="max-height:380px;">${groups.map((g,idx)=>`<div style="padding:7px 9px;border-bottom:1px solid rgba(18,52,86,0.06);font-size:12px;line-height:1.4;">${renderHistoryGroup(g, idx===0)}</div>`).join('')}</div>`;
+}
+function openHistory(){
+  showModal({ title:'📜 Riwayat Permainan', desc: historyListHTML(), buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}], historyMode:true });
+}
+/* Kalau modal Riwayat sedang terbuka, timpa isinya begitu ada log baru
+   (mis. keputusan beli/lelang selesai) — supaya baris yang tadinya
+   "menunggu keputusan…" langsung nyambung jadi satu baris utuh, tanpa
+   pemain perlu menutup lalu membuka lagi modalnya. Posisi scroll dijaga
+   supaya tidak lompat ke atas tiap kali ada penyegaran. */
+function refreshHistoryIfOpen(){
+  if(!historyModalOpen) return;
+  const descEl = document.querySelector('#modalBox .desc');
+  if(!descEl) return;
+  const body = document.querySelector('#modalBox .modal-body');
+  const scrollTop = body ? body.scrollTop : 0;
+  descEl.innerHTML = historyListHTML();
+  if(body) body.scrollTop = scrollTop;
 }
 
 function showTileInfo(idx){
@@ -4374,13 +4504,12 @@ function renderDeedList(){
     row.className='deed-item';
     const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
     let info = t.type==='property' ? (ps.houses===5?'Hotel':(ps.houses+' rumah')) : (ps.mortgaged?'Digadai':'Aktif');
-    const freeBuildWaiting = state.rules.houseFreeBuild && t.type==='property' && !ps.mortgaged && ps.houses<5 && state.pendingHouseBuild!==i;
-    if(freeBuildWaiting) info += ' • mendarat di sini dulu untuk bangun';
     const canBuild = t.type==='property' && !ps.mortgaged && ps.houses<5 &&
       (state.rules.houseFreeBuild ? state.pendingHouseBuild===i : ownsFullGroup(p, t.group));
     const canSellHouse = t.type==='property' && ps.houses>0;
     const canMortgage = !ps.mortgaged && ps.houses===0;
     const canUnmortgage = ps.mortgaged;
+    const sellHouseGain = t.type==='property' ? Math.round(HC(t.group)/2) : 0;
     row.innerHTML = `
       <div class="di-top">
         <div class="deed-swatch" style="background:${swatchColor}"></div>
@@ -4390,9 +4519,10 @@ function renderDeedList(){
         </div>
         <div class="di-btns">
           ${t.type==='property' ? `<button ${canBuild?'':'disabled'} onclick="buildHouse(${i})">+ ${fmt(HC(t.group))}</button>` : ''}
-          ${t.type==='property' ? `<button ${canSellHouse?'':'disabled'} onclick="confirmSellHouse(${i})">- Rumah</button>` : ''}
-          <button class="mort" ${canMortgage?'':'disabled'} onclick="confirmMortgage(${i})">Gadai</button>
-          <button class="mort" ${canUnmortgage?'':'disabled'} onclick="confirmUnmortgage(${i})">Tebus</button>
+          ${t.type==='property' ? `<button ${canSellHouse?'':'disabled'} onclick="confirmSellHouse(${i})">🏠 +${fmt(sellHouseGain)}</button>` : ''}
+          ${ps.mortgaged
+            ? `<button class="mort" ${canUnmortgage?'':'disabled'} onclick="confirmUnmortgage(${i})">Tebus</button>`
+            : `<button class="mort" ${canMortgage?'':'disabled'} onclick="confirmMortgage(${i})">Gadai</button>`}
           <button onclick="openSellOffer(${i})">🤝 Tawarkan</button>
         </div>
       </div>
@@ -4543,14 +4673,15 @@ function openFriendProps(){
               <div class="di-name">${t.name}</div>
               <div class="di-info">${info}${ps.mortgaged?' • Digadai':''}</div>
             </div>
-            <div style="text-align:right;flex:none;padding-left:6px;">
+            <div style="text-align:center;flex:none;padding-left:6px;">
               <div style="font-size:9px;color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.5px;">Bayar jika berhenti</div>
               <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:${ps.mortgaged?'var(--paper-dim)':'var(--gold)'};">${rentTxt}</div>
             </div>
+            <button class="fp-tawar-btn" onclick="toggleFpOffer(${i})">🤝 Tawar</button>
           </div>
-          <div class="fp-offer-row">
+          <div class="fp-offer-row" id="fpOfferRow-${i}" style="display:none;">
             <input type="number" min="1" step="1" placeholder="${suggested}" id="fpOfferInput-${i}">
-            <button onclick="quickOfferProperty(${i})">🤝 Tawar</button>
+            <button onclick="quickOfferProperty(${i})">Kirim</button>
           </div>
         </div>`;
       });
@@ -4558,7 +4689,20 @@ function openFriendProps(){
     }
     html += `</details>`;
   });
-  showModal({title:'👀 Properti Teman', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]});
+  showModal({title:'👀 Properti Teman', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}], fixedHeight:true});
+}
+/* Tampilkan/sembunyikan kolom input tawaran untuk satu properti; kolom
+   ini sengaja disembunyikan sampai tombol "Tawar" ditekan supaya kartu
+   properti tidak penuh input di awal. */
+function toggleFpOffer(idx){
+  const row = document.getElementById('fpOfferRow-'+idx);
+  if(!row) return;
+  const willShow = row.style.display==='none' || !row.style.display;
+  row.style.display = willShow ? 'flex' : 'none';
+  if(willShow){
+    const inp = document.getElementById('fpOfferInput-'+idx);
+    if(inp) setTimeout(()=>inp.focus(),50);
+  }
 }
 
 /* ============================================================
@@ -4595,6 +4739,16 @@ async function submitQuickOffer(fromId, toId, idx, amount, t){
   // menjawab sendiri lewat handleBotAutomation() (sudah terpicu dari commit()).
   if(!toPlayer.isBot && (state.mode!=='online' || myOnlineSlot===toPlayer.id)) showTradeOfferReceived();
 }
+/* Total uang yang sudah dikeluarkan untuk properti ini: harga beli tanah
+   ditambah biaya semua rumah/hotel yang sudah dibangun di atasnya. Dipakai
+   sebagai saran harga (placeholder, bukan nilai wajib) saat menawarkan jual. */
+function investedValue(idx){
+  const t = BOARD[idx];
+  const ps = state.propStates[idx];
+  let v = t.price || 0;
+  if(t.type==='property' && ps && ps.houses>0){ v += ps.houses * HC(t.group); }
+  return Math.round(v);
+}
 function openSellOffer(presetIdx){
   const p = localPlayer();
   const myProps = Array.from(new Set(p.properties||[])).sort((a,b)=>a-b)
@@ -4608,19 +4762,20 @@ function openSellOffer(presetIdx){
     showModal({title:'🤝 Tawarkan Properti', desc:'Tidak ada pemain lain untuk ditawarkan.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModalMaybeReturnToDebt}]});
     return;
   }
+  const initialIdx = presetIdx!=null ? presetIdx : myProps[0];
   const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--modal-bg);color:var(--paper);font-size:13px;';
   const propOpts = myProps.map(i=>`<option value="${i}" ${presetIdx===i?'selected':''}>${BOARD[i].name}</option>`).join('');
   const buyerOpts = buyers.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
   const html = `
     <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
       <label style="font-size:12px;color:var(--paper-dim);">Properti yang ditawarkan
-        <select id="sellOfferProp" style="${fieldStyle}">${propOpts}</select>
+        <select id="sellOfferProp" style="${fieldStyle}" onchange="document.getElementById('sellOfferAmount').placeholder = investedValue(Number(this.value))">${propOpts}</select>
       </label>
       <label style="font-size:12px;color:var(--paper-dim);">Tawarkan ke
         <select id="sellOfferTo" style="${fieldStyle}">${buyerOpts}</select>
       </label>
       <label style="font-size:12px;color:var(--paper-dim);">Harga jual ($)
-        <input id="sellOfferAmount" type="number" min="1" step="1" placeholder="Contoh: 250" style="${fieldStyle}">
+        <input id="sellOfferAmount" type="number" min="1" step="1" placeholder="${investedValue(initialIdx)}" style="${fieldStyle}">
       </label>
     </div>`;
   showModal({
@@ -4641,7 +4796,9 @@ async function submitSellOffer(){
   const p = localPlayer();
   const idx = Number(document.getElementById('sellOfferProp').value);
   const toId = Number(document.getElementById('sellOfferTo').value);
-  const amountRaw = Number(document.getElementById('sellOfferAmount').value);
+  const amountInput = document.getElementById('sellOfferAmount');
+  const amountTyped = amountInput.value.trim();
+  const amountRaw = Number(amountTyped ? amountTyped : amountInput.placeholder);
   const amount = Math.round(amountRaw);
   const ps = state.propStates[idx];
   const t = BOARD[idx];
