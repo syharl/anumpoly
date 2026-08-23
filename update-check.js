@@ -356,6 +356,11 @@ async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
     btn.textContent = '🔁 Coba Lagi';
     btn.dataset.busy = '0';
     btn.onclick = ()=> startContentUpdate(data, buildTerbaru, 1);
+    // Bersihkan bundle gagal SEKARANG JUGA, jangan tunggu app dibuka ulang —
+    // ini yang tadinya bikin storage numpuk (71MB -> 112MB dalam hitungan
+    // menit) kalau pemain gagal beberapa kali berturut-turut di sesi yang
+    // sama sebelum sempat menutup aplikasi.
+    bersihkanBundleLama();
     return;
   }
   if(downloadListener) { try{ await downloadListener.remove(); }catch(e){} }
