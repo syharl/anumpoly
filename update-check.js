@@ -231,22 +231,78 @@ async function startUpdateFlow(data){
     document.getElementById('updProgressWrap').style.display = 'block';
     status.textContent = 'Mengunduh update, mohon tunggu...';
 
+    // PENTING — kenapa ditulis ke disk BERTAHAP (streaming), bukan
+    // dikumpulkan dulu semua baru ditulis sekali di akhir seperti
+    // sebelumnya:
+    // Cara lama menumpuk SELURUH file APK di memori 3x lipat secara
+    // bersamaan — array "chunks" (~55MB), lalu disalin lagi jadi satu
+    // Blob (~55MB lagi), lalu dikonversi lagi jadi satu string base64
+    // (~74MB, base64 selalu ~33% lebih besar dari aslinya) — total bisa
+    // >180MB menumpuk di memori PAS SEBELUM ditulis ke file. Ini yang
+    // bikin crash "Failed to allocate ... until OOM" di HP dengan RAM
+    // pas-pasan atau heap kecil: begitu APK makin besar, titik ini
+    // makin gampang kelewat batas.
+    // Sekarang: tiap potongan (chunk) dari jaringan langsung digabung
+    // jadi buffer kecil (maks ~2MB), dikonversi ke base64 HANYA untuk
+    // buffer sekecil itu, langsung ditulis/ditempel ke file di disk
+    // lewat writeFile (potongan pertama) lalu appendFile (potongan
+    // berikutnya), lalu buffer itu dibuang dari memori sebelum lanjut
+    // ke potongan berikutnya. Jadi berapa pun besar APK-nya, yang
+    // menumpuk di memori pada satu waktu cuma beberapa MB saja, bukan
+    // seluruh ukuran file.
+    const CACHE_APK_PATH = 'monopoli-dunia-update.apk';
+    const FLUSH_THRESHOLD_BYTES = 2 * 1024 * 1024; // tulis ke disk tiap ~2MB terkumpul
+
+    // Hapus sisa file dari percobaan sebelumnya (kalau ada) SEBELUM mulai
+    // menulis — supaya appendFile tidak "menyambung" ke sisa unduhan lama
+    // yang gagal/terpotong, yang bisa menghasilkan APK korup.
+    try{ await CapPlugins.Filesystem.deleteFile({ path: CACHE_APK_PATH, directory: 'CACHE' }); }catch(e){ /* memang belum ada file lama — aman diabaikan */ }
+
+    function uint8KeBase64(bytes){
+      let biner = '';
+      const langkah = 0x8000; // dipotong per 32KB saat konversi karena String.fromCharCode tidak aman dipanggil dengan array yang sangat besar sekaligus
+      for(let i=0;i<bytes.length;i+=langkah){
+        biner += String.fromCharCode.apply(null, bytes.subarray(i, i+langkah));
+      }
+      return btoa(biner);
+    }
+
     const res = await fetch(data.link_apk);
     if(!res.ok) throw new Error('Gagal mengunduh (HTTP '+res.status+')');
     const total = parseInt(res.headers.get('Content-Length') || '0', 10);
     const reader = res.body.getReader();
-    const chunks = [];
     let received = 0;
+    let bufferPotongan = [];
+    let bufferBytes = 0;
+    let fileSudahDibuat = false;
     // Dipakai buat hitung kecepatan sesaat (byte yang nambah / waktu yang
     // lewat sejak titik ukur SEBELUMNYA) — bukan rata-rata dari awal,
     // supaya kalau jaringan sempat melambat/cepat, angkanya ikut berubah
     // secara real-time, bukan angka yang "adem-ayem" terus.
     let waktuUkurTerakhir = performance.now();
     let bytesUkurTerakhir = 0;
+
+    async function tulisBuffer(){
+      if(bufferBytes === 0) return;
+      const gabungan = new Uint8Array(bufferBytes);
+      let offset = 0;
+      for(const potong of bufferPotongan){ gabungan.set(potong, offset); offset += potong.length; }
+      const base64Potongan = uint8KeBase64(gabungan);
+      if(!fileSudahDibuat){
+        await CapPlugins.Filesystem.writeFile({ path: CACHE_APK_PATH, data: base64Potongan, directory: 'CACHE' });
+        fileSudahDibuat = true;
+      } else {
+        await CapPlugins.Filesystem.appendFile({ path: CACHE_APK_PATH, data: base64Potongan, directory: 'CACHE' });
+      }
+      bufferPotongan = [];
+      bufferBytes = 0;
+    }
+
     while(true){
       const { done, value } = await reader.read();
       if(done) break;
-      chunks.push(value);
+      bufferPotongan.push(value);
+      bufferBytes += value.length;
       received += value.length;
       const sekarang = performance.now();
       if(total){
@@ -264,17 +320,17 @@ async function startUpdateFlow(data){
         waktuUkurTerakhir = sekarang;
         bytesUkurTerakhir = received;
       }
+      if(bufferBytes >= FLUSH_THRESHOLD_BYTES){
+        status.textContent = 'Mengunduh & menyimpan update, mohon tunggu...';
+        await tulisBuffer();
+      }
     }
+    // Tulis sisa buffer terakhir yang belum genap 2MB
+    status.textContent = 'Menyimpan sisa file update...';
+    await tulisBuffer();
 
-    // 3) Simpan ke folder cache aplikasi — tidak perlu izin penyimpanan
-    status.textContent = 'Menyimpan file update...';
-    const blob = new Blob(chunks, { type: 'application/vnd.android.package-archive' });
-    const base64 = await blobToBase64(blob);
-    const writeResult = await CapPlugins.Filesystem.writeFile({
-      path: 'monopoli-dunia-update.apk',
-      data: base64,
-      directory: 'CACHE'
-    });
+    // 3) Ambil URI file yang barusan ditulis, buat dipasang installer
+    const writeResult = await CapPlugins.Filesystem.getUri({ path: CACHE_APK_PATH, directory: 'CACHE' });
 
     // 4) Siap dipasang — tinggal satu tap, tanpa keluar dari game
     document.getElementById('updProgressBar').style.width = '100%';
