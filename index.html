@@ -80,7 +80,7 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
    itu selalu digambar utuh satu kali seukuran layar. */
 #appBg{
   position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
-  background:radial-gradient(circle at 30% 0%, #FFFFFF 0%, #EAF4FC 45%, #DCEBF8 100%);
+  background:radial-gradient(circle at 30% 0%, #FFFFFF 0%, #EAF4FC 45%, #EEF3F7 100%);
 }
 #appBg::before{
   content:"";position:absolute;inset:0;
@@ -146,7 +146,7 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
   justify-content:flex-start;
   padding:26px 20px 40px;
   text-align:center;
-  background:radial-gradient(circle at 50% 0%, #FFFFFF 0%, #EAF4FC 55%, #DCEBF8 100%);
+  background:radial-gradient(circle at 50% 0%, #FFFFFF 0%, #EAF4FC 55%, #EEF3F7 100%);
   color:#163455;
   overflow:hidden;
 }
@@ -180,16 +180,16 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .mc-btn-resume:active{transform:scale(0.98);}
 .mc-grid{width:100%;max-width:420px;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .mc-card{
-  background:#EAF4FC;border:none;border-radius:20px;padding:20px 12px;
+  background:#D6E6FB;border:none;border-radius:20px;padding:20px 12px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  box-shadow:0 6px 16px rgba(47,111,168,0.14);color:#16324F;font-weight:700;font-size:14.5px;
+  box-shadow:0 6px 16px rgba(47,111,168,0.16);color:#16324F;font-weight:700;font-size:14.5px;
   line-height:1.25;min-height:104px;transition:transform .12s ease;
 }
 .mc-card:active{transform:scale(0.96);}
 .mc-card-icon{font-size:26px;}
 .mc-grid-dark{grid-template-columns:1fr 1fr;}
 .mc-card-dark{
-  background:linear-gradient(135deg,#2E4A66,#16324F);color:#EAF4FC;
+  background:linear-gradient(135deg,#4A7BAA,#2C4F73);color:#EAF4FC;
   border:none;border-radius:18px;padding:18px 12px;font-weight:700;font-size:15px;
   display:flex;align-items:center;justify-content:center;gap:8px;
   box-shadow:0 8px 20px rgba(22,52,85,0.35);
@@ -200,10 +200,10 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 
 /* ---------- TEMA GELAP: elemen menu yang warnanya hardcode (bukan var) ---------- */
 html[data-theme="dark"] #appBg{
-  background:radial-gradient(circle at 30% 0%, #16324F 0%, #0F2036 45%, #0B1B2E 100%);
+  background:radial-gradient(circle at 30% 0%, #1C3A57 0%, #16233A 45%, #101C2C 100%);
 }
 html[data-theme="dark"] #screen-menu.menu-blue{
-  background:radial-gradient(circle at 50% 0%, #16324F 0%, #102640 55%, #0B1B2E 100%);
+  background:radial-gradient(circle at 50% 0%, #1C3A57 0%, #16233A 55%, #101C2C 100%);
   color:#D7E4F0;
 }
 html[data-theme="dark"] .mc-avatar-btn,
@@ -217,14 +217,20 @@ html[data-theme="dark"] .mc-logo{
 html[data-theme="dark"] .mc-title{color:#EAF4FC;}
 html[data-theme="dark"] .mc-tag{color:#8CA0B4;}
 html[data-theme="dark"] .mc-card{
-  background:#1C3A57;color:#EAF4FC;box-shadow:0 6px 16px rgba(0,0,0,0.35);
+  background:#234970;color:#EAF4FC;box-shadow:0 6px 16px rgba(0,0,0,0.35);
 }
 html[data-theme="dark"] .mc-card-dark{
-  background:linear-gradient(135deg,#0F2036,#0B1B2E);
-  box-shadow:0 8px 20px rgba(0,0,0,0.5);
+  /* Sengaja DIBALIK dari tema terang: di referensi, tombol aksi bawah
+     (Peringkat/Pengaturan) di tema gelap justru jadi pil BIRU TERANG
+     yang menonjol di atas latar gelap — bukan gelap-di-atas-gelap
+     seperti sebelumnya (kontrasnya nyaris hilang). */
+  background:linear-gradient(135deg,#B7D6FA,#8FBDEE);color:var(--ink2);
+  box-shadow:0 8px 20px rgba(0,0,0,0.4);
 }
 html[data-theme="dark"] .mc-footer{color:#8CA0B4;}
 html[data-theme="dark"] .mc-version-footer{color:#5D7B99;}
+html[data-theme="dark"] .settings-section-label{color:#A5CAF7;}
+html[data-theme="dark"] .snr-icon{color:#A5CAF7;}
 /* ---------- TEMA GELAP: elemen di dalam modal yang warnanya hardcode
    berbasis rgba(hitam/biru muda) — di modal terang kontrasnya pas,
    tapi di atas --modal-bg gelap jadi nyaris tak kelihatan. ---------- */
@@ -349,7 +355,7 @@ select.rule-select{background:rgba(18,52,86,0.08);color:var(--paper);border:1px 
   color:var(--paper);font-family:inherit;cursor:pointer;
 }
 .settings-nav-row:active{background:rgba(47,111,168,0.08);}
-.snr-icon{font-size:20px;flex:none;width:22px;text-align:center;color:var(--gold);}
+.snr-icon{font-size:20px;flex:none;width:22px;text-align:center;color:#3E6189;}
 .snr-text{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
 .snr-title{font-size:14.5px;font-weight:700;}
 .snr-sub{font-size:12px;color:var(--paper-dim);}
@@ -362,24 +368,25 @@ select.rule-select{background:rgba(18,52,86,0.08);color:var(--paper);border:1px 
 .page-header{
   width:100%;display:flex;align-items:center;gap:10px;
   padding:calc(14px + env(safe-area-inset-top)) 14px 14px 6px;
-  background:linear-gradient(135deg,#2E4A66,#16324F);
-  box-shadow:0 4px 14px rgba(0,0,0,0.25);position:sticky;top:0;z-index:2;flex:none;
+  background:linear-gradient(135deg,#DCEAFC,#C9DFFA);
+  box-shadow:0 4px 14px rgba(47,111,168,0.18);position:sticky;top:0;z-index:2;flex:none;
 }
 .page-header .ph-back{
   flex:none;width:36px;height:36px;border-radius:50%;border:none;background:transparent;
-  color:#EAF4FC;font-size:25px;display:flex;align-items:center;justify-content:center;padding:0;
+  color:var(--paper);font-size:25px;display:flex;align-items:center;justify-content:center;padding:0;
 }
-.page-header .ph-back:active{background:rgba(255,255,255,0.14);}
+.page-header .ph-back:active{background:rgba(22,52,86,0.10);}
 .page-header .ph-icon{flex:none;font-size:19px;}
-.page-header .ph-title{margin:0;color:#EAF4FC;font-size:20px;font-weight:800;font-family:'Playfair Display',serif;line-height:1.15;}
-.page-header .ph-sub{margin:1px 0 0;color:#9EC7EC;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-html[data-theme="dark"] .page-header{background:linear-gradient(135deg,#0F2036,#0B1B2E);}
+.page-header .ph-title{margin:0;color:var(--paper);font-size:20px;font-weight:800;font-family:'Playfair Display',serif;line-height:1.15;}
+.page-header .ph-sub{margin:1px 0 0;color:var(--paper-dim);font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html[data-theme="dark"] .page-header{background:linear-gradient(135deg,#2A5480,#1E4060);}
+html[data-theme="dark"] .page-header .ph-back:active{background:rgba(255,255,255,0.14);}
 
 /* ---------- Isi layar di bawah page-header, lebar konsisten ---------- */
 .page-body{width:100%;max-width:520px;padding:18px 18px 90px;}
 
 /* ---------- Label section ala referensi ("Umum", dst) + garis pemisah ---------- */
-.settings-section-label{color:var(--gold);font-size:13px;font-weight:800;letter-spacing:.6px;margin:20px 2px 8px;}
+.settings-section-label{color:#3E6189;font-size:13px;font-weight:800;letter-spacing:.6px;margin:20px 2px 8px;}
 .settings-section-label:first-child{margin-top:2px;}
 .settings-divider{height:1px;background:rgba(47,111,168,0.18);margin-bottom:2px;}
 
@@ -392,11 +399,18 @@ html[data-theme="dark"] .page-header{background:linear-gradient(135deg,#0F2036,#
 .str-sub{font-size:11.5px;color:var(--paper-dim);line-height:1.4;}
 .switch{position:relative;width:44px;height:24px;flex:none;}
 .switch input{opacity:0;width:0;height:0;}
-.slider{position:absolute;inset:0;background:rgba(18,52,86,0.15);border-radius:999px;transition:.2s;cursor:pointer;}
+.slider{position:absolute;inset:0;background:#AFB4B9;border-radius:999px;transition:.2s;cursor:pointer;}
 .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--surface);border-radius:50%;transition:.2s;}
-input:checked + .slider{background:var(--gold);}
+input:checked + .slider{background:#3E6189;}
 input:checked + .slider:before{transform:translateX(20px);background:var(--surface);}
 input:disabled + .slider{opacity:0.4;cursor:default;}
+/* Dark: track OFF jadi abu gelap, ON jadi biru pastel terang, knob ON navy tua
+   (dibalik dari terang) — persis pola pil "Peringkat/Pengaturan" di menu:
+   elemen aktif justru terang menonjol di atas latar gelap. */
+html[data-theme="dark"] .slider{background:#5E6166;}
+html[data-theme="dark"] .slider:before{background:#8B9099;}
+html[data-theme="dark"] input:checked + .slider{background:#A5CAF7;}
+html[data-theme="dark"] input:checked + .slider:before{background:var(--ink2);}
 .sticky-bottom{position:fixed;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(0deg, var(--ink2) 60%, transparent);display:flex;justify-content:center;gap:10px;}
 .btn-big{padding:14px 26px;border-radius:999px;border:none;background:var(--gold);color:var(--ink2);font-weight:800;font-size:15px;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(0,0,0,0.35);}
 .btn-ghost{padding:14px 20px;border-radius:999px;border:2px solid rgba(47,111,168,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:14px;}
@@ -2277,10 +2291,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">24 Agustus 2026, 01:53 WITA — v1.8.24.0153</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
