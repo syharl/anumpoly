@@ -80,19 +80,24 @@ async function checkForUpdate(){
     const versiSaya = await getVersiTerpasang();
     const res = await fetch(REMOTE_VERSI_URL, { cache: 'no-store' });
     const data = await res.json();
-    // PENTING: perbandingan "ada update APK atau tidak" pakai "nativeBuild"
-    // — BUKAN "contentBuild" (dulu namanya "terbaruBuild"). Ini yang
-    // memperbaiki masalah update dobel: nativeBuild HANYA naik kalau rilis
-    // itu benar-benar mengubah sesuatu yang butuh APK baru (plugin/
-    // dependency/config native — lihat step "Deteksi perubahan native" di
-    // build-android.yml). Rilis konten biasa (index.html/asset) TIDAK
-    // menaikkan nativeBuild, jadi kalau native shell yang kepasang di HP
-    // sudah setara dengan nativeBuild terbaru, kartu update APK ini TIDAK
-    // akan muncul lagi — cukup hot-update konten (checkForContentUpdate)
-    // yang jalan. versiSaya sendiri (dari App.getInfo().build) adalah
-    // versionCode APK yang kepasang, yang selalu naik tiap build apapun,
-    // jadi perbandingan "versiSaya < data.nativeBuild" tetap valid.
-    if(data && data.nativeBuild && versiSaya < data.nativeBuild){
+    // DIUBAH — SEMENTARA hot-update konten dimatikan (lihat blok di bawah,
+    // dekat "Hot update konten dicek DULUAN"), jadi kartu update APK ini
+    // sekarang jadi SATU-SATUNYA jalur update yang jalan. Makanya
+    // perbandingannya diganti pakai "contentBuild" (naik tiap rilis
+    // apapun, sekecil apapun), BUKAN "nativeBuild" lagi (yang cuma naik
+    // kalau ada perubahan native — kalau tetap dipakai sendirian tanpa
+    // hot-update, rilis konten biasa tidak akan pernah ditawarkan ke
+    // pemain sama sekali, karena nativeBuild-nya diam terus).
+    // versiSaya sendiri (dari App.getInfo().build) adalah versionCode
+    // APK yang kepasang, angkanya sama skemanya dengan contentBuild
+    // (keduanya dari github.run_number saat build), jadi perbandingan
+    // "versiSaya < data.contentBuild" valid buat semua jenis rilis.
+    //
+    // KALAU NANTI HOT-UPDATE DIAKTIFKAN LAGI: baris di bawah ini WAJIB
+    // dikembalikan ke "data.nativeBuild" (bukan contentBuild), supaya
+    // kartu update APK ini tidak lagi muncul tiap rilis kecil — cukup
+    // hot-update konten (checkForContentUpdate) yang menangani itu.
+    if(data && data.contentBuild && versiSaya < data.contentBuild){
       showUpdateCard(data);
     }
   }catch(e){ /* offline / gagal cek — biarkan pemain lanjut main seperti biasa */ }
@@ -464,11 +469,18 @@ async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
   if(downloadListener) { try{ await downloadListener.remove(); }catch(e){} }
 }
 
-// Hot update konten dicek DULUAN (ringan, tidak ganggu) — kalau memang
-// ada dan pemain memilih update, alur update APK penuh di bawahnya
-// dilewati dulu sesi ini (nanti otomatis kecek lagi begitu bundle baru
-// selesai diterapkan & aplikasi reload).
+// Hot update konten UNTUK SEMENTARA DIMATIKAN (permintaan developer) —
+// semua rilis, sekecil apapun, sekarang ditawarkan sebagai update APK
+// penuh saja (1x tap di dalam game: unduh + pasang, tanpa keluar dari
+// aplikasi — lihat startUpdateFlow() di atas). Fungsi-fungsi hot-update
+// di atas (checkForContentUpdate, showContentUpdateCard,
+// startContentUpdate, bersihkanBundleLama) SENGAJA tidak dihapus, cuma
+// tidak dipanggil lagi di sini — supaya gampang dinyalakan lagi nanti
+// kalau perlu, tinggal un-comment baris yang di-comment di bawah, DAN
+// kembalikan checkForUpdate() ke perbandingan "nativeBuild" (lihat
+// catatan di fungsi checkForUpdate() di atas).
 (async ()=>{
-  const contentUpdateShown = await checkForContentUpdate();
-  if(!contentUpdateShown) checkForUpdate();
+  // const contentUpdateShown = await checkForContentUpdate();
+  // if(!contentUpdateShown) checkForUpdate();
+  checkForUpdate();
 })();
