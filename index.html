@@ -419,14 +419,33 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   display:flex;flex-direction:column;overflow:hidden;
   line-height:1.05;
 }
-.tile .grp{height:clamp(6px,2.1vw,13px);flex:none;}
-.tile .body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1px;text-align:center;gap:1px;}
-.tile .nm{font-weight:800;font-size:clamp(4px,1.4vw,6.5px);text-transform:uppercase;letter-spacing:-0.1px;line-height:1.05;word-break:break-word;}
-.tile .pr{font-family:'Space Mono',monospace;font-size:clamp(4px,1.3vw,6px);color:var(--teal);font-weight:700;}
-.tile.corner .body{font-size:clamp(5.5px,1.9vw,9px);}
+.tile .grp{height:clamp(9px,2.4vw,13px);flex:none;position:relative;display:flex;align-items:center;justify-content:center;}
+.tile .grp.has-flag{justify-content:space-between;padding:0 2px;}
+.tile .grp-flag{font-size:clamp(4px,1.3vw,7px);line-height:1;}
+.tile .grp-price{
+  font-family:'Space Mono',monospace;font-weight:700;color:#fff;
+  font-size:clamp(3.6px,1.1vw,6px);line-height:1;
+  text-shadow:0 1px 1.5px rgba(0,0,0,0.55);white-space:nowrap;
+}
+.tile.owned .grp-price{display:none;}
+.tile .body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1px;text-align:center;gap:1px;min-width:0;min-height:0;}
+.tile .body.body-art{padding:0;position:relative;}
+.tile .art{width:100%;height:100%;line-height:0;}
+.tile .art svg{width:100%;height:100%;display:block;}
+.tile .lbl{
+  position:absolute;left:0;right:0;bottom:0;z-index:1;pointer-events:none;
+  font-weight:700;line-height:1.05;color:#fff;text-align:center;
+  background:rgba(0,0,0,0.4);padding:0 1px;letter-spacing:-0.2px;
+  font-size:clamp(0.45px,0.135vw,0.75px);
+  white-space:normal;overflow:hidden;text-overflow:ellipsis;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+}
+.tile .nm{font-weight:800;font-size:clamp(0.3px,0.12vw,0.575px);text-transform:uppercase;letter-spacing:-0.1px;line-height:1;white-space:nowrap;max-width:100%;}
+.tile .pr{font-family:'Space Mono',monospace;font-size:clamp(3.2px,1vw,4.5px);color:var(--teal);font-weight:700;}
+.tile.corner .body{font-size:clamp(4.5px,1.5vw,7px);}
 .tile.corner{align-items:center;justify-content:center;}
-.tile.corner .nm{font-size:clamp(5px,1.8vw,8.5px);}
-.tile .icon{font-size:clamp(9px,3vw,16px);}
+.tile.corner .nm{font-size:clamp(1px,0.35vw,1.6px);}
+.tile .icon{font-size:clamp(3.25px,1.05vw,5.5px);line-height:1;}
 .tile.owned{box-shadow:inset 0 0 0 2px var(--owner-clr, var(--gold));}
 .tile .owner-mark{position:absolute;top:1px;left:1px;width:clamp(4px,1.3vw,7px);height:clamp(4px,1.3vw,7px);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,0.55);display:none;z-index:2;}
 .tile .houses{position:absolute;bottom:1px;left:0;right:0;display:flex;justify-content:center;gap:1px;}
@@ -505,15 +524,16 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .actions-row button.secondary{background:transparent;border:2px solid rgba(47,111,168,0.5);color:var(--gold);}
 .actions-row button:disabled{opacity:0.35;pointer-events:none;}
 
-.players-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;}
+.players-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;}
 .player-chip{
-  flex:none;min-width:120px;background:rgba(18,52,86,0.04);border:1px solid rgba(47,111,168,0.25);
-  border-radius:10px;padding:8px 10px;position:relative;overflow:visible;
+  flex:1 1 0;min-width:0;background:rgba(18,52,86,0.04);border:1px solid rgba(47,111,168,0.25);
+  border-radius:10px;padding:6px 7px;position:relative;overflow:visible;
 }
 .player-chip.current{border-color:var(--gold);background:rgba(47,111,168,0.12);}
 .player-chip.bankrupt{opacity:0.35;text-decoration:line-through;}
-.player-chip .row1{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;}
-.player-chip .row2{font-family:'Space Mono',monospace;font-size:12px;color:var(--gold);margin-top:2px;position:relative;overflow:visible;}
+.player-chip .row1{display:flex;align-items:center;gap:4px;font-weight:700;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.player-chip .row1 .token{flex:none;}
+.player-chip .row2{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--gold);margin-top:2px;position:relative;overflow:visible;white-space:nowrap;text-overflow:ellipsis;}
 .bot-tag{font-size:9px;color:var(--gold-dim);border:1px solid rgba(47,111,168,0.4);border-radius:5px;padding:0 4px;font-weight:700;letter-spacing:0.5px;flex:none;}
 .money-fx{
   position:absolute;right:0;top:-1px;font-family:'Space Mono',monospace;font-weight:800;font-size:12px;
@@ -530,9 +550,9 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 }
 
 .board-log{
-  position:absolute;left:6%;right:6%;bottom:3%;z-index:5;
+  position:absolute;left:20%;right:20%;bottom:2%;z-index:5;
   display:flex;flex-direction:column;gap:3px;align-items:stretch;
-  pointer-events:none;max-height:34%;overflow:hidden;
+  pointer-events:none;max-height:60%;overflow:visible;
 }
 .toast{
   background:rgba(11,22,38,0.62);border:1px solid rgba(47,111,168,0.35);color:#EAF4FC;
@@ -1395,6 +1415,62 @@ const GROUP_COLORS = {
   orange:'var(--orange)', red:'var(--redgrp)', yellow:'var(--yellow)',
   green:'var(--greengrp)', darkblue:'var(--darkblue)'
 };
+/* Emoji bendera tiap negara di papan — ditampilkan di grup bar (sebelah
+   kiri harga) menggantikan nama negara. Kotak putih di tengah petak
+   sengaja dikosongkan supaya nanti bisa diisi foto negara masing-masing. */
+const COUNTRY_FLAGS = {
+  'Indonesia':'🇮🇩', 'Malaysia':'🇲🇾', 'Vietnam':'🇻🇳', 'Thailand':'🇹🇭', 'Filipina':'🇵🇭',
+  'Mesir':'🇪🇬', 'Maroko':'🇲🇦', 'Afrika Selatan':'🇿🇦', 'India':'🇮🇳', 'Turki':'🇹🇷', 'Yunani':'🇬🇷',
+  'Jerman':'🇩🇪', 'Prancis':'🇫🇷', 'Italia':'🇮🇹', 'Spanyol':'🇪🇸', 'Belanda':'🇳🇱', 'Inggris':'🇬🇧',
+  'Kanada':'🇨🇦', 'Brasil':'🇧🇷', 'Argentina':'🇦🇷', 'Jepang':'🇯🇵', 'Amerika Serikat':'🇺🇸'
+};
+/* Ilustrasi "pemandangan singkat" tiap petak (SVG flat, ringan, tanpa
+   perlu internet — cocok buat dibundel ke APK). Key untuk negara/utilitas
+   pakai nama persis, sisanya (stasiun/pajak/kartu/petak khusus) pakai
+   tipe petak karena kontennya dipakai berulang di beberapa petak yang
+   sama jenisnya. Kalau ada gambar yang kurang pas, tinggal ganti isi
+   string SVG-nya di sini — tidak perlu ubah bagian render. */
+function scene(sky, ground, shapes){
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <rect width="100" height="100" fill="${sky}"/>
+    <rect y="82" width="100" height="18" fill="${ground}"/>
+    ${shapes}
+  </svg>`;
+}
+const TILE_ART = {
+  'Indonesia': scene('#BFE3F5','#6FA85A', `<circle cx="80" cy="20" r="9" fill="#F7C948"/><polygon points="20,82 80,82 70,66 30,66" fill="#8B5A2B"/><polygon points="28,66 72,66 63,53 37,53" fill="#8B5A2B"/><polygon points="36,53 64,53 57,41 43,41" fill="#8B5A2B"/><circle cx="50" cy="35" r="4" fill="#8B5A2B"/>`),
+  'Malaysia': scene('#CDEBFA','#4E7A6B', `<rect x="35" y="30" width="10" height="52" fill="#375C99"/><rect x="55" y="30" width="10" height="52" fill="#375C99"/><polygon points="35,30 40,14 45,30" fill="#375C99"/><polygon points="55,30 60,14 65,30" fill="#375C99"/><rect x="45" y="54" width="10" height="6" fill="#2C4A7A"/>`),
+  'Vietnam': scene('#DCEFFB','#2E7D8C', `<polygon points="8,82 20,54 32,82" fill="#3C6E52"/><polygon points="27,82 42,44 57,82" fill="#3C6E52"/><polygon points="54,82 68,57 84,82" fill="#3C6E52"/><polygon points="38,80 62,80 56,73 44,73" fill="#5A3A22"/>`),
+  'Thailand': scene('#FCE8C8','#7A5C3E', `<polygon points="42,82 58,82 55,62 45,62" fill="#D8A23B"/><polygon points="45,62 55,62 52,46 48,46" fill="#D8A23B"/><polygon points="48,46 52,46 50,25" fill="#D8A23B"/><circle cx="50" cy="22" r="3" fill="#D8A23B"/>`),
+  'Filipina': scene('#CFF0E0','#4C8C5A', `<ellipse cx="23" cy="80" rx="17" ry="14" fill="#8FBF6B"/><ellipse cx="50" cy="82" rx="19" ry="16" fill="#79AD55"/><ellipse cx="78" cy="80" rx="17" ry="14" fill="#8FBF6B"/>`),
+  'Mesir': scene('#F7E1B5','#D8B36A', `<circle cx="78" cy="22" r="9" fill="#F2A93C"/><polygon points="30,82 50,38 70,82" fill="#C99A46"/><polygon points="55,82 50,38 70,82" fill="#B8873A"/>`),
+  'Maroko': scene('#FBE2C5','#DFAE6C', `<path d="M0,84 Q25,70 50,84 T100,84 L100,100 L0,100 Z" fill="#E0B478"/><rect x="46" y="35" width="8" height="47" fill="#7A5A3C"/><polygon points="46,35 50,19 54,35" fill="#7A5A3C"/>`),
+  'Afrika Selatan': scene('#CDE7F2','#5E8C63', `<polygon points="14,82 30,35 70,35 86,82" fill="#6B7B5E"/><rect x="28" y="30" width="44" height="6" fill="#576B4D"/>`),
+  'India': scene('#F6E7D0','#C9AE7E', `<rect x="38" y="56" width="24" height="26" fill="#EDE3D0"/><circle cx="50" cy="52" r="12" fill="#EDE3D0"/><rect x="29" y="70" width="7" height="12" fill="#EDE3D0"/><rect x="64" y="70" width="7" height="12" fill="#EDE3D0"/><circle cx="50" cy="39" r="2" fill="#B99B5B"/>`),
+  'Turki': scene('#F9D9C4','#C88B62', `<ellipse cx="28" cy="34" rx="10" ry="13" fill="#D6553F"/><ellipse cx="54" cy="24" rx="9" ry="12" fill="#3E7FB0"/><ellipse cx="76" cy="40" rx="8" ry="11" fill="#E8B84B"/><line x1="28" y1="46" x2="28" y2="52" stroke="#7A5A3C" stroke-width="1.5"/><line x1="54" y1="35" x2="54" y2="41" stroke="#7A5A3C" stroke-width="1.5"/><line x1="76" y1="50" x2="76" y2="56" stroke="#7A5A3C" stroke-width="1.5"/>`),
+  'Yunani': scene('#DCEEF7','#B7A67E', `<polygon points="25,45 50,29 75,45" fill="#E4E0D2"/><rect x="25" y="45" width="50" height="6" fill="#E4E0D2"/><rect x="28" y="51" width="5" height="25" fill="#E4E0D2"/><rect x="38" y="51" width="5" height="25" fill="#E4E0D2"/><rect x="48" y="51" width="5" height="25" fill="#E4E0D2"/><rect x="58" y="51" width="5" height="25" fill="#E4E0D2"/><rect x="68" y="51" width="5" height="25" fill="#E4E0D2"/>`),
+  'Jerman': scene('#D7E6EF','#5F7A5A', `<rect x="35" y="45" width="30" height="37" fill="#7C8A99"/><polygon points="35,45 42,31 49,45" fill="#5C6A78"/><polygon points="51,45 58,29 65,45" fill="#5C6A78"/><rect x="46" y="56" width="8" height="26" fill="#4A5866"/>`),
+  'Prancis': scene('#E7EEF4','#8A9A8A', `<polygon points="46,82 54,82 58,56 50,20 42,56" fill="#5B5147"/><polygon points="38,82 62,82 58,73 42,73" fill="#5B5147"/>`),
+  'Italia': scene('#F5E7CE','#C7A97A', `<rect x="20" y="55" width="60" height="27" rx="4" fill="#C9A268"/><rect x="20" y="55" width="60" height="6" fill="#B8946A"/><rect x="27" y="63" width="6" height="10" fill="#F5E7CE"/><rect x="39" y="63" width="6" height="10" fill="#F5E7CE"/><rect x="51" y="63" width="6" height="10" fill="#F5E7CE"/><rect x="63" y="63" width="6" height="10" fill="#F5E7CE"/>`),
+  'Spanyol': scene('#F7E3D8','#C79B72', `<polygon points="30,82 34,42 38,82" fill="#B5793F"/><polygon points="45,82 50,25 55,82" fill="#B5793F"/><polygon points="62,82 66,44 70,82" fill="#B5793F"/><circle cx="34" cy="40" r="2" fill="#8B5A2B"/><circle cx="50" cy="23" r="2" fill="#8B5A2B"/><circle cx="66" cy="42" r="2" fill="#8B5A2B"/>`),
+  'Belanda': scene('#DCEEF0','#8FBF6B', `<rect x="46" y="45" width="8" height="37" fill="#9C7A4E"/><polygon points="50,45 50,15 60,25" fill="#D8D2C4"/><polygon points="50,45 50,15 40,25" fill="#D8D2C4"/><polygon points="50,45 80,45 70,55" fill="#D8D2C4"/><polygon points="50,45 20,45 30,35" fill="#D8D2C4"/>`),
+  'Inggris': scene('#DCE6EE','#6E8261', `<rect x="42" y="35" width="16" height="47" fill="#9B8148"/><rect x="40" y="28" width="20" height="8" fill="#7C6836"/><circle cx="50" cy="32" r="4" fill="#F4E7C6"/><polygon points="40,28 50,15 60,28" fill="#7C6836"/>`),
+  'Kanada': scene('#DFF0F7','#5E8C63', `<polygon points="8,82 30,44 52,82" fill="#7C93A6"/><polygon points="40,82 62,40 84,82" fill="#8FA6B8"/><polygon points="50,20 53,28 60,26 55,32 58,38 50,34 42,38 45,32 40,26 47,28" fill="#C8393A"/>`),
+  'Brasil': scene('#D9EEF2','#5B9463', `<polygon points="8,82 50,50 92,82" fill="#4E8353"/><rect x="48" y="30" width="4" height="20" fill="#B9AE9A"/><rect x="34" y="34" width="32" height="3" fill="#B9AE9A"/><circle cx="50" cy="26" r="4" fill="#B9AE9A"/>`),
+  'Argentina': scene('#E7EAF2','#8590A3', `<polygon points="46,82 54,82 52,25 48,25" fill="#D9D6CC"/><polygon points="48,25 52,25 50,14" fill="#D9D6CC"/>`),
+  'Jepang': scene('#F6DCE3','#7FA6C9', `<polygon points="12,82 50,28 88,82" fill="#7C93A8"/><polygon points="38,46 50,28 62,46 56,54 44,54" fill="#EFEFEF"/><rect x="30" y="60" width="4" height="22" fill="#B3402F"/><rect x="66" y="60" width="4" height="22" fill="#B3402F"/><rect x="26" y="56" width="48" height="5" fill="#B3402F"/><rect x="28" y="63" width="44" height="4" fill="#B3402F"/>`),
+  'Amerika Serikat': scene('#DCE9F2','#6E8B96', `<rect x="47" y="55" width="6" height="27" fill="#6FA98C"/><circle cx="50" cy="48" r="6" fill="#6FA98C"/><polygon points="44,42 50,29 56,42" fill="#6FA98C"/><rect x="46" y="35" width="2" height="10" fill="#6FA98C"/><rect x="52" y="35" width="2" height="10" fill="#6FA98C"/>`),
+  'Perusahaan Listrik': scene('#FDF3D6','#B7A47A', `<circle cx="50" cy="42" r="18" fill="#F7D34C"/><polygon points="52,28 40,48 49,48 45,66 63,42 52,42" fill="#8A6A16"/><rect x="45" y="58" width="10" height="8" fill="#B3A06A"/>`),
+  'Perusahaan Air': scene('#DCEEF7','#3E6E8C', `<path d="M50,18 C61,40 67,52 50,68 C33,52 39,40 50,18 Z" fill="#3E8FC7"/><rect x="38" y="70" width="24" height="12" fill="#2E6E9C"/>`),
+  'railroad': scene('#E3E9EE','#57677a', `<rect x="20" y="46" width="60" height="20" rx="4" fill="#7c8794"/><rect x="25" y="30" width="20" height="18" fill="#8C97A4"/><rect x="30" y="34" width="10" height="8" fill="#DCE4EA"/><circle cx="35" cy="70" r="6" fill="#2b2b2b"/><circle cx="65" cy="70" r="6" fill="#2b2b2b"/>`),
+  'tax': scene('#EAF4E9','#7a4a3b', `<ellipse cx="50" cy="60" rx="22" ry="20" fill="#3FA34D"/><rect x="44" y="34" width="12" height="12" fill="#2E7D3C"/><text x="50" y="68" font-size="22" fill="#fff" text-anchor="middle" font-family="Arial" font-weight="bold">$</text>`),
+  'chance': scene('#FBEBD3','#EE9B3E', `<rect x="20" y="14" width="60" height="70" rx="8" fill="#EE9B3E"/><text x="50" y="62" font-size="42" fill="#fff" text-anchor="middle" font-family="Georgia" font-weight="bold">?</text>`),
+  'chest': scene('#F3E6D2','#8B5A2B', `<rect x="18" y="46" width="64" height="32" rx="3" fill="#8B5A2B"/><rect x="18" y="34" width="64" height="16" rx="6" fill="#A9702F"/><rect x="44" y="46" width="12" height="9" fill="#EFC93B"/>`),
+  'go': scene('#EAF4FC','#2F6FA8', `<rect x="27" y="16" width="4" height="66" fill="#163455"/><polygon points="31,18 60,26 31,34" fill="#2F6FA8"/><polygon points="31,36 60,44 31,52" fill="#7FB2E0"/>`),
+  'jail': scene('#EFE3D2','#4A3A28', `<rect x="20" y="24" width="60" height="56" fill="#B79A73"/><rect x="28" y="24" width="4" height="56" fill="#4A3A28"/><rect x="40" y="24" width="4" height="56" fill="#4A3A28"/><rect x="52" y="24" width="4" height="56" fill="#4A3A28"/><rect x="64" y="24" width="4" height="56" fill="#4A3A28"/>`),
+  'freeparking': scene('#DCEEF7','#5E8C63', `<circle cx="50" cy="34" r="18" fill="#2F6FA8"/><text x="50" y="42" font-size="24" fill="#fff" text-anchor="middle" font-family="Arial" font-weight="bold">P</text><rect x="30" y="60" width="40" height="16" rx="6" fill="#B3402F"/><circle cx="38" cy="78" r="5" fill="#2b2b2b"/><circle cx="62" cy="78" r="5" fill="#2b2b2b"/>`),
+  'gotojail': scene('#EAEFF4','#57677a', `<circle cx="50" cy="45" r="24" fill="#7c8794"/><rect x="38" y="35" width="24" height="20" rx="2" fill="#EAEFF4"/><text x="50" y="51" font-size="18" fill="#57677a" text-anchor="middle" font-family="Arial" font-weight="bold">👮</text>`)
+};
 const BASE_HOUSE_COST = { brown:50, lightblue:50, pink:100, orange:100, red:150, yellow:150, green:200, darkblue:200 };
 /* Harga rumah efektif — mengikuti pengganda "Harga Rumah Lebih Murah" dari
    aturan aktif (dipakai mode Quick Match). Tetap balik ke harga normal
@@ -2104,7 +2180,13 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='screen-menu') syncMenuMusicIcon();
-  if(id==='screen-game') syncGameMusicIcon();
+  if(id==='screen-game'){
+    syncGameMusicIcon();
+    // Papan dibangun sebelum layarnya ditampilkan (masih display:none),
+    // jadi clientWidth tile masih 0 di titik itu — susun ulang ukuran
+    // font nama tile di sini, setelah papan benar-benar terlihat.
+    requestAnimationFrame(fitBoardText);
+  }
   refreshBgmPlayback();
 }
 function openHowToModal(){
@@ -2186,10 +2268,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 22:13 WITA — v1.8.23.2213</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -2568,20 +2646,22 @@ function runNextRemoteAnim(){
   const shouldAnimate = !appSettings.reducedMotion && screenActive && (movedEntries.length>0 || rolledNew);
 
   if(!shouldAnimate){
-    // Tetap tampilkan log baru sebagai toast walau tanpa animasi jalan.
-    newLogEntries.forEach(e=>showToast(e.msg));
+    // Tetap tampilkan log terbaru (versi ringkas ala Riwayat) walau tanpa animasi jalan.
+    renderBoardLog(state.log);
     afterApply();
     return;
   }
 
-  // Log ditampilkan satu-per-satu berbarengan dengan animasi supaya
-  // "log di bawah dadu" ikut hidup di semua pemain, bukan cuma muncul
-  // borongan di akhir.
+  // Log papan dibangun ulang bertahap (bukan per-baris mentah) berbarengan
+  // dengan animasi, supaya "log di bawah dadu" ikut hidup di semua pemain
+  // sambil tetap tampil ringkas seperti di modal Riwayat.
   (function replayLogs(){
+    const fullLog = state.log || [];
+    const baseLen = Math.max(0, fullLog.length - newLogEntries.length);
     let li=0;
     function nextLog(){
       if(li>=newLogEntries.length) return;
-      showToast(newLogEntries[li].msg);
+      renderBoardLog(fullLog.slice(0, baseLen+li+1));
       li++;
       setTimeout(nextLog, 420);
     }
@@ -3135,23 +3215,123 @@ function buildBoardDOM(){
 
     let grpBar='';
     if(t.type==='property'){
-      grpBar = `<div class="grp" style="background:${GROUP_COLORS[t.group]}"></div>`;
+      const flag = COUNTRY_FLAGS[t.name] || '🏳';
+      grpBar = `<div class="grp has-flag" style="background:${GROUP_COLORS[t.group]}"><span class="grp-flag">${flag}</span><span class="grp-price">${fmt(t.price)}</span></div>`;
+    } else if(t.type==='railroad'){
+      grpBar = `<div class="grp has-flag" style="background:#7c8794"><span class="grp-flag">🚂</span><span class="grp-price">${fmt(t.price)}</span></div>`;
+    } else if(t.type==='utility'){
+      const uicon = t.name==='Perusahaan Air' ? '💧' : '💡';
+      grpBar = `<div class="grp has-flag" style="background:#57677a"><span class="grp-flag">${uicon}</span><span class="grp-price">${fmt(t.price)}</span></div>`;
+    } else if(t.type==='tax'){
+      grpBar = `<div class="grp has-flag" style="background:#7a4a3b"><span class="grp-flag">💵</span><span class="grp-price">${fmt(t.amount)}</span></div>`;
     }
+    // Kunci untuk mengambil ilustrasi petak dari TILE_ART: negara &
+    // perusahaan pakai nama persis (biar Listrik vs Air beda gambar),
+    // sisanya pakai tipe petak (dipakai ulang di beberapa petak sejenis).
+    let artKey=null;
+    if(t.type==='property' || t.type==='utility') artKey = t.name;
+    else if(['railroad','tax','chance','chest','go','jail','freeparking','gotojail'].includes(t.type)) artKey = t.type;
     let bodyHTML='';
-    if(t.type==='go'){ bodyHTML = `<div class="icon">➡</div><div class="nm">MULAI</div>`; }
-    else if(t.type==='jail'){ bodyHTML = `<div class="icon">🔒</div><div class="nm">PENJARA</div>`; }
-    else if(t.type==='freeparking'){ bodyHTML = `<div class="icon">🅿</div><div class="nm">PARKIR BEBAS</div>`; }
-    else if(t.type==='gotojail'){ bodyHTML = `<div class="icon">👮</div><div class="nm">MASUK PENJARA</div>`; }
-    else if(t.type==='chance'){ bodyHTML = `<div class="icon">❓</div><div class="nm">${t.name}</div>`; }
-    else if(t.type==='chest'){ bodyHTML = `<div class="icon">💰</div><div class="nm">${t.name}</div>`; }
-    else if(t.type==='tax'){ bodyHTML = `<div class="icon">💵</div><div class="nm">${t.name}</div><div class="pr">${fmt(t.amount)}</div>`; }
-    else if(t.type==='railroad'){ bodyHTML = `<div class="icon">🚂</div><div class="nm">${t.name}</div><div class="pr">${fmt(t.price)}</div>`; }
-    else if(t.type==='utility'){ bodyHTML = `<div class="icon">💡</div><div class="nm">${t.name}</div><div class="pr">${fmt(t.price)}</div>`; }
-    else { bodyHTML = `<div class="nm">${t.name}</div><div class="pr">${fmt(t.price)}</div>`; }
+    if(artKey && TILE_ART[artKey]){ bodyHTML = `<div class="art">${TILE_ART[artKey]}</div><div class="lbl">${t.name}</div>`; }
+    else { bodyHTML = `<div class="lbl">${t.name}</div>`; }
 
-    el.innerHTML = grpBar + `<div class="body">${bodyHTML}</div><div class="owner-mark" id="ownerMark${i}"></div><div class="houses" id="houses${i}"></div><div class="tokens" id="tokens${i}"></div>`;
+    const bodyCls = artKey && TILE_ART[artKey] ? ' body-art' : '';
+    el.innerHTML = grpBar + `<div class="body${bodyCls}">${bodyHTML}</div><div class="owner-mark" id="ownerMark${i}"></div><div class="houses" id="houses${i}"></div><div class="tokens" id="tokens${i}"></div>`;
     board.appendChild(el);
   });
+  fitBoardText();
+}
+/* Nama properti panjang (mis. "STASIUN") dulu dipaksa word-break:break-word
+   sehingga huruf terakhir bisa terpotong turun sendirian ke baris baru
+   ("STASIU" lalu "N"). Sekarang ukuran font tiap nama tile disusutkan
+   sedikit-sedikit lewat JS sampai muat satu baris penuh (tanpa terpotong),
+   dan hanya diizinkan turun baris di antara kata (bukan di tengah kata)
+   kalau memang benar-benar tidak muat walau sudah di ukuran minimum. */
+function fitBoardText(){
+  document.querySelectorAll('.tile').forEach(tile=>{
+    const nmEl = tile.querySelector('.nm');
+    if(!nmEl) return;
+    const bodyEl = nmEl.parentElement;
+    const avail = tile.clientWidth - 2;
+    // PENTING: tinggi yang tersedia untuk NAMA bukan cuma tinggi .body,
+    // tapi harus dikurangi tinggi elemen lain yang sama-sama numpuk di
+    // .body (ikon 🚂/💡/dll pada petak stasiun/perusahaan/pajak) + gap
+    // di antara mereka — sebelumnya ini tidak dihitung, jadi nama di
+    // petak berikon (mis. "Stasiun Jakarta") dikira punya ruang lebih
+    // dari yang sebenarnya, dan baris keduanya kepotong oleh overflow.
+    let availH = Infinity;
+    if(bodyEl){
+      const iconEl = bodyEl.querySelector('.icon');
+      const bodyCS = getComputedStyle(bodyEl);
+      const gapPx = parseFloat(bodyCS.rowGap || bodyCS.gap || '0') || 0;
+      const iconH = iconEl ? iconEl.getBoundingClientRect().height : 0;
+      const padTB = (parseFloat(bodyCS.paddingTop)||0) + (parseFloat(bodyCS.paddingBottom)||0);
+      availH = bodyEl.clientHeight - padTB - iconH - (iconEl?gapPx:0) - 1;
+    }
+    if(avail<=0) return;
+    nmEl.style.fontSize = '';
+    nmEl.style.whiteSpace = 'nowrap';
+    nmEl.style.overflowWrap = 'normal';
+    // Batas minimum dibuat jauh lebih rendah dari sebelumnya (dulu berhenti
+    // di 0.4px, kepepet lalu langsung dipotong tengah kata). Sekarang
+    // dikasih ruang susut jauh lebih besar dulu supaya kata/nama panjang
+    // (mis. "Indonesia", "Amerika Serikat") sebisa mungkin tetap utuh
+    // tanpa terpotong huruf, sebelum benar-benar terpaksa dipatah.
+    const minFs = 0.08;
+    let fs = parseFloat(getComputedStyle(nmEl).fontSize);
+    let guard = 0;
+    // Tahap 1: coba muat nama utuh dalam SATU baris dulu.
+    while(nmEl.scrollWidth > avail && fs > minFs && guard < 300){
+      fs -= 0.02; nmEl.style.fontSize = fs.toFixed(2)+'px'; guard++;
+    }
+    if(nmEl.scrollWidth <= avail) return; // sudah muat satu baris, selesai.
+    // Tahap 2: nama 2 kata (mis. "STASIUN LONDON") boleh pindah baris di
+    // spasi, TAPI kata terlebarnya (kata kedua) tetap harus diukur ulang
+    // supaya benar-benar muat — sebelumnya di sini teksnya berhenti
+    // disusutkan padahal kata keduanya sendiri masih lebih lebar dari
+    // tile, jadi kepotong horizontal walau sudah pindah baris. TINGGI
+    // hasil wrap-nya juga dicek terhadap tinggi area yang benar-benar
+    // tersisa untuk nama (di luar ikon) — kalau baris kedua ("JAKARTA"
+    // pada "STASIUN JAKARTA") melebihi itu, dia akan kepotong/hilang
+    // karena tile overflow:hidden, jadi font terus disusutkan sampai
+    // KEDUA baris benar-benar muat di dalam.
+    nmEl.style.whiteSpace = 'normal';
+    guard = 0;
+    while((nmEl.scrollWidth > avail || nmEl.scrollHeight > availH) && fs > minFs && guard < 300){
+      fs -= 0.02; nmEl.style.fontSize = fs.toFixed(2)+'px'; guard++;
+    }
+    if(nmEl.scrollWidth <= avail && nmEl.scrollHeight <= availH) return;
+    // Tahap 3: kalau di ukuran terkecil pun masih ada kata tunggal yang
+    // lebih lebar dari tile (nama sangat panjang tanpa spasi), baru izinkan
+    // patah di tengah kata sebagai jalan terakhir. TAPI tetap terus
+    // disusutkan sesudahnya (bukan cuma di-set sekali) sampai lebar MAUPUN
+    // tinggi hasil patahannya benar-benar muat — supaya tidak PERNAH ada
+    // baris yang hilang/kepotong dari tampilan walau jadi 2-3 baris kecil.
+    nmEl.style.overflowWrap = 'anywhere';
+    guard = 0;
+    const floorFs = 0.04;
+    while((nmEl.scrollWidth > avail || nmEl.scrollHeight > availH) && fs > floorFs && guard < 300){
+      fs -= 0.015; nmEl.style.fontSize = fs.toFixed(3)+'px'; guard++;
+    }
+  });
+}
+let fitBoardTextTimer=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(fitBoardTextTimer);
+  fitBoardTextTimer = setTimeout(fitBoardText, 150);
+});
+/* PENYEBAB ASLI kenapa nama tile masih kepotong walau sudah disusutkan:
+   halaman ini memuat font 'Inter' dari Google Fonts dengan display=swap.
+   Di koneksi lambat, papan sempat digambar pakai font pengganti (fallback)
+   dulu — fitBoardText() menghitung ukuran pas berdasarkan lebar huruf
+   fallback itu — baru BEBERAPA SAAT KEMUDIAN font Inter yang asli selesai
+   dimuat dan menggantikan fallback-nya. Lebar huruf Inter berbeda dari
+   fallback, jadi teks yang tadinya sudah pas jadi melebar lagi dan
+   kepotong, padahal fitBoardText() sendiri tidak salah hitung. Perbaikan:
+   hitung ulang begitu font-nya benar-benar selesai dimuat. */
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(()=>{ fitBoardText(); });
+  document.fonts.addEventListener('loadingdone', ()=>{ fitBoardText(); });
 }
 function diceHTML(v){
   const patterns = {
@@ -3244,7 +3424,7 @@ function showMoneyFx(playerId, delta){
 }
 function log(msg){
   state.log.push({id: Date.now()+'-'+CLIENT_ID+'-'+(logSeq++), msg});
-  showToast(msg);
+  renderBoardLog(state.log);
   refreshHistoryIfOpen();
 }
 /* Gabungkan log lokal dengan log dari server berdasarkan id unik,
@@ -3262,15 +3442,22 @@ function mergeLogs(remoteLog, localLog){
   });
   return merged.slice(-150);
 }
-function showToast(msg){
+/* Log di tengah papan dulu menampilkan SETIAP baris state.log mentah
+   sebagai toast terpisah (lempar dadu, lewat MULAI, mendarat, bayar
+   sewa, dst masing-masing jadi toast sendiri) — hasilnya berasa spam.
+   Sekarang log papan memakai ringkasan yang sama seperti modal Riwayat
+   (lihat summarizeHistory/renderHistoryGroup di bawah), jadi satu aksi
+   jalan cuma jadi satu baris ringkas yang tumbuh sedikit-sedikit, bukan
+   numpuk banyak baris kecil sekaligus. */
+function renderBoardLog(entriesAsc){
   const stack = document.getElementById('toastStack');
   if(!stack) return;
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.innerHTML = msg;
-  stack.prepend(el);
-  while(stack.children.length>5){ stack.removeChild(stack.lastChild); }
-  requestAnimationFrame(()=>el.classList.add('show'));
+  const groups = summarizeHistory((entriesAsc||[]).slice()).slice(-5).reverse();
+  stack.innerHTML = groups.map((g,idx)=>
+    `<div class="toast${idx===0?'':' show'}">${renderHistoryGroup(g, idx===0)}</div>`
+  ).join('');
+  const first = stack.firstElementChild;
+  if(first) requestAnimationFrame(()=>first.classList.add('show'));
 }
 function updateTurnBanner(){
   const p = currentPlayer();
