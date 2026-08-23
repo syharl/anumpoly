@@ -2278,15 +2278,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">24 Agustus 2026, 01:32 WITA — v1.8.24.0132</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">24 Agustus 2026, 00:51 WITA — v1.8.24.0051</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2299,6 +2290,92 @@ function openWhatsNewModal(){
 }
 function goToMenu(){ showScreen('screen-menu'); }
 function goToModeSelect(){ showScreen('screen-mode'); }
+
+/* ============================================================
+   TOMBOL BACK ANDROID (hardware/gesture back)
+   ============================================================
+   Kenapa perlu didaftarkan manual: game ini satu halaman (SPA) — semua
+   "layar" cuma div yang ditampilkan/disembunyikan lewat showScreen(),
+   bukan URL/history browser beneran. Tanpa listener ini, tombol back
+   Android tidak tahu apa-apa soal itu dan cuma akan langsung menutup
+   aplikasi dari layar manapun.
+
+   Urutan prioritas tiap kali back ditekan (dicek dari atas ke bawah,
+   berhenti begitu satu kondisi cocok):
+   1) Kartu update (#updateOverlay dari update-check.js) — kalau tombol
+      X-nya sedang kelihatan, anggap sama seperti menekan X. Kalau lagi
+      disembunyikan (proses unduh berjalan), back diabaikan total —
+      supaya tidak keluar aplikasi di tengah unduhan/pemasangan.
+   2) Modal kelola properti (#manageOverlay).
+   3) Modal pemilih (mis. Tema — #pickerOverlay).
+   4) Modal umum (#modalOverlay) — HANYA kalau modal itu punya tombol X
+      (lihat showModal(): modal yang mengharuskan pemain memilih, mis.
+      bayar utang atau lelang, sengaja TIDAK punya tombol X sama sekali
+      — jadi back juga otomatis tidak bisa menutupnya sembarangan,
+      pemain tetap harus menekan salah satu tombol aksi di dalamnya).
+   5) Layar menang (#winnerOverlay) — sengaja diabaikan total, pemain
+      harus menekan tombol "Main Lagi" sendiri.
+   6) Kalau tidak ada overlay/modal yang terbuka: ikuti PERSIS tujuan
+      tombol panah (←) yang sudah ada di pojok kiri atas tiap layar
+      (lihat page-header > .ph-back di tiap layar) — jadi tombol back
+      HP cuma memicu fungsi yang sama, bukan logic baru yang beda.
+   7) Layar paling awal (Menu Utama / Welcome, tidak ada tombol ← sama
+      sekali): tawarkan konfirmasi keluar aplikasi — sama persis dengan
+      menekan tombol 🚪 di menu utama (confirmExitApp()).
+*/
+function tanganiTombolBackAndroid(){
+  const updateOverlay = document.getElementById('updateOverlay');
+  if(updateOverlay){
+    const btnX = document.getElementById('btnUpdateDismiss');
+    if(btnX && btnX.style.display !== 'none'){ btnX.click(); }
+    return;
+  }
+  const manageOverlay = document.getElementById('manageOverlay');
+  if(manageOverlay && manageOverlay.classList.contains('show')){ closeManage(); return; }
+
+  const pickerOverlay = document.getElementById('pickerOverlay');
+  if(pickerOverlay && pickerOverlay.classList.contains('show')){ closePicker(); return; }
+
+  const modalOverlay = document.getElementById('modalOverlay');
+  if(modalOverlay && modalOverlay.classList.contains('show')){
+    const modalX = document.getElementById('modalCloseX');
+    if(modalX) modalX.click();
+    return;
+  }
+
+  const winnerOverlay = document.getElementById('winnerOverlay');
+  if(winnerOverlay && winnerOverlay.classList.contains('show')) return;
+
+  const layarAktif = document.querySelector('.screen.active');
+  const idLayar = layarAktif ? layarAktif.id : '';
+  switch(idLayar){
+    case 'screen-mode':
+    case 'screen-settings':
+    case 'screen-account':
+    case 'screen-setup':
+      goToMenu();
+      return;
+    case 'screen-online':
+      leaveOnline();
+      return;
+    case 'screen-game':
+      // Belum ada tombol panah (←) khusus di layar ini — back di sini
+      // dipetakan ke menu jeda (☰) yang sudah ada, supaya konsisten
+      // dengan game lain: back saat main = buka menu jeda dulu, bukan
+      // langsung keluar diam-diam.
+      openSettingsMenu();
+      return;
+    case 'screen-menu':
+    case 'screen-welcome':
+    default:
+      confirmExitApp();
+      return;
+  }
+}
+if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()
+   && window.Capacitor.Plugins && window.Capacitor.Plugins.App && window.Capacitor.Plugins.App.addListener){
+  window.Capacitor.Plugins.App.addListener('backButton', tanganiTombolBackAndroid);
+}
 
 /* ---------- ONLINE MODE ---------- */
 function ensureStorage(){
