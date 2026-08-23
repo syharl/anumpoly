@@ -75,6 +75,44 @@ async function getVersiTerpasang(){
   return parseInt(new URLSearchParams(location.search).get('v') || '1', 10);
 }
 
+// ------------------------------------------------------------------
+// TOMBOL "X" ABAIKAN — dipakai di pojok kanan atas kartu update.
+// Kalau pemain menekannya, nomor build yang SEDANG ditawarkan disimpan
+// ke localStorage. Selama build itu masih yang terbaru (belum ada
+// rilis baru lagi), kartu tidak akan muncul lagi di kunjungan
+// berikutnya. Begitu ada build LEBIH BARU dari yang tersimpan, kartu
+// otomatis tampil lagi — jadi "abaikan" ini cuma menunda untuk update
+// yang sedang ditawarkan sekarang, bukan mematikan pengecekan selamanya.
+// ------------------------------------------------------------------
+const UPDATE_DISMISSED_KEY = 'anumpoly_update_dismissed_build';
+function sudahDiabaikan(buildDitawarkan){
+  try{ return localStorage.getItem(UPDATE_DISMISSED_KEY) === String(buildDitawarkan); }
+  catch(e){ return false; }
+}
+function tandaiAbaikan(buildDitawarkan){
+  try{ localStorage.setItem(UPDATE_DISMISSED_KEY, String(buildDitawarkan)); }catch(e){}
+}
+// Markup tombol X, dipakai bareng oleh kartu update APK & kartu
+// hot-update konten. Style ditulis INLINE (bukan lewat class CSS di
+// index.html) supaya tetap tampil benar walau APK lama yang belum
+// punya class CSS terbaru sekalipun — file ini sendiri kan selalu
+// versi terbaru dari GitHub Pages, tapi index.html-nya belum tentu.
+const TOMBOL_ABAIKAN_HTML = `<button id="btnUpdateDismiss" aria-label="Abaikan update ini" title="Abaikan"
+  style="position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:none;
+  background:rgba(18,52,86,0.08);color:var(--paper-dim,#4B6B8A);font-size:16px;line-height:1;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>`;
+// Dipasang ke tombol X di kedua jenis kartu — cukup hapus overlay dari
+// layar & catat sudah diabaikan, tanpa mengubah apa pun yang sedang
+// berjalan di game di baliknya.
+function pasangTombolAbaikan(overlay, buildDitawarkan){
+  const btnClose = overlay.querySelector('#btnUpdateDismiss');
+  if(!btnClose) return;
+  btnClose.onclick = ()=>{
+    tandaiAbaikan(buildDitawarkan);
+    overlay.remove();
+  };
+}
+
 async function checkForUpdate(){
   try{
     const versiSaya = await getVersiTerpasang();
@@ -97,7 +135,7 @@ async function checkForUpdate(){
     // dikembalikan ke "data.nativeBuild" (bukan contentBuild), supaya
     // kartu update APK ini tidak lagi muncul tiap rilis kecil — cukup
     // hot-update konten (checkForContentUpdate) yang menangani itu.
-    if(data && data.contentBuild && versiSaya < data.contentBuild){
+    if(data && data.contentBuild && versiSaya < data.contentBuild && !sudahDiabaikan(data.contentBuild)){
       showUpdateCard(data);
     }
   }catch(e){ /* offline / gagal cek — biarkan pemain lanjut main seperti biasa */ }
@@ -107,7 +145,8 @@ function showUpdateCard(data){
   const overlay = document.createElement('div');
   overlay.id = 'updateOverlay';
   overlay.innerHTML = `
-    <div class="upd-box">
+    <div class="upd-box" style="position:relative;">
+      ${TOMBOL_ABAIKAN_HTML}
       <div class="upd-icon">🔔</div>
       <h2>Update Tersedia</h2>
       <p>Ada versi baru Monopoli Dunia${data.terbaru?(' (v'+data.terbaru+')'):''}. Update dulu ya biar bisa main bareng teman.</p>
@@ -121,6 +160,7 @@ function showUpdateCard(data){
     </div>`;
   document.body.appendChild(overlay);
   document.getElementById('btnUpdateAction').onclick = ()=> startUpdateFlow(data);
+  pasangTombolAbaikan(overlay, data.contentBuild);
 }
 
 async function startUpdateFlow(data){
@@ -128,6 +168,11 @@ async function startUpdateFlow(data){
   const status = document.getElementById('updateStatus');
   if(btn.dataset.busy==='1') return;
   btn.dataset.busy = '1';
+  // Sembunyikan tombol X begitu unduhan mulai — supaya pemain tidak
+  // menutup kartu di tengah proses (unduhannya tetap lanjut di
+  // belakang layar tanpa UI, yang cuma bikin bingung).
+  const btnDismissSaatDownload = document.getElementById('btnUpdateDismiss');
+  if(btnDismissSaatDownload) btnDismissSaatDownload.style.display = 'none';
 
   // Di browser biasa (bukan APK) atau kalau plugin belum ikut ter-build,
   // tetap sediakan jalan keluar: buka link APK apa adanya.
@@ -309,6 +354,8 @@ async function checkForContentUpdate(){
       return false; // build konten yang aktif SUDAH sama dengan yang terbaru, tidak perlu apa-apa
     }
 
+    if(sudahDiabaikan(buildTerbaru)) return false;
+
     showContentUpdateCard(data, buildTerbaru);
     return true;
   }catch(e){ return false; /* offline / gagal cek — biarkan pemain lanjut main seperti biasa */ }
@@ -318,7 +365,8 @@ function showContentUpdateCard(data, buildTerbaru){
   const overlay = document.createElement('div');
   overlay.id = 'updateOverlay';
   overlay.innerHTML = `
-    <div class="upd-box">
+    <div class="upd-box" style="position:relative;">
+      ${TOMBOL_ABAIKAN_HTML}
       <div class="upd-icon">✨</div>
       <h2>Update Kecil Tersedia</h2>
       <p>Ada pembaruan ringan Anumpoly${data.terbaru?(' (v'+data.terbaru+')'):''} — perbaikan/tampilan, unduhan kecil, TANPA install ulang.</p>
@@ -332,6 +380,7 @@ function showContentUpdateCard(data, buildTerbaru){
     </div>`;
   document.body.appendChild(overlay);
   document.getElementById('btnContentUpdateAction').onclick = ()=> startContentUpdate(data, buildTerbaru);
+  pasangTombolAbaikan(overlay, buildTerbaru);
 }
 
 // Berapa kali coba ulang otomatis kalau unduhan gagal (mis. putus sesaat di
@@ -351,6 +400,8 @@ async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
   const sizeLabel = document.getElementById('contentSizeLabel');
   if(btn.dataset.busy==='1') return;
   btn.dataset.busy = '1';
+  const btnDismissSaatDownload = document.getElementById('btnUpdateDismiss');
+  if(btnDismissSaatDownload) btnDismissSaatDownload.style.display = 'none';
   btn.textContent = '⏳ Mengunduh...';
   progressWrap.style.display = 'block';
   progressBar.style.width = '0%';
