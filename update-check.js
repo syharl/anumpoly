@@ -46,6 +46,21 @@
      biasa (bahkan Play Store pun tidak bisa memasang tanpa dialog itu).
 */
 const REMOTE_VERSI_URL = 'https://syharl.github.io/anumpoly/versi.json'; // sesuaikan kalau alamat GitHub Pages-mu berbeda
+
+// ------------------------------------------------------------------
+// Helper format angka ukuran file & kecepatan unduhan, dipakai bareng
+// oleh update APK penuh maupun hot-update konten di bawah.
+// ------------------------------------------------------------------
+function formatBytes(bytes){
+  if(!bytes || bytes <= 0) return '0 KB';
+  if(bytes < 1024*1024) return Math.round(bytes/1024)+' KB';
+  return (bytes/1024/1024).toFixed(1)+' MB';
+}
+function formatSpeed(bytesPerSecond){
+  if(!bytesPerSecond || bytesPerSecond <= 0) return '';
+  if(bytesPerSecond < 1024*1024) return Math.round(bytesPerSecond/1024)+' KB/d';
+  return (bytesPerSecond/1024/1024).toFixed(2)+' MB/d';
+}
 const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const CapPlugins = (window.Capacitor && window.Capacitor.Plugins) || {};
 
@@ -93,6 +108,7 @@ function showUpdateCard(data){
       <p>Ada versi baru Monopoli Dunia${data.terbaru?(' (v'+data.terbaru+')'):''}. Update dulu ya biar bisa main bareng teman.</p>
       <div id="updProgressWrap" style="display:none;">
         <div class="upd-bar-track"><div id="updProgressBar" class="upd-bar-fill"></div></div>
+        <div class="upd-meta-row"><span id="updSpeedLabel"></span><span id="updSizeLabel"></span></div>
         <div id="updProgressLabel" class="upd-progress-label">0%</div>
       </div>
       <button id="btnUpdateAction" class="upd-btn-main">⬇️ Download Update</button>
@@ -139,15 +155,32 @@ async function startUpdateFlow(data){
     const reader = res.body.getReader();
     const chunks = [];
     let received = 0;
+    // Dipakai buat hitung kecepatan sesaat (byte yang nambah / waktu yang
+    // lewat sejak titik ukur SEBELUMNYA) — bukan rata-rata dari awal,
+    // supaya kalau jaringan sempat melambat/cepat, angkanya ikut berubah
+    // secara real-time, bukan angka yang "adem-ayem" terus.
+    let waktuUkurTerakhir = performance.now();
+    let bytesUkurTerakhir = 0;
     while(true){
       const { done, value } = await reader.read();
       if(done) break;
       chunks.push(value);
       received += value.length;
+      const sekarang = performance.now();
       if(total){
         const pct = Math.min(100, Math.round(received/total*100));
         document.getElementById('updProgressBar').style.width = pct+'%';
         document.getElementById('updProgressLabel').textContent = pct+'%';
+        document.getElementById('updSizeLabel').textContent = formatBytes(received)+' / '+formatBytes(total);
+      } else {
+        document.getElementById('updSizeLabel').textContent = formatBytes(received);
+      }
+      const selisihWaktu = (sekarang - waktuUkurTerakhir) / 1000;
+      if(selisihWaktu >= 0.4){ // update label kecepatan tiap ~0.4 detik, biar tidak "kedip" tiap chunk kecil
+        const kecepatan = (received - bytesUkurTerakhir) / selisihWaktu;
+        document.getElementById('updSpeedLabel').textContent = formatSpeed(kecepatan);
+        waktuUkurTerakhir = sekarang;
+        bytesUkurTerakhir = received;
       }
     }
 
@@ -286,6 +319,7 @@ function showContentUpdateCard(data, buildTerbaru){
       <p>Ada pembaruan ringan Anumpoly${data.terbaru?(' (v'+data.terbaru+')'):''} — perbaikan/tampilan, unduhan kecil, TANPA install ulang.</p>
       <div id="contentProgressWrap" style="display:none;">
         <div class="upd-bar-track"><div id="contentProgressBar" class="upd-bar-fill"></div></div>
+        <div class="upd-meta-row"><span id="contentSpeedLabel"></span><span id="contentSizeLabel"></span></div>
         <div id="contentProgressLabel" class="upd-progress-label">0%</div>
       </div>
       <button id="btnContentUpdateAction" class="upd-btn-main">⬇️ Perbarui Sekarang</button>
@@ -308,32 +342,95 @@ async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
   const progressWrap = document.getElementById('contentProgressWrap');
   const progressBar = document.getElementById('contentProgressBar');
   const progressLabel = document.getElementById('contentProgressLabel');
+  const speedLabel = document.getElementById('contentSpeedLabel');
+  const sizeLabel = document.getElementById('contentSizeLabel');
   if(btn.dataset.busy==='1') return;
   btn.dataset.busy = '1';
   btn.textContent = '⏳ Mengunduh...';
   progressWrap.style.display = 'block';
   progressBar.style.width = '0%';
   progressLabel.textContent = '0%';
+  speedLabel.textContent = '';
+  sizeLabel.textContent = '';
   status.textContent = 'Mengunduh pembaruan, mohon tunggu...';
 
-  // Dengerin event progress asli dari plugin CapacitorUpdater (bukan
-  // animasi palsu) — inilah yang tadinya hilang, makanya progress bar
-  // hot-update tidak pernah jalan padahal update APK di atas sudah punya.
-  // Listener WAJIB dilepas lagi di finally, supaya tidak numpuk kalau
-  // fungsi ini dipanggil ulang (coba lagi / update berikutnya).
+  // PENTING — kenapa perlu HEAD request terpisah ke dist.zip:
+  // Plugin @capgo/capacitor-updater cuma ngasih "percent" polos lewat
+  // event 'download' (dan di banyak HP naiknya lompat per-blok, mis.
+  // 0 -> 10 -> 20 -> ..., BUKAN pelan-pelan per 1% — ini keterbatasan
+  // di sisi native plugin, bukan sesuatu yang bisa diatur dari sini).
+  // Plugin ini juga TIDAK ngasih info ukuran file (byte terunduh/total)
+  // ataupun kecepatan sama sekali. Makanya sebelum mulai download,
+  // kita ambil dulu Content-Length dari dist.zip lewat HEAD request —
+  // dari situ ukuran MB & kecepatan bisa DIHITUNG SENDIRI (estimasi
+  // dari persen x total ukuran), bukan dibaca langsung dari plugin.
+  let totalBundleBytes = null;
+  try{
+    const headRes = await fetch(data.link_bundle, { method: 'HEAD', cache: 'no-store' });
+    const len = headRes.headers.get('Content-Length');
+    if(len) totalBundleBytes = parseInt(len, 10);
+  }catch(e){ /* HEAD gagal (jaringan/HP tertentu) -> ukuran & kecepatan disembunyikan, progres tetap jalan pakai persen */ }
+
+  // ------------------------------------------------------------------
+  // Animasi persen HALUS 1% demi 1% dari nilai yang sedang tampil menuju
+  // target terbaru dari plugin — supaya progress bar tidak "meloncat"
+  // 10% sekali lompat walau data mentah dari plugin memang lompat.
+  // ------------------------------------------------------------------
+  let persenTampil = 0;
+  let animFrame = null;
+  function animasikanKe(target){
+    if(animFrame) cancelAnimationFrame(animFrame);
+    const awal = persenTampil;
+    const waktuMulai = performance.now();
+    const durasi = 500; // ms — cukup untuk terasa "naik pelan", tapi tidak ketinggalan jauh dari data asli
+    function langkah(now){
+      const t = Math.min(1, (now - waktuMulai) / durasi);
+      persenTampil = awal + (target - awal) * t;
+      const tampil = Math.min(100, Math.round(persenTampil));
+      progressBar.style.width = tampil + '%';
+      progressLabel.textContent = tampil + '%';
+      if(t < 1) animFrame = requestAnimationFrame(langkah);
+    }
+    animFrame = requestAnimationFrame(langkah);
+  }
+
+  // Dengerin event progress asli dari plugin CapacitorUpdater. Listener
+  // WAJIB dilepas lagi di finally, supaya tidak numpuk kalau fungsi ini
+  // dipanggil ulang (coba lagi / update berikutnya).
   let downloadListener = null;
+  let waktuUkurTerakhir = performance.now();
+  let bytesUkurTerakhir = 0;
   if(CapUpdater.addListener){
     downloadListener = await CapUpdater.addListener('download', (info)=>{
-      const pct = Math.min(100, Math.round(info && info.percent || 0));
-      progressBar.style.width = pct+'%';
-      progressLabel.textContent = pct+'%';
+      const pctAsli = Math.min(100, Math.max(0, Math.round(info && info.percent || 0)));
+      animasikanKe(pctAsli);
+
+      if(totalBundleBytes){
+        const bytesSekarang = Math.round(totalBundleBytes * pctAsli / 100);
+        sizeLabel.textContent = formatBytes(bytesSekarang) + ' / ' + formatBytes(totalBundleBytes);
+
+        const sekarang = performance.now();
+        const selisihWaktu = (sekarang - waktuUkurTerakhir) / 1000;
+        const selisihBytes = bytesSekarang - bytesUkurTerakhir;
+        // Cuma hitung ulang kecepatan kalau memang ada progres baru sejak
+        // titik ukur sebelumnya — kalau event ini "percent"-nya masih
+        // sama (kadang plugin kirim event kosong), biarkan angka lama.
+        if(selisihWaktu > 0 && selisihBytes > 0){
+          speedLabel.textContent = formatSpeed(selisihBytes / selisihWaktu);
+          waktuUkurTerakhir = sekarang;
+          bytesUkurTerakhir = bytesSekarang;
+        }
+      }
     });
   }
 
   try{
     const bundle = await CapUpdater.download({ version: buildTerbaru, url: data.link_bundle });
+    if(animFrame) cancelAnimationFrame(animFrame);
     progressBar.style.width = '100%';
     progressLabel.textContent = '100%';
+    if(totalBundleBytes) sizeLabel.textContent = formatBytes(totalBundleBytes) + ' / ' + formatBytes(totalBundleBytes);
+    speedLabel.textContent = '';
     status.textContent = 'Menerapkan pembaruan...';
     if(CapPlugins.SplashScreen) { try{ await CapPlugins.SplashScreen.show(); }catch(e){} }
     try{ localStorage.setItem(CONTENT_VERSION_KEY, buildTerbaru); }catch(e){}
@@ -341,6 +438,7 @@ async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
     // tempat — baris setelah ini biasanya tidak sempat kejalan lagi.
     await CapUpdater.set(bundle);
   }catch(err){
+    if(animFrame) cancelAnimationFrame(animFrame);
     if(downloadListener) { try{ await downloadListener.remove(); }catch(e){} }
     // Gagal (paling sering: timeout di jaringan lambat/putus sesaat) —
     // coba ulang otomatis dulu beberapa kali sebelum benar-benar

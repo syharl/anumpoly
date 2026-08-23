@@ -297,6 +297,7 @@ html[data-theme="dark"] .deed-details{background:rgba(0,0,0,0.28);}
 .upd-bar-track{width:100%;height:10px;border-radius:999px;background:rgba(18,52,86,0.08);border:1px solid rgba(47,111,168,0.25);overflow:hidden;margin-bottom:6px;}
 .upd-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#7FC1EE,var(--gold));transition:width .15s ease;}
 .upd-progress-label{font-size:12px;color:var(--gold-dim);margin-bottom:14px;font-family:'Space Mono',monospace;}
+.upd-meta-row{display:flex;justify-content:space-between;font-size:10.5px;color:var(--paper-dim);font-family:'Space Mono',monospace;margin:-2px 2px 6px;min-height:14px;}
 .howto{max-width:420px;text-align:left;background:rgba(18,52,86,0.04);border:1px solid rgba(47,111,168,0.3);border-radius:var(--radius);padding:16px 18px;margin-top:18px;font-size:13px;line-height:1.6;color:var(--paper-dim);display:none;}
 .howto.show{display:block;}
 .howto b{color:var(--gold);}
@@ -2208,10 +2209,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 15:10 WITA — v1.8.23.1510</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
