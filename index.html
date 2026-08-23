@@ -2208,56 +2208,15 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 12:35 WITA — v1.8.23.1235</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <!-- Baris di atas ini JANGAN dihapus/dipindah — CI (build-android.yml,
          step "Tambah entri Apa Yang Baru") menyisipkan entri rilis baru
          TEPAT SETELAH marker itu secara otomatis, tiap kali ada rilis
          (sekalipun kecil). Entri-entri lama di bawah ini tetap seperti
          biasa, ditulis manual oleh developer untuk rilis-rilis penting. -->
     <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026 — Pengaturan Layar Penuh &amp; Room Online Otomatis Dibersihkan</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Layar Pengaturan (⚙️) di menu utama sekarang layar penuh, bukan lagi jendela pop-up — sama seperti Pilih Mode Main, Main Online, dan Akun, semuanya sekarang pakai tombol "← Kembali" konsisten di kiri atas.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Aturan "Sewa properti kosong tanpa rumah" sekarang bisa diatur host di mode Online juga (sebelumnya cuma ada di mode Offline dan online-nya selalu aktif dipaksa).</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>House rule baru: <b>💰 Bonus Tetap $500 di Parkir Bebas</b> — dapat $500 flat tiap mendarat di Parkir Bebas, bisa digabung atau dipakai terpisah dari "Dana Parkir Bebas".</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Kolom nama pemain di layar Pengaturan Permainan (Offline) kadang terisi otomatis sendiri dengan teks aneh (mis. "on") akibat autofill HP — sekarang kolom nama selalu kosong sampai diketik sendiri.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Data room online (kode Room &amp; state permainan) sekarang otomatis dihapus dari server begitu semua pemain manusia sudah keluar dari room itu — tidak lagi numpuk jadi room "hantu" yang cuma tersisa bot tanpa ada yang menonton.</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">22 Agustus 2026 — Lelang Lebih Nekat &amp; Bisa Kelola Properti Dulu</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Lelang sekarang dimulai dari <b>harga beli normal</b> properti itu di papan (sebelumnya dimulai dari 10% harga, kadang bikin properti mahal jatuh ke tangan orang dengan harga terlalu murah).</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Bot sekarang jauh lebih berani menawar di lelang — tidak lagi gampang menyerah di bawah harga normal. Bot juga menilai properti lebih tinggi kalau itu melengkapi satu set warna yang sudah ia kuasai sebagian (mendekati atau berhasil monopoli), plus ada sedikit faktor acak tiap kali menawar supaya tidak selalu menyerah persis di angka yang sama.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>3 gaya main (personality) bot baru: <b>Kolektor Set</b> (rela bayar lebih demi melengkapi warna), <b>Spekulan</b> (paling berani menawar dari semua gaya, kadang di atas harga normal), dan <b>Konglomerat</b> (modal besar, tetap kalem tapi cukup kompetitif) — total sekarang ada 8 gaya main bot yang berbeda-beda.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Sekarang bisa menekan tombol "🏠 Kelola Dulu" saat kartu lelang muncul di giliran menawarmu — untuk cek/gadai/jual rumah dulu (misal butuh tambahan uang tunai) sebelum memutuskan tawar atau lewati. Kartu lelangnya muncul lagi otomatis setelah selesai.</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">22 Agustus 2026 — Giliran Tidak Lagi Macet Saat Ada yang Bangkrut</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Dulu, kalau seorang pemain dinyatakan bangkrut (klik "Nyatakan Bangkrut" saat tidak sanggup bayar), giliran tidak otomatis pindah ke pemain berikutnya — permainan jadi macet menunggu pemain yang sudah bangkrut itu sendiri, padahal dia sudah tidak bisa berbuat apa-apa lagi. Sekarang giliran langsung lanjut ke pemain berikutnya yang masih hidup, persis seperti saat ada yang menyerah lewat menu ☰.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Bug posisi token yang kadang "kembali" ke petak sebelumnya (mis. tampak masih di Dana Umum padahal barusan sudah jalan ke petak lain, lalu giliran berikutnya dadu malah dihitung dari petak lama) sudah diperbaiki. Penyebabnya: saat dua HP menyimpan data hampir bersamaan, HP yang datanya belum ter-update bisa menimpa balik posisi HP lain yang sudah lebih dulu jalan. Sekarang sebelum menyimpan, tiap HP menyamakan dulu datanya dengan yang paling baru di server sebelum menimpa apa pun.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Animasi token kedip-kedip/lompat-lompat saat ada pemain yang dikirim ke Penjara (mis. kena kartu, dobel 3× berturut-turut, atau menginjak petak "Masuk Penjara") sudah diperbaiki. Dikirim ke penjara sekarang langsung memindahkan token ke sana di layar semua pemain, bukan dianimasikan jalan kaki mengelilingi papan dulu.</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">21 Agustus 2026 — Sinkron Saat Utang Belum Lunas</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Kalau seorang pemain singgah di properti pemain lain lalu uangnya kurang untuk bayar sewa, pemain lain sekarang langsung melihat token-nya sudah mendarat di petak itu — tidak perlu menunggu sampai dia menekan "Bayar Sekarang". Proses gadai/jual rumah yang dia lakukan sambil melunasi utang juga tetap kelihatan berjalan bertahap di layar pemain lain seperti biasa.</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">21 Agustus 2026 — Perbaikan Bug Giliran Ter-skip</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Bug giliran pemain kadang ter-skip setelah kartu Kesempatan/Dana Umum yang jalannya jauh (mis. "Maju ke petak MULAI", "Maju ke Stasiun Jakarta") sudah diperbaiki. Sebelumnya giliran bisa dianggap "selesai" sebelum animasi token benar-benar sampai, jadi kadang giliran maju sendiri dan pemain berikutnya terlewat.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Bonus lempar dadu lagi karena dobel sekarang tidak hilang lagi kalau kena kartu yang memindahkan posisi.</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">21 Agustus 2026 — Lelang Bisa Tawar Bebas</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Saat lelang, sekarang kamu bisa mengetik/atur sendiri nominal tawaran (pakai tombol −/+ atau ketik langsung), tidak cuma menaikkan sesuai kelipatan tetap seperti sebelumnya.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Modal lelang sekarang menampilkan info lengkap properti yang dilelang — sewa tiap level rumah/hotel (atau sewa stasiun/perusahaan), harga bangun rumah, nilai gadai, dan warna set — jadi tidak perlu buka menu Referensi dulu untuk mengecek.</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">20 Agustus 2026 — Update Dalam-Game &amp; Perbaikan Bot</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update aplikasi sekarang bisa di-download dan dipasang <b>langsung dari dalam game</b> — tidak perlu lagi keluar ke browser/GitHub dan install ulang manual. Begitu ada versi baru, muncul kartu "Update Tersedia" dengan progress bar asli saat mengunduh, lalu tinggal tekan "Pasang Sekarang".</div>
-      <ul>
-        <li class="fix"><span class="cl-tag fix">Perbaikan</span>Bug dadu "dobel palsu": pada kondisi tertentu (HP lag/animasi molor), bot bisa melempar dadu dua kali dalam satu giliran padahal tidak dapat dobel, membuat token bot melompat tidak wajar. Sekarang giliran dikunci begitu dadu mulai dilempar, sehingga tidak bisa lagi terpicu dobel oleh sistem penjaga otomatis bot.</li>
-      </ul>
+      <div class="cl-date">23 Agustus 2026 — Status Bar &amp; Navigasi Menyatu Tema, Update Lebih Stabil</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Status bar (atas) dan navigation bar (bawah) HP sekarang otomatis disembunyikan (mode immersive, sama seperti game lain) dan tidak lagi tampil putih polos saat memakai Tema Gelap — cukup usap dari tepi layar sebentar kalau perlu memunculkannya lagi.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Update dalam-game (hot-update) sekarang lebih stabil dan tidak lagi memborong kuota — bundle unduhan yang gagal langsung dibersihkan saat itu juga, dan proses build tidak lagi menerbitkan rilis baru sebelum rilis sebelumnya sempat selesai diunduh pemain.</div>
     </div>`;
   showModal({ title:'🆕 Apa yang Baru', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
 }
