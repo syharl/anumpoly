@@ -5,16 +5,7 @@
          (update dalam-game) di Android 8 (API 26) ke atas. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
-    <!-- android:largeHeap="true" — menaikkan batas heap JS/WebView yang
-         diizinkan Android untuk aplikasi ini (biasanya ~256MB jadi bisa
-         2x lipat lebih di kebanyakan HP, walau produsen tertentu bisa
-         membatasi beda). Ini JARING PENGAMAN TAMBAHAN di atas perbaikan
-         di update-check.js (unduhan APK kini ditulis ke disk bertahap
-         per ~2MB, bukan ditumpuk penuh di memori) — kombinasi keduanya
-         supaya proses lain yang juga makan memori (asset game, dsb)
-         tidak gampang memicu OutOfMemoryError lagi di HP RAM pas-pasan. -->
-    <application android:largeHeap="true">
-
+    <application>
         <!-- FileProvider khusus untuk membagikan file APK hasil download
              (disimpan di folder cache aplikasi) ke pemasang paket sistem
              lewat content:// URI, tanpa perlu izin penyimpanan tambahan.
