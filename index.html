@@ -2209,24 +2209,14 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 14:50 WITA — v1.8.23.1450</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
+      <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
     <!-- Baris di atas ini JANGAN dihapus/dipindah — CI (build-android.yml,
          step "Tambah entri Apa Yang Baru") menyisipkan entri rilis baru
          TEPAT SETELAH marker itu secara otomatis, tiap kali ada rilis
          (sekalipun kecil). Entri-entri lama di bawah ini tetap seperti
-         biasa, ditulis manual oleh developer untuk rilis-rilis penting. -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026 — Status Bar &amp; Navigasi Menyatu Tema, Update Lebih Stabil</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Status bar (atas) dan navigation bar (bawah) HP sekarang otomatis disembunyikan (mode immersive, sama seperti game lain) dan tidak lagi tampil putih polos saat memakai Tema Gelap — cukup usap dari tepi layar sebentar kalau perlu memunculkannya lagi.</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Update dalam-game (hot-update) sekarang lebih stabil dan tidak lagi memborong kuota — bundle unduhan yang gagal langsung dibersihkan saat itu juga, dan proses build tidak lagi menerbitkan rilis baru sebelum rilis sebelumnya sempat selesai diunduh pemain.</div>
-    </div>`;
+         biasa, ditulis manual oleh developer untuk rilis-rilis penting. -->`;
   showModal({ title:'🆕 Apa yang Baru', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
 }
 function goToMenu(){ showScreen('screen-menu'); }
