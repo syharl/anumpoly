@@ -1,0 +1,20 @@
+{
+  "appId": "com.anumpoly.monopolidunia",
+  "appName": "Monopoli Dunia",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SocialLogin": {
+      "google": {
+        "webClientId": "20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com"
+      }
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": "off",
+      "responseTimeout": 60
+    }
+  }
+}

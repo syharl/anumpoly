@@ -262,7 +262,7 @@ function showContentUpdateCard(data, buildTerbaru){
 // Percobaan ulang otomatis ini yang tadinya tidak ada — dulu sekali gagal
 // (mis. cuma putus sebentar) langsung tampil "Gagal memperbarui" walau
 // jaringannya sebenarnya masih hidup.
-const CONTENT_UPDATE_MAX_RETRY = 2;
+const CONTENT_UPDATE_MAX_RETRY = 4;
 
 async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
   const btn = document.getElementById('btnContentUpdateAction');
@@ -310,7 +310,7 @@ async function startContentUpdate(data, buildTerbaru, percobaanKe = 1){
     if(percobaanKe < CONTENT_UPDATE_MAX_RETRY){
       status.textContent = 'Unduhan sempat gagal, mencoba lagi... ('+percobaanKe+'/'+CONTENT_UPDATE_MAX_RETRY+')';
       btn.dataset.busy = '0';
-      setTimeout(()=> startContentUpdate(data, buildTerbaru, percobaanKe+1), 1500);
+      setTimeout(()=> startContentUpdate(data, buildTerbaru, percobaanKe+1), 3000);
       return;
     }
     if(CapPlugins.SplashScreen) { try{ await CapPlugins.SplashScreen.hide(); }catch(e){} }
