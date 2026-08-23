@@ -202,9 +202,6 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 html[data-theme="dark"] #appBg{
   background:radial-gradient(circle at 30% 0%, #16324F 0%, #0F2036 45%, #0B1B2E 100%);
 }
-html[data-theme="dark"] #updateOverlay{
-  background:radial-gradient(circle at 30% 0%, #16324F 0%, #0F2036 45%, #0B1B2E 100%);
-}
 html[data-theme="dark"] #screen-menu.menu-blue{
   background:radial-gradient(circle at 50% 0%, #16324F 0%, #102640 55%, #0B1B2E 100%);
   color:#D7E4F0;
@@ -288,8 +285,15 @@ html[data-theme="dark"] .deed-details{background:rgba(0,0,0,0.28);}
 #screen-menu > .menu-corner-btn{position:absolute;z-index:5;}
 
 /* ---------- UPDATE DALAM-GAME (kartu download + progress) ---------- */
-#updateOverlay{position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at 30% 0%, #FFFFFF 0%, #EAF4FC 45%, #DCEBF8 100%);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
-.upd-box{max-width:340px;text-align:center;color:var(--paper);}
+/* Dulu overlay ini menutup SELURUH layar dengan gradien terang/gelap
+   (seolah ganti halaman), sekarang dibuat berupa MODAL beneran:
+   backdrop gelap-transparan (sama seperti .overlay modal lain di game
+   ini) dengan kartu putih/gelap mengambang di tengah — jadi papan
+   permainan di belakangnya masih kelihatan (redup), bukan tertutup
+   total. Konsisten dengan tampilan modal lain (lihat .overlay/.modal
+   di atas), supaya tidak terasa seperti "keluar" dari aplikasi. */
+#updateOverlay{position:fixed;inset:0;z-index:9999;background:rgba(6,10,20,0.82);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
+.upd-box{max-width:340px;width:100%;text-align:center;color:var(--paper);background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,0.6);padding:28px 22px 22px;max-height:85vh;overflow-y:auto;}
 .upd-icon{width:60px;height:60px;border-radius:50%;background:rgba(47,111,168,0.14);border:1px solid rgba(47,111,168,0.35);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;}
 .upd-box h2{font-family:'Playfair Display',serif;margin:0 0 8px;font-size:21px;color:var(--gold);letter-spacing:.3px;}
 .upd-box p{color:var(--paper-dim);font-size:13.5px;line-height:1.6;margin:0 0 18px;}
@@ -1953,6 +1957,11 @@ function settingsPanelHTML(){
         <span class="snr-text"><span class="snr-title">Apa yang Baru</span></span>
         <span class="snr-chevron">›</span>
       </button>
+      <button type="button" class="settings-nav-row" id="settingsCekUpdateRow" onclick="onClickCekUpdateManual()">
+        <span class="snr-icon">🔄</span>
+        <span class="snr-text"><span class="snr-title snr-title-cek-update">Cek Update</span><span class="snr-sub">v__ANUMPOLY_VERSION__ · build __ANUMPOLY_BUILD__</span></span>
+        <span class="snr-chevron">›</span>
+      </button>
 
       <div class="settings-section-label">Suara &amp; Musik</div>
       <div class="settings-divider"></div>
@@ -2269,14 +2278,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">24 Agustus 2026, 00:27 WITA — v1.8.24.0027</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">24 Agustus 2026, 00:08 WITA — v1.8.24.0008</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2300,6 +2301,29 @@ function ensureStorage(){
 }
 function alertModal(msg){
   showModal({ title:'Pemberitahuan', desc:msg, buttons:[{label:'Oke', cls:'btn-yes', onClick:closeModal}] });
+}
+
+/* Tombol "Cek Update" di layar Pengaturan (menu utama & submenu saat
+   main). SENGAJA cuma pembungkus tipis di sini — logic sesungguhnya
+   (fetch versi.json, bandingkan build, tampilkan kartu update) ada di
+   window.cekUpdateManual() dari update-check.js (dimuat dari GitHub
+   Pages, lihat loader di akhir file ini), supaya kalau ada perbaikan
+   nanti cukup publish ulang update-check.js tanpa perlu APK baru.
+   Beda dari pengecekan otomatis saat app dibuka: yang manual ini SELALU
+   menampilkan kartu update kalau memang ada versi lebih baru, walau
+   pemain sebelumnya sudah pernah menekan X untuk menyembunyikannya —
+   supaya tombol ini benar-benar berguna sebagai jalan manual, bukan
+   ikut tersembunyi juga. */
+function onClickCekUpdateManual(){
+  const judul = document.querySelector('#settingsCekUpdateRow .snr-title-cek-update');
+  if(typeof window.cekUpdateManual !== 'function'){
+    alertModal('Modul pengecekan update belum selesai dimuat. Pastikan HP terhubung internet, lalu coba lagi sebentar.');
+    return;
+  }
+  if(judul) judul.textContent = 'Mengecek...';
+  Promise.resolve(window.cekUpdateManual()).catch(()=>{}).finally(()=>{
+    if(judul) judul.textContent = 'Cek Update';
+  });
 }
 function goToOnline(){
   if(!ensureStorage()) return;

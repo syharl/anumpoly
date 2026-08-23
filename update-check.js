@@ -141,6 +141,38 @@ async function checkForUpdate(){
   }catch(e){ /* offline / gagal cek — biarkan pemain lanjut main seperti biasa */ }
 }
 
+// ------------------------------------------------------------------
+// CEK UPDATE MANUAL — dipanggil dari tombol "Cek Update" di layar
+// Pengaturan (lihat onClickCekUpdateManual() di index.html).
+// Beda dari checkForUpdate() otomatis di atas: fungsi ini SENGAJA
+// TIDAK mengecek sudahDiabaikan() sama sekali — jadi kalau pemain
+// sebelumnya sudah menekan X untuk update yang sama, tombol ini tetap
+// bisa memanggil kartu update itu lagi. Kalau memang belum ada versi
+// baru, kasih tahu pemain lewat alertModal() (fungsi umum yang sudah
+// ada di index.html) supaya tombolnya terasa jelas kegunaannya,
+// bukan cuma diam saja kalau ditekan.
+// ------------------------------------------------------------------
+window.cekUpdateManual = async function(){
+  try{
+    const versiSaya = await getVersiTerpasang();
+    const res = await fetch(REMOTE_VERSI_URL, { cache: 'no-store' });
+    const data = await res.json();
+    if(data && data.contentBuild && versiSaya < data.contentBuild){
+      // Kalau kartu update kebetulan sudah tampil (mis. dari pengecekan
+      // otomatis tadi belum sempat ditutup), jangan tumpuk overlay baru.
+      const overlayLama = document.getElementById('updateOverlay');
+      if(overlayLama) overlayLama.remove();
+      showUpdateCard(data);
+    } else if(typeof window.alertModal === 'function'){
+      window.alertModal('Kamu sudah pakai versi terbaru Monopoli Dunia. 👍');
+    }
+  }catch(e){
+    if(typeof window.alertModal === 'function'){
+      window.alertModal('Gagal mengecek update. Pastikan HP terhubung ke internet, lalu coba lagi.');
+    }
+  }
+};
+
 function showUpdateCard(data){
   const overlay = document.createElement('div');
   overlay.id = 'updateOverlay';
