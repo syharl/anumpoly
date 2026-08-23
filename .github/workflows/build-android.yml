@@ -1,27 +1,22 @@
 name: Build Android APK
 
 on:
-  # PENTING — DIUBAH dari branch "main" ke "release":
-  # Sebelumnya workflow ini jalan tiap kali ADA push ke main, termasuk
-  # komit-komit kecil pas lagi iterasi/testing. Efeknya: tiap komit
-  # langsung menerbitkan rilis (contentBuild/nativeBuild baru) ke GitHub
-  # Pages — kalau developer push beberapa kali berturut-turut sambil
-  # testing di HP, rilis baru bisa terbit SEBELUM hot-update rilis
-  # sebelumnya sempat selesai di-download pemain. Akibatnya pemain
-  # "mengejar target yang terus bergerak": tiap hampir selesai unduh,
-  # sudah ada versi lebih baru lagi -> kelihatan seperti "gagal terus,
-  # tidak selesai-selesai" padahal sebenarnya berkejaran dengan rilis
-  # baru, plus tiap percobaan unduh ulang penuh (tidak ada resume)
-  # menghabiskan kuota besar berulang-ulang.
+  # DISEDERHANAKAN kembali ke 1 branch (main) atas keputusan developer:
+  # setiap push ke main langsung build+publish, TIDAK ada lagi branch
+  # "release" terpisah.
   #
-  # Sekarang: kerja/iterasi harian tetap di branch "main" seperti biasa,
-  # TIDAK memicu build apapun. Build+publish (yang benar-benar dikirim
-  # ke pemain lewat GitHub Pages) HANYA jalan kalau ada push ke branch
-  # "release" — jadi developer push ke main sepuasnya dulu, baru kalau
-  # sudah yakin siap dirilis, merge/push main -> release sekali untuk
-  # memicu satu rilis yang stabil.
+  # CATATAN RISIKO (sengaja ditulis di sini, bukan dihapus, biar developer
+  # yang baca workflow ini nanti tetap ingat kenapa skema release pernah
+  # dibuat): kalau push beberapa kali berturut-turut sambil iterasi/testing
+  # di HP, tiap push langsung menerbitkan rilis baru ke GitHub Pages —
+  # pemain yang sedang hot-update bisa "mengejar target yang terus
+  # bergerak" (rilis baru terbit sebelum unduhan rilis sebelumnya selesai).
+  # Kalau ini mulai mengganggu pemain, opsi mitigasi paling sederhana:
+  # tambahkan "[skip build]" di pesan commit untuk push iterasi/testing
+  # (lalu tambahkan guard di job ini: skip kalau commit message mengandung
+  # "[skip build]"), tanpa perlu balik ke skema 2-branch.
   push:
-    branches: [ release ]
+    branches: [ main ]
   workflow_dispatch: {}
 
 permissions:
@@ -471,11 +466,11 @@ jobs:
             # publish ini dibuat ulang di atas fondasi main yang paling
             # mutakhir - bukan digabung dengan riwayat lama - sehingga tidak
             # pernah ada conflict merge/rebase di file binary lagi.
-            git fetch origin release
-            git reset --soft origin/release
+            git fetch origin main
+            git reset --soft origin/main
             git add anumpoly.apk dist.zip versi.json index.html
             git commit -m "chore: publikasikan anumpoly.apk v${{ steps.rilis.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [bot-publish]"
-            git push origin HEAD:release
+            git push origin HEAD:main
           fi
 
       - name: Verifikasi dist.zip yang live di GitHub Pages cocok dengan yang dipublish
