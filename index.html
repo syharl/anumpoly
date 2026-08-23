@@ -28,6 +28,8 @@
   --greengrp:#379155;
   --darkblue:#2451A6;
   --radius:10px;
+  --modal-bg:var(--surface);
+  --modal-border:rgba(47,111,168,0.4);
 }
 /* ---------- TEMA GELAP ----------
    Diaktifkan lewat atribut data-theme="dark" di <html> (lihat
@@ -43,6 +45,8 @@ html[data-theme="dark"]{
   --paper:#D7E4F0;
   --paper-dim:#8CA0B4;
   --surface:#EAF4FC;
+  --modal-bg:#1C3A57;
+  --modal-border:rgba(127,178,224,0.3);
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -222,6 +226,12 @@ html[data-theme="dark"] .mc-card-dark{
 }
 html[data-theme="dark"] .mc-footer{color:#8CA0B4;}
 html[data-theme="dark"] .mc-version-footer{color:#5D7B99;}
+/* ---------- TEMA GELAP: elemen di dalam modal yang warnanya hardcode
+   berbasis rgba(hitam/biru muda) — di modal terang kontrasnya pas,
+   tapi di atas --modal-bg gelap jadi nyaris tak kelihatan. ---------- */
+html[data-theme="dark"] .deed-item{background:rgba(255,255,255,0.05);}
+html[data-theme="dark"] .deed-item button.mort{background:rgba(255,255,255,0.14);}
+html[data-theme="dark"] .deed-details{background:rgba(0,0,0,0.28);}
 
 /* ---------- WELCOME (layar login awal untuk pemain baru) ----------
    Muncul sekali sebelum masuk ke #screen-menu, khusus pemain baru yang
@@ -503,10 +513,24 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .overlay.show{display:flex;}
 #modalOverlay{z-index:60;}
 .modal{
-  background:var(--surface);border:1px solid rgba(47,111,168,0.4);border-radius:16px;
-  width:100%;max-width:420px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.6);
-  max-height:85vh;overflow-y:auto;
+  background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:16px;
+  width:100%;max-width:420px;box-shadow:0 20px 50px rgba(0,0,0,0.6);
+  max-height:85vh;display:flex;flex-direction:column;overflow:hidden;
 }
+/* Header nempel di atas modal: judul + tombol tutup (X), selalu
+   kelihatan walau isi modal discroll (lihat .modal-body di bawah). */
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 18px 14px;border-bottom:1px solid var(--modal-border);flex:none;
+}
+.modal-header h3{margin:0;color:var(--gold);font-size:19px;}
+.modal-close{
+  flex:none;width:30px;height:30px;border-radius:50%;border:none;background:transparent;
+  color:var(--paper);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;
+  transition:background .15s ease;padding:0;
+}
+.modal-close:active{background:rgba(127,178,224,0.18);}
+.modal-body{padding:16px 20px 20px;overflow-y:auto;flex:1;min-height:0;}
 .modal h3{margin:0 0 6px;color:var(--gold);font-size:19px;}
 .modal .desc{color:var(--paper-dim);font-size:13px;margin-bottom:14px;line-height:1.5;}
 .modal .price-tag{font-family:'Space Mono',monospace;font-size:22px;color:var(--gold);font-weight:700;margin-bottom:14px;}
@@ -551,7 +575,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .card-deck-back.c3{transform:translate(5px,5px) rotate(4deg);}
 .card-deck-back.c2{transform:translate(2px,2px) rotate(-3deg);}
 .card-drawn{
-  position:absolute;inset:0;border-radius:10px;background:var(--surface);border:2px solid var(--gold);
+  position:absolute;inset:0;border-radius:10px;background:var(--modal-bg);border:2px solid var(--gold);
   display:flex;align-items:center;justify-content:center;font-size:36px;
   opacity:0.001;transform:translateY(26px) rotate(-10deg) scale(0.8);
   box-shadow:0 10px 26px rgba(0,0,0,0.5);
@@ -585,7 +609,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 
 /* ---------- MENU EXTRAS: reference + changelog ---------- */
 .menu-btn.secondary-link{border-style:dashed;font-size:13px;padding:12px 18px;}
-.ref-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;position:sticky;top:0;background:var(--surface);padding:4px 0 8px;z-index:2;}
+.ref-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;position:sticky;top:0;background:var(--modal-bg);padding:4px 0 8px;z-index:2;}
 .ref-tab{border:2px solid rgba(47,111,168,0.4);background:transparent;color:var(--paper);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;}
 .ref-tab.active{background:var(--gold);border-color:var(--gold);color:var(--ink2);}
 .ref-item{background:rgba(18,52,86,0.04);border-radius:8px;padding:9px 11px;margin-bottom:6px;font-size:12px;}
@@ -1000,11 +1024,13 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 <!-- Manage properties modal -->
 <div class="overlay" id="manageOverlay">
   <div class="modal">
-    <h3>Kelola Properti</h3>
-    <div class="desc">Bangun rumah/hotel, jual, atau gadai propertimu.</div>
-    <div class="deed-list" id="deedList"></div>
-    <div class="modal-actions">
-      <button class="btn-no" onclick="closeManage()">Tutup</button>
+    <div class="modal-header">
+      <h3>Kelola Properti</h3>
+      <button type="button" class="modal-close" onclick="closeManage()" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="desc">Bangun rumah/hotel, jual, atau gadai propertimu.</div>
+      <div class="deed-list" id="deedList"></div>
     </div>
   </div>
 </div>
@@ -2053,14 +2079,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 08:59 WITA — v1.8.23.0859</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update versi.json</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 08:42 WITA — v1.8.23.0842</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <!-- Baris di atas ini JANGAN dihapus/dipindah — CI (build-android.yml,
          step "Tambah entri Apa Yang Baru") menyisipkan entri rilis baru
          TEPAT SETELAH marker itu secara otomatis, tiap kali ada rilis
@@ -2795,7 +2813,14 @@ function openSelectPicker(sel){
   const rows = Array.from(sel.options).map((opt,i)=>
     `<button type="button" class="picker-option${opt.selected?' selected':''}" data-idx="${i}"><span>${opt.textContent}</span><span class="pk-dot"></span></button>`
   ).join('');
-  box.innerHTML = `<h3>${title}</h3><div class="picker-list">${rows}</div><div class="modal-actions"><button class="btn-no" onclick="closePicker()">Batal</button></div>`;
+  box.innerHTML = `
+    <div class="modal-header">
+      <h3>${title}</h3>
+      <button type="button" class="modal-close" onclick="closePicker()" aria-label="Tutup">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="picker-list">${rows}</div>
+    </div>`;
   box.querySelectorAll('.picker-option').forEach(b=>{
     b.onclick=()=>{
       sel.selectedIndex = parseInt(b.dataset.idx,10);
@@ -3945,14 +3970,16 @@ function playCardDrawAnimation(type, onDone){
   const label = type==='chance' ? '❓ Kesempatan' : '💰 Dana Umum';
   const symbol = type==='chance' ? '❓' : '💰';
   box.innerHTML = `
-    <div class="card-draw-stage">
-      <div class="card-draw-label">${label}</div>
-      <div class="card-deck-wrap">
-        <div class="card-deck-back c3"></div>
-        <div class="card-deck-back c2"></div>
-        <div class="card-drawn" id="cardDrawnFace"><span>${symbol}</span></div>
+    <div class="modal-body">
+      <div class="card-draw-stage">
+        <div class="card-draw-label">${label}</div>
+        <div class="card-deck-wrap">
+          <div class="card-deck-back c3"></div>
+          <div class="card-deck-back c2"></div>
+          <div class="card-drawn" id="cardDrawnFace"><span>${symbol}</span></div>
+        </div>
+        <div class="card-draw-hint">Mengocok &amp; mengambil kartu…</div>
       </div>
-      <div class="card-draw-hint">Mengocok &amp; mengambil kartu…</div>
     </div>`;
   overlay.classList.add('show');
   requestAnimationFrame(()=>{
@@ -4066,16 +4093,41 @@ function confirmPass(){
    ============================================================ */
 function showModal({title, desc, priceTag, buttons, vertical}){
   const box = document.getElementById('modalBox');
-  box.innerHTML = `<h3>${title}</h3><div class="desc">${desc||''}</div>${priceTag?`<div class="price-tag">${priceTag}</div>`:''}<div class="modal-actions${vertical?' vertical':''}" id="modalBtns"></div>`;
+  buttons = buttons || [];
+  // Kalau salah satu tombol memang cuma "tutup tanpa melakukan apa-apa"
+  // (onClick-nya persis closeModal / closeModalMaybeReturnToDebt), pindahkan
+  // jadi tombol X di header, bukan tombol di bawah lagi. Modal yang MEMANG
+  // mengharuskan pemain memilih (mis. bayar utang, lelang, terima/tolak
+  // tawaran) tidak punya tombol seperti ini sama sekali, jadi otomatis tidak
+  // dapat tombol X — supaya keputusan wajib tidak bisa dilewati begitu saja.
+  const closeFns = [closeModal, closeModalMaybeReturnToDebt];
+  const closeIdx = buttons.findIndex(b=>closeFns.includes(b.onClick));
+  const headerCloseFn = closeIdx>=0 ? buttons[closeIdx].onClick : null;
+  const renderButtons = headerCloseFn ? buttons.filter((_,i)=>i!==closeIdx) : buttons;
+  box.innerHTML = `
+    <div class="modal-header">
+      <h3>${title}</h3>
+      ${headerCloseFn?`<button type="button" class="modal-close" id="modalCloseX" aria-label="Tutup">✕</button>`:''}
+    </div>
+    <div class="modal-body">
+      <div class="desc">${desc||''}</div>
+      ${priceTag?`<div class="price-tag">${priceTag}</div>`:''}
+      ${renderButtons.length?`<div class="modal-actions${vertical?' vertical':''}" id="modalBtns"></div>`:''}
+    </div>`;
+  if(headerCloseFn){
+    document.getElementById('modalCloseX').onclick = headerCloseFn;
+  }
   const btnWrap = document.getElementById('modalBtns');
-  buttons.forEach(b=>{
-    const el=document.createElement('button');
-    el.textContent=b.label;
-    el.className=b.cls;
-    if(b.disabled) el.disabled=true;
-    el.onclick=b.onClick;
-    btnWrap.appendChild(el);
-  });
+  if(btnWrap){
+    renderButtons.forEach(b=>{
+      const el=document.createElement('button');
+      el.textContent=b.label;
+      el.className=b.cls;
+      if(b.disabled) el.disabled=true;
+      el.onclick=b.onClick;
+      btnWrap.appendChild(el);
+    });
+  }
   document.getElementById('modalOverlay').classList.add('show');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
@@ -4364,7 +4416,7 @@ function openTradeOffer(){
     return;
   }
   const activePlayers = state.players.filter(p=>!p.bankrupt);
-  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--surface);color:var(--paper);font-size:13px;';
+  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--modal-bg);color:var(--paper);font-size:13px;';
   const playerOpts = activePlayers.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   const propOpts = ownedProps.map(pp=>`<option value="${pp.idx}">${pp.name} — milik ${pp.ownerName}</option>`).join('');
   const html = `
@@ -4424,7 +4476,7 @@ function openSellOffer(presetIdx){
     showModal({title:'🤝 Tawarkan Properti', desc:'Tidak ada pemain lain untuk ditawarkan.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModalMaybeReturnToDebt}]});
     return;
   }
-  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--surface);color:var(--paper);font-size:13px;';
+  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--modal-bg);color:var(--paper);font-size:13px;';
   const propOpts = myProps.map(i=>`<option value="${i}" ${presetIdx===i?'selected':''}>${BOARD[i].name}</option>`).join('');
   const buyerOpts = buyers.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
   const html = `
