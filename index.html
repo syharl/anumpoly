@@ -8,16 +8,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#12203A;
-  --ink2:#0B1626;
-  --gold:#D7A94B;
-  --gold-dim:#8a713a;
+  --ink:#1B3A56;
+  --ink2:#163455;
+  --gold:#2F6FA8;
+  --gold-dim:#7FA6C9;
   --teal:#2F6F62;
-  --paper:#F3EEE1;
-  --paper-dim:#e7dfc9;
+  --paper:#16324F;
+  --paper-dim:#4B6B8A;
+  --surface:#F5FAFF;
   --red:#B3402F;
   --green-ok:#3FA34D;
-  --text:#1B1B1B;
+  --text:#16324F;
   --brown:#8B5A2B;
   --lightblue:#6FB9DA;
   --pink:#E27AB0;
@@ -28,6 +29,21 @@
   --darkblue:#2451A6;
   --radius:10px;
 }
+/* ---------- TEMA GELAP ----------
+   Diaktifkan lewat atribut data-theme="dark" di <html> (lihat
+   applyThemeMode() di JS, dipicu dari Pengaturan > Tema). Cukup
+   redefinisi variabel warna yang sama, jadi otomatis nyebar ke semua
+   komponen yang sudah pakai var(--gold)/var(--paper)/dst — layar,
+   tombol, kartu, modal, dll — tanpa perlu tulis ulang tiap komponen. */
+html[data-theme="dark"]{
+  --ink:#0B1B2E;
+  --ink2:#16324F;
+  --gold:#7FB2E0;
+  --gold-dim:#4C6E8F;
+  --paper:#D7E4F0;
+  --paper-dim:#8CA0B4;
+  --surface:#EAF4FC;
+}
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
 body{
@@ -35,7 +51,7 @@ body{
   /* Warna polos sebagai fallback saja — gradien + motif sesungguhnya
      sekarang ada di #appBg (lihat bawah), supaya konsisten di semua
      layar dan tidak "berjahit"/terpotong di layar panjang. */
-  background:var(--ink2);
+  background:var(--surface);
   color:var(--paper);
   min-height:100vh;
   overflow-x:hidden;
@@ -58,13 +74,13 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
    itu selalu digambar utuh satu kali seukuran layar. */
 #appBg{
   position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
-  background:radial-gradient(circle at 30% 0%, #1a2c4a 0%, var(--ink) 45%, var(--ink2) 100%);
+  background:radial-gradient(circle at 30% 0%, #FFFFFF 0%, #EAF4FC 45%, #DCEBF8 100%);
 }
 #appBg::before{
   content:"";position:absolute;inset:0;
   background-image:
-    repeating-linear-gradient(45deg, rgba(215,169,75,0.035) 0 2px, transparent 2px 26px),
-    repeating-linear-gradient(-45deg, rgba(215,169,75,0.025) 0 2px, transparent 2px 26px);
+    repeating-linear-gradient(45deg, rgba(47,111,168,0.035) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(-45deg, rgba(47,111,168,0.025) 0 2px, transparent 2px 26px);
 }
 
 .screen{display:none;min-height:100vh;flex-direction:column;align-items:center;position:relative;z-index:1;}
@@ -74,7 +90,7 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 #screen-menu{justify-content:center;padding:24px 16px;text-align:center;position:relative;overflow:hidden;}
 #screen-menu::after{
   content:"";position:absolute;left:50%;top:8%;width:280px;height:280px;
-  background:radial-gradient(circle, rgba(215,169,75,0.16) 0%, transparent 70%);
+  background:radial-gradient(circle, rgba(47,111,168,0.16) 0%, transparent 70%);
   transform:translateX(-50%);pointer-events:none;z-index:0;
   animation:menuGlow 5s ease-in-out infinite;
 }
@@ -86,12 +102,12 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
   display:flex;align-items:center;justify-content:center;flex-direction:column;
   transform:rotate(-8deg);
   margin:0 auto 18px;
-  box-shadow:0 0 0 6px rgba(215,169,75,0.08);
+  box-shadow:0 0 0 6px rgba(47,111,168,0.08);
   position:relative;
 }
 .stamp::before{
   content:"";position:absolute;inset:-11px;border-radius:50%;
-  border:1px dashed rgba(215,169,75,0.3);
+  border:1px dashed rgba(47,111,168,0.3);
   animation:stampSpin 60s linear infinite;
 }
 @keyframes stampSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
@@ -99,22 +115,113 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .stamp .top{font-size:11px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;font-weight:700;}
 .stamp .mid{font-family:'Playfair Display',serif;font-size:30px;font-weight:800;color:var(--gold);line-height:1;margin:4px 0;}
 .stamp .bot{font-size:10px;letter-spacing:2px;color:var(--gold-dim);text-transform:uppercase;}
-#screen-menu h1{font-size:38px;margin:6px 0 4px;letter-spacing:0.5px;text-shadow:0 2px 18px rgba(215,169,75,0.25);}
+#screen-menu h1{font-size:38px;margin:6px 0 4px;letter-spacing:0.5px;text-shadow:0 2px 18px rgba(47,111,168,0.25);}
 #screen-menu .tag{color:var(--paper-dim);font-size:14px;margin-bottom:14px;letter-spacing:0.5px;}
 .menu-divider{color:var(--gold-dim);letter-spacing:9px;font-size:10px;margin-bottom:26px;}
 .menu-btn{
   width:min(320px,80vw);
   padding:16px 20px;margin:8px 0;border-radius:999px;border:2px solid var(--gold);
-  background:rgba(255,255,255,0.02);color:var(--gold);font-weight:700;font-size:16px;letter-spacing:1px;
+  background:rgba(18,52,86,0.02);color:var(--gold);font-weight:700;font-size:16px;letter-spacing:1px;
   transition:all .15s ease;position:relative;overflow:hidden;
 }
 .menu-btn.primary{
-  background:linear-gradient(135deg, #ecc978 0%, var(--gold) 55%, #c0913a 100%);
-  color:var(--ink2);box-shadow:0 8px 22px rgba(215,169,75,0.35);border-color:#f0d493;
+  background:linear-gradient(135deg, #7FC1EE 0%, var(--gold) 55%, #5B93C4 100%);
+  color:var(--ink2);box-shadow:0 8px 22px rgba(47,111,168,0.35);border-color:#9ED0F0;
 }
 .menu-btn:active{transform:scale(0.97);}
-.menu-footer{margin-top:36px;font-size:11px;color:var(--gold-dim);letter-spacing:1px;padding-top:16px;border-top:1px solid rgba(215,169,75,0.15);width:min(220px,60vw);}
+.menu-footer{margin-top:36px;font-size:11px;color:var(--gold-dim);letter-spacing:1px;padding-top:16px;border-top:1px solid rgba(47,111,168,0.15);width:min(220px,60vw);}
 .menu-version-footer{margin-top:10px;font-size:10px;color:var(--gold-dim);letter-spacing:.4px;line-height:1.7;opacity:.75;}
+
+/* ---------- MENU UTAMA: REDESIGN GAYA "CHECKMATE" — TEMA BIRU MUDA ----------
+   Layout kartu 2x2 + 2 tombol navy gelap di bawah, dipalet biru muda
+   persis referensi (bukan cream). Class di-scope pakai prefix "mc-"
+   dan hanya dipakai di #screen-menu. */
+#screen-menu.menu-blue{
+  justify-content:flex-start;
+  padding:26px 20px 40px;
+  text-align:center;
+  background:radial-gradient(circle at 50% 0%, #FFFFFF 0%, #EAF4FC 55%, #DCEBF8 100%);
+  color:#163455;
+  overflow:hidden;
+}
+.mc-topbar{width:100%;max-width:420px;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.mc-avatar-btn{
+  width:46px;height:46px;border-radius:16px;border:none;
+  background:#fff;box-shadow:0 4px 14px rgba(47,111,168,0.18);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  color:#2F6FA8;padding:0;overflow:hidden;
+}
+.mc-avatar-btn img{width:100%;height:100%;object-fit:cover;border-radius:16px;}
+.mc-icon-circle{
+  width:46px;height:46px;border-radius:50%;border:none;background:#fff;
+  box-shadow:0 4px 14px rgba(47,111,168,0.18);display:flex;align-items:center;
+  justify-content:center;font-size:19px;color:#2F6FA8;padding:0;
+}
+.mc-avatar-btn:active,.mc-icon-circle:active{transform:scale(0.94);}
+.mc-logo{
+  width:112px;height:112px;border-radius:50%;margin:14px auto 12px;
+  display:flex;align-items:center;justify-content:center;font-size:50px;
+  background:radial-gradient(circle at 35% 30%, #2F6FA8, #163455 78%);
+  box-shadow:0 10px 26px rgba(22,52,85,0.35), inset 0 0 0 5px rgba(255,255,255,0.55);
+}
+.mc-title{font-family:'Playfair Display',serif;font-size:32px;font-weight:800;margin:2px 0;color:#16324F;letter-spacing:0.4px;}
+.mc-tag{font-size:13.5px;color:#5D7B99;margin:0 0 18px;letter-spacing:0.3px;}
+.mc-btn-resume{
+  width:min(420px,100%);padding:14px 18px;margin-bottom:14px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,#7FC1EE,#2F6FA8);color:#0F2A44;font-weight:800;font-size:14.5px;
+  box-shadow:0 6px 16px rgba(47,111,168,0.28);
+}
+.mc-btn-resume:active{transform:scale(0.98);}
+.mc-grid{width:100%;max-width:420px;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.mc-card{
+  background:#EAF4FC;border:none;border-radius:20px;padding:20px 12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 6px 16px rgba(47,111,168,0.14);color:#16324F;font-weight:700;font-size:14.5px;
+  line-height:1.25;min-height:104px;transition:transform .12s ease;
+}
+.mc-card:active{transform:scale(0.96);}
+.mc-card-icon{font-size:26px;}
+.mc-grid-dark{grid-template-columns:1fr 1fr;}
+.mc-card-dark{
+  background:linear-gradient(135deg,#2E4A66,#16324F);color:#EAF4FC;
+  border:none;border-radius:18px;padding:18px 12px;font-weight:700;font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 8px 20px rgba(22,52,85,0.35);
+}
+.mc-card-dark:active{transform:scale(0.96);}
+.mc-footer{margin-top:6px;font-size:12px;color:#5D7B99;letter-spacing:0.3px;}
+.mc-version-footer{margin-top:8px;font-size:10px;color:#8FA9C2;letter-spacing:.4px;line-height:1.7;}
+
+/* ---------- TEMA GELAP: elemen menu yang warnanya hardcode (bukan var) ---------- */
+html[data-theme="dark"] #appBg{
+  background:radial-gradient(circle at 30% 0%, #16324F 0%, #0F2036 45%, #0B1B2E 100%);
+}
+html[data-theme="dark"] #updateOverlay{
+  background:radial-gradient(circle at 30% 0%, #16324F 0%, #0F2036 45%, #0B1B2E 100%);
+}
+html[data-theme="dark"] #screen-menu.menu-blue{
+  background:radial-gradient(circle at 50% 0%, #16324F 0%, #102640 55%, #0B1B2E 100%);
+  color:#D7E4F0;
+}
+html[data-theme="dark"] .mc-avatar-btn,
+html[data-theme="dark"] .mc-icon-circle{
+  background:#1C3A57;box-shadow:0 4px 14px rgba(0,0,0,0.4);color:#9EC7EC;
+}
+html[data-theme="dark"] .mc-logo{
+  background:radial-gradient(circle at 35% 30%, #7FB2E0, #163455 78%);
+  box-shadow:0 10px 26px rgba(0,0,0,0.45), inset 0 0 0 5px rgba(255,255,255,0.35);
+}
+html[data-theme="dark"] .mc-title{color:#EAF4FC;}
+html[data-theme="dark"] .mc-tag{color:#8CA0B4;}
+html[data-theme="dark"] .mc-card{
+  background:#1C3A57;color:#EAF4FC;box-shadow:0 6px 16px rgba(0,0,0,0.35);
+}
+html[data-theme="dark"] .mc-card-dark{
+  background:linear-gradient(135deg,#0F2036,#0B1B2E);
+  box-shadow:0 8px 20px rgba(0,0,0,0.5);
+}
+html[data-theme="dark"] .mc-footer{color:#8CA0B4;}
+html[data-theme="dark"] .mc-version-footer{color:#5D7B99;}
 
 /* ---------- WELCOME (layar login awal untuk pemain baru) ----------
    Muncul sekali sebelum masuk ke #screen-menu, khusus pemain baru yang
@@ -123,7 +230,7 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 #screen-welcome{justify-content:center;padding:24px 16px;text-align:center;position:relative;overflow:hidden;}
 #screen-welcome::after{
   content:"";position:absolute;left:50%;top:8%;width:280px;height:280px;
-  background:radial-gradient(circle, rgba(215,169,75,0.16) 0%, transparent 70%);
+  background:radial-gradient(circle, rgba(47,111,168,0.16) 0%, transparent 70%);
   transform:translateX(-50%);pointer-events:none;z-index:0;
   animation:menuGlow 5s ease-in-out infinite;
 }
@@ -131,19 +238,19 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .welcome-tag{color:var(--paper-dim);font-size:14px;margin:2px 0 30px;letter-spacing:0.5px;}
 .welcome-google-btn{
   width:min(320px,80vw);padding:15px 18px;margin:0 0 20px;border-radius:999px;
-  border:2px solid var(--gold);background:rgba(255,255,255,0.05);color:var(--paper);
+  border:2px solid var(--gold);background:rgba(18,52,86,0.05);color:var(--paper);
   font-weight:700;font-size:14.5px;letter-spacing:.3px;display:flex;align-items:center;
   justify-content:center;gap:12px;transition:all .15s ease;
 }
 .welcome-google-btn:active{transform:scale(0.97);}
 .welcome-divider{display:flex;align-items:center;gap:12px;width:min(320px,80vw);margin:0 0 18px;}
-.welcome-divider .line{flex:1;height:1px;background:rgba(215,169,75,0.25);}
+.welcome-divider .line{flex:1;height:1px;background:rgba(47,111,168,0.25);}
 .welcome-divider span{color:var(--gold-dim);font-size:12px;letter-spacing:1px;}
 .welcome-guest-label{color:var(--paper-dim);font-size:13px;margin:0 0 8px;letter-spacing:.5px;}
 .welcome-help{margin-top:38px;font-size:12px;color:var(--gold-dim);letter-spacing:.5px;line-height:1.7;}
 .welcome-kontak-btn{
   margin-top:12px;padding:10px 26px;border-radius:999px;border:2px solid var(--gold);
-  background:rgba(255,255,255,0.03);color:var(--gold);font-weight:700;font-size:13px;letter-spacing:.5px;
+  background:rgba(18,52,86,0.03);color:var(--gold);font-weight:700;font-size:13px;letter-spacing:.5px;
 }
 .welcome-kontak-btn:active{transform:scale(0.96);}
 
@@ -154,7 +261,7 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
    dan .menu-btn. */
 .menu-corner-btn{
   position:absolute;top:18px;width:46px;height:46px;border-radius:14px;
-  border:2px solid var(--gold);background:rgba(255,255,255,0.05);
+  border:2px solid var(--gold);background:rgba(18,52,86,0.05);
   color:var(--gold);font-size:20px;display:flex;align-items:center;justify-content:center;
   z-index:5;padding:0;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.25);
 }
@@ -169,18 +276,18 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 #screen-menu > .menu-corner-btn{position:absolute;z-index:5;}
 
 /* ---------- UPDATE DALAM-GAME (kartu download + progress) ---------- */
-#updateOverlay{position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at 30% 0%, #1a2c4a 0%, var(--ink) 45%, var(--ink2) 100%);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
+#updateOverlay{position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at 30% 0%, #FFFFFF 0%, #EAF4FC 45%, #DCEBF8 100%);display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Inter',sans-serif;}
 .upd-box{max-width:340px;text-align:center;color:var(--paper);}
-.upd-icon{width:60px;height:60px;border-radius:50%;background:rgba(215,169,75,0.14);border:1px solid rgba(215,169,75,0.35);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;}
+.upd-icon{width:60px;height:60px;border-radius:50%;background:rgba(47,111,168,0.14);border:1px solid rgba(47,111,168,0.35);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;}
 .upd-box h2{font-family:'Playfair Display',serif;margin:0 0 8px;font-size:21px;color:var(--gold);letter-spacing:.3px;}
 .upd-box p{color:var(--paper-dim);font-size:13.5px;line-height:1.6;margin:0 0 18px;}
-.upd-btn-main{background:linear-gradient(135deg,#ecc978 0%,var(--gold) 55%,#c0913a 100%);color:var(--ink2);padding:15px 30px;border-radius:999px;border:2px solid #f0d493;font-weight:800;font-size:14.5px;letter-spacing:.3px;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;}
+.upd-btn-main{background:linear-gradient(135deg,#7FC1EE 0%,var(--gold) 55%,#5B93C4 100%);color:var(--ink2);padding:15px 30px;border-radius:999px;border:2px solid #9ED0F0;font-weight:800;font-size:14.5px;letter-spacing:.3px;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;}
 .upd-btn-main:active{transform:scale(0.97);}
 .upd-status{min-height:36px;max-width:300px;font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-top:16px;}
-.upd-bar-track{width:100%;height:10px;border-radius:999px;background:rgba(255,255,255,0.08);border:1px solid rgba(215,169,75,0.25);overflow:hidden;margin-bottom:6px;}
-.upd-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#ecc978,var(--gold));transition:width .15s ease;}
+.upd-bar-track{width:100%;height:10px;border-radius:999px;background:rgba(18,52,86,0.08);border:1px solid rgba(47,111,168,0.25);overflow:hidden;margin-bottom:6px;}
+.upd-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#7FC1EE,var(--gold));transition:width .15s ease;}
 .upd-progress-label{font-size:12px;color:var(--gold-dim);margin-bottom:14px;font-family:'Space Mono',monospace;}
-.howto{max-width:420px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.3);border-radius:var(--radius);padding:16px 18px;margin-top:18px;font-size:13px;line-height:1.6;color:var(--paper-dim);display:none;}
+.howto{max-width:420px;text-align:left;background:rgba(18,52,86,0.04);border:1px solid rgba(47,111,168,0.3);border-radius:var(--radius);padding:16px 18px;margin-top:18px;font-size:13px;line-height:1.6;color:var(--paper-dim);display:none;}
 .howto.show{display:block;}
 .howto b{color:var(--gold);}
 
@@ -189,50 +296,63 @@ button{font-family:'Inter',sans-serif;cursor:pointer;}
 .setup-header{text-align:center;margin-bottom:18px;}
 .setup-header h2{margin:0 0 4px;font-size:24px;color:var(--gold);}
 .setup-header p{margin:0;color:var(--paper-dim);font-size:13px;}
-.card{background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.card{background:rgba(18,52,86,0.045);border:1px solid rgba(47,111,168,0.25);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
 .card h3{margin:0 0 10px;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
 .pill-row{display:flex;gap:8px;flex-wrap:wrap;}
 .pill{
-  border:2px solid rgba(215,169,75,0.4);background:transparent;color:var(--paper);
+  border:2px solid rgba(47,111,168,0.4);background:transparent;color:var(--paper);
   border-radius:999px;padding:8px 16px;font-size:14px;font-weight:600;
 }
 .pill.active{background:var(--gold);border-color:var(--gold);color:var(--ink2);}
 .player-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.token-dot{width:30px;height:30px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,0.4);}
+.token-dot{width:30px;height:30px;border-radius:50%;flex:none;border:2px solid rgba(18,52,86,0.4);}
 .player-row input{
-  flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(215,169,75,0.3);
+  flex:1;background:rgba(18,52,86,0.06);border:1px solid rgba(47,111,168,0.3);
   color:var(--paper);border-radius:8px;padding:10px 12px;font-size:14px;
 }
-.rule-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+.rule-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(18,52,86,0.06);}
 .rule-row:last-child{border-bottom:none;}
 .rule-label{font-size:13px;color:var(--paper);}
 .rule-label small{display:block;color:var(--paper-dim);font-size:11px;margin-top:2px;}
-select.rule-select{background:rgba(255,255,255,0.08);color:var(--paper);border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:6px 8px;font-size:13px;}
-.fake-select-btn{background:rgba(255,255,255,0.08);color:var(--gold);border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:700;font-family:inherit;min-width:76px;text-align:right;}
-.fake-select-btn:active{background:rgba(215,169,75,0.18);}
+select.rule-select{background:rgba(18,52,86,0.08);color:var(--paper);border:1px solid rgba(47,111,168,0.4);border-radius:6px;padding:6px 8px;font-size:13px;}
+.fake-select-btn{background:rgba(18,52,86,0.08);color:var(--gold);border:1px solid rgba(47,111,168,0.4);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:700;font-family:inherit;min-width:76px;text-align:right;}
+.fake-select-btn:active{background:rgba(47,111,168,0.18);}
 .fake-select-btn:disabled{opacity:0.4;}
 .picker-list{display:flex;flex-direction:column;gap:8px;margin-top:4px;max-height:55vh;overflow-y:auto;}
-.picker-option{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:rgba(255,255,255,0.05);border:1px solid rgba(215,169,75,0.25);border-radius:10px;padding:13px 14px;font-size:15px;color:var(--paper);font-family:inherit;font-weight:600;}
-.picker-option:active{background:rgba(215,169,75,0.15);}
-.picker-option.selected{border-color:var(--gold);background:rgba(215,169,75,0.14);color:var(--gold);}
-.picker-option .pk-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(215,169,75,0.4);flex:none;}
+.picker-option{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:rgba(18,52,86,0.05);border:1px solid rgba(47,111,168,0.25);border-radius:10px;padding:13px 14px;font-size:15px;color:var(--paper);font-family:inherit;font-weight:600;}
+.picker-option:active{background:rgba(47,111,168,0.15);}
+.picker-option.selected{border-color:var(--gold);background:rgba(47,111,168,0.14);color:var(--gold);}
+.picker-option .pk-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(47,111,168,0.4);flex:none;}
 .picker-option.selected .pk-dot{border-color:var(--gold);background:radial-gradient(var(--gold) 0 40%,transparent 42%);}
+/* Baris navigasi di layar Pengaturan (mis. "Tema") — ikon + judul + subjudul + panah,
+   dibuka lewat tombol ini menuju modal pilihan (lihat openThemePicker()). */
+.settings-nav-row{
+  display:flex;align-items:center;gap:14px;width:100%;background:transparent;border:none;
+  border-bottom:1px solid rgba(47,111,168,0.15);padding:12px 0;text-align:left;
+  color:var(--paper);font-family:inherit;cursor:pointer;
+}
+.settings-nav-row:active{background:rgba(47,111,168,0.08);}
+.snr-icon{font-size:20px;flex:none;width:22px;text-align:center;color:var(--gold);}
+.snr-text{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
+.snr-title{font-size:14.5px;font-weight:700;}
+.snr-sub{font-size:12px;color:var(--paper-dim);}
+.snr-chevron{color:var(--paper-dim);font-size:18px;flex:none;}
 .switch{position:relative;width:44px;height:24px;flex:none;}
 .switch input{opacity:0;width:0;height:0;}
-.slider{position:absolute;inset:0;background:rgba(255,255,255,0.15);border-radius:999px;transition:.2s;cursor:pointer;}
-.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--paper);border-radius:50%;transition:.2s;}
-input:checked + .slider{background:var(--teal);}
-input:checked + .slider:before{transform:translateX(20px);background:var(--gold);}
+.slider{position:absolute;inset:0;background:rgba(18,52,86,0.15);border-radius:999px;transition:.2s;cursor:pointer;}
+.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--surface);border-radius:50%;transition:.2s;}
+input:checked + .slider{background:var(--gold);}
+input:checked + .slider:before{transform:translateX(20px);background:var(--surface);}
 input:disabled + .slider{opacity:0.4;cursor:default;}
 .sticky-bottom{position:fixed;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(0deg, var(--ink2) 60%, transparent);display:flex;justify-content:center;gap:10px;}
 .btn-big{padding:14px 26px;border-radius:999px;border:none;background:var(--gold);color:var(--ink2);font-weight:800;font-size:15px;letter-spacing:0.5px;box-shadow:0 4px 14px rgba(0,0,0,0.35);}
-.btn-ghost{padding:14px 20px;border-radius:999px;border:2px solid rgba(215,169,75,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:14px;}
+.btn-ghost{padding:14px 20px;border-radius:999px;border:2px solid rgba(47,111,168,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:14px;}
 
 /* ---------- GAME ---------- */
 #screen-game{width:100%;padding:10px 10px 12px;align-items:center;}
 .topbar{width:100%;max-width:700px;display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 6px 10px;}
 .topbar .title{font-size:14px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;font-weight:700;}
-.icon-btn{background:transparent;border:1px solid rgba(215,169,75,0.4);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:12px;}
+.icon-btn{background:transparent;border:1px solid rgba(47,111,168,0.4);color:var(--gold);border-radius:8px;padding:6px 10px;font-size:12px;}
 
 .board-wrap{
   width:100%;max-width:440px;margin:0 auto;overflow:hidden;border-radius:12px;
@@ -245,7 +365,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   position:relative;
 }
 .tile{
-  position:relative;background:var(--paper);color:var(--text);
+  position:relative;background:var(--surface);color:var(--text);
   border:1px solid rgba(0,0,0,0.15);
   display:flex;flex-direction:column;overflow:hidden;
   line-height:1.05;
@@ -267,7 +387,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .token{
   width:clamp(11px,3.4vw,17px);height:clamp(11px,3.4vw,17px);border-radius:50%;
   border:1.5px solid rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;
-  font-size:clamp(7px,2.3vw,12px);line-height:1;background:var(--paper);
+  font-size:clamp(7px,2.3vw,12px);line-height:1;background:var(--surface);
   box-shadow:0 1px 3px rgba(0,0,0,0.5);
 }
 .token.walking{animation:tokenHop .28s ease;}
@@ -278,13 +398,13 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;
   padding-top:9%;
   background:radial-gradient(circle, #386f61 0%, var(--teal) 70%);
-  border:2px dashed rgba(215,169,75,0.4);margin:6px;border-radius:8px;
+  border:2px dashed rgba(47,111,168,0.4);margin:6px;border-radius:8px;
 }
-.center-area h1{color:var(--gold);font-size:clamp(14px,4.6vw,24px);margin:0;letter-spacing:1px;text-align:center;line-height:1.15;}
-.center-area .sub{color:rgba(255,255,255,0.75);font-size:clamp(7px,1.9vw,10px);letter-spacing:1.5px;text-transform:uppercase;text-align:center;padding:0 4px;}
+.center-area h1{color:#EAF4FC;font-size:clamp(14px,4.6vw,24px);margin:0;letter-spacing:1px;text-align:center;line-height:1.15;}
+.center-area .sub{color:rgba(234,244,252,0.75);font-size:clamp(7px,1.9vw,10px);letter-spacing:1.5px;text-transform:uppercase;text-align:center;padding:0 4px;}
 .dice-box{display:flex;gap:clamp(5px,2vw,10px);margin-top:4px;}
 .die{
-  width:clamp(24px,7.5vw,40px);height:clamp(24px,7.5vw,40px);background:var(--paper);border-radius:6px;
+  width:clamp(24px,7.5vw,40px);height:clamp(24px,7.5vw,40px);background:var(--surface);border-radius:6px;
   display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:clamp(3px,1vw,5px);gap:2px;
   box-shadow:0 3px 8px rgba(0,0,0,0.4);
 }
@@ -295,16 +415,16 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 
 .panel{width:100%;max-width:700px;margin-top:12px;}
 .turn-banner{
-  display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);
-  border:1px solid rgba(215,169,75,0.3);border-radius:12px;padding:10px 14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:10px;background:rgba(18,52,86,0.05);
+  border:1px solid rgba(47,111,168,0.3);border-radius:12px;padding:10px 14px;margin-bottom:10px;
 }
-.turn-banner .dot-big{width:26px;height:26px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,0.5);}
+.turn-banner .dot-big{width:26px;height:26px;border-radius:50%;flex:none;border:2px solid rgba(18,52,86,0.5);}
 .turn-banner .info{flex:1;}
 .turn-banner .info .nm{font-weight:800;font-size:15px;}
 .turn-banner .info .mn{font-family:'Space Mono',monospace;color:var(--gold);font-size:13px;}
 .timer-badge{
   flex:none;min-width:52px;text-align:center;font-family:'Space Mono',monospace;font-weight:700;font-size:15px;
-  color:var(--gold);border:2px solid rgba(215,169,75,0.5);border-radius:999px;padding:6px 10px;
+  color:var(--gold);border:2px solid rgba(47,111,168,0.5);border-radius:999px;padding:6px 10px;
   transition:color .2s,border-color .2s,transform .15s;
 }
 .timer-badge.low{color:#fff;border-color:var(--red);background:var(--red);animation:timerPulse .6s infinite;}
@@ -312,7 +432,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 @keyframes timerPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
 
 .buy-bar{
-  display:none;align-items:center;gap:10px;background:rgba(215,169,75,0.1);
+  display:none;align-items:center;gap:10px;background:rgba(47,111,168,0.1);
   border:2px solid var(--gold);border-radius:12px;padding:10px 12px;margin-bottom:10px;
   animation:buyBarIn .25s ease;
 }
@@ -324,7 +444,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .buy-bar .buy-actions button{padding:10px 14px;border-radius:8px;border:none;font-weight:800;font-size:12px;}
 .buy-bar .buy-yes{background:var(--gold);color:var(--ink2);}
 .buy-bar .buy-yes:disabled{opacity:0.35;}
-.buy-bar .buy-no{background:transparent;border:2px solid rgba(255,255,255,0.3)!important;color:var(--paper);}
+.buy-bar .buy-no{background:transparent;border:2px solid rgba(18,52,86,0.3)!important;color:var(--paper);}
 .buy-bar.house-bar{border-color:var(--green-ok);background:rgba(63,163,77,0.12);}
 .buy-bar.house-bar .buy-name{color:var(--green-ok);}
 
@@ -333,19 +453,19 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   flex:1;min-width:110px;padding:12px 10px;border-radius:10px;border:none;
   background:var(--gold);color:var(--ink2);font-weight:800;font-size:13px;
 }
-.actions-row button.secondary{background:transparent;border:2px solid rgba(215,169,75,0.5);color:var(--gold);}
+.actions-row button.secondary{background:transparent;border:2px solid rgba(47,111,168,0.5);color:var(--gold);}
 .actions-row button:disabled{opacity:0.35;pointer-events:none;}
 
 .players-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;}
 .player-chip{
-  flex:none;min-width:120px;background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.25);
+  flex:none;min-width:120px;background:rgba(18,52,86,0.04);border:1px solid rgba(47,111,168,0.25);
   border-radius:10px;padding:8px 10px;position:relative;overflow:visible;
 }
-.player-chip.current{border-color:var(--gold);background:rgba(215,169,75,0.12);}
+.player-chip.current{border-color:var(--gold);background:rgba(47,111,168,0.12);}
 .player-chip.bankrupt{opacity:0.35;text-decoration:line-through;}
 .player-chip .row1{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12px;}
 .player-chip .row2{font-family:'Space Mono',monospace;font-size:12px;color:var(--gold);margin-top:2px;position:relative;overflow:visible;}
-.bot-tag{font-size:9px;color:var(--gold-dim);border:1px solid rgba(215,169,75,0.4);border-radius:5px;padding:0 4px;font-weight:700;letter-spacing:0.5px;flex:none;}
+.bot-tag{font-size:9px;color:var(--gold-dim);border:1px solid rgba(47,111,168,0.4);border-radius:5px;padding:0 4px;font-weight:700;letter-spacing:0.5px;flex:none;}
 .money-fx{
   position:absolute;right:0;top:-1px;font-family:'Space Mono',monospace;font-weight:800;font-size:12px;
   pointer-events:none;z-index:9;white-space:nowrap;animation:moneyFxSlide 3s ease forwards;
@@ -366,7 +486,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   pointer-events:none;max-height:34%;overflow:hidden;
 }
 .toast{
-  background:rgba(11,22,38,0.62);border:1px solid rgba(215,169,75,0.35);color:var(--paper);
+  background:rgba(11,22,38,0.62);border:1px solid rgba(47,111,168,0.35);color:#EAF4FC;
   padding:3px 7px;border-radius:6px;font-size:clamp(6px,1.5vw,8.5px);line-height:1.25;text-align:center;
   opacity:0;transform:translateY(-6px);
   transition:opacity .25s ease, transform .25s ease;
@@ -383,7 +503,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .overlay.show{display:flex;}
 #modalOverlay{z-index:60;}
 .modal{
-  background:var(--ink2);border:1px solid rgba(215,169,75,0.4);border-radius:16px;
+  background:var(--surface);border:1px solid rgba(47,111,168,0.4);border-radius:16px;
   width:100%;max-width:420px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.6);
   max-height:85vh;overflow-y:auto;
 }
@@ -395,12 +515,12 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .modal-actions.vertical{flex-direction:column;flex-wrap:nowrap;}
 .modal-actions.vertical button{width:100%;}
 .btn-yes{background:var(--gold);color:var(--ink2);}
-.btn-no{background:transparent;border:2px solid rgba(215,169,75,0.4)!important;color:var(--paper);}
+.btn-no{background:transparent;border:2px solid rgba(47,111,168,0.4)!important;color:var(--paper);}
 .btn-danger{background:var(--red);color:#fff;}
 
 .deed-list{max-height:340px;overflow-y:auto;margin-top:6px;}
 .deed-item{
-  display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,0.04);border-radius:8px;
+  display:flex;flex-direction:column;gap:8px;background:rgba(18,52,86,0.04);border-radius:8px;
   padding:8px 10px;margin-bottom:6px;font-size:12px;
 }
 .deed-item .di-top{display:flex;align-items:center;gap:10px;}
@@ -409,7 +529,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .deed-item .di-info{color:var(--paper-dim);font-size:11px;}
 .deed-item .di-btns{display:flex;gap:4px;flex-wrap:wrap;}
 .deed-item button{padding:6px 8px;font-size:11px;border-radius:6px;border:none;background:var(--teal);color:#fff;font-weight:700;}
-.deed-item button.mort{background:rgba(255,255,255,0.15);}
+.deed-item button.mort{background:rgba(18,52,86,0.15);}
 .deed-item button:disabled{opacity:0.3;}
 .deed-details{
   display:grid;grid-template-columns:repeat(2,1fr);gap:3px 12px;
@@ -431,7 +551,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 .card-deck-back.c3{transform:translate(5px,5px) rotate(4deg);}
 .card-deck-back.c2{transform:translate(2px,2px) rotate(-3deg);}
 .card-drawn{
-  position:absolute;inset:0;border-radius:10px;background:var(--ink2);border:2px solid var(--gold);
+  position:absolute;inset:0;border-radius:10px;background:var(--surface);border:2px solid var(--gold);
   display:flex;align-items:center;justify-content:center;font-size:36px;
   opacity:0.001;transform:translateY(26px) rotate(-10deg) scale(0.8);
   box-shadow:0 10px 26px rgba(0,0,0,0.5);
@@ -449,33 +569,33 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   background:var(--gold)!important;color:var(--ink2)!important;font-weight:800!important;
   font-size:14px!important;letter-spacing:0.5px;animation:passPulse 1.4s ease-in-out infinite;
 }
-@keyframes passPulse{0%,100%{box-shadow:0 0 0 0 rgba(215,169,75,0.45);}50%{box-shadow:0 0 0 8px rgba(215,169,75,0);}}
+@keyframes passPulse{0%,100%{box-shadow:0 0 0 0 rgba(47,111,168,0.45);}50%{box-shadow:0 0 0 8px rgba(47,111,168,0);}}
 
 .winner-overlay{position:fixed;inset:0;background:rgba(6,10,20,0.95);z-index:90;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;}
 .winner-overlay.show{display:flex;flex-direction:column;}
 .winner-overlay .stamp{width:170px;height:170px;}
 
-.room-badge{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:2px;border:1px solid rgba(215,169,75,0.4);border-radius:6px;padding:3px 8px;}
+.room-badge{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:2px;border:1px solid rgba(47,111,168,0.4);border-radius:6px;padding:3px 8px;}
 
 /* ---------- BOT TOGGLES & LOBBY EXTRAS ---------- */
 .bot-toggle-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--paper-dim);flex:none;}
-.mini-x{width:22px;height:22px;border-radius:50%;border:1px solid rgba(215,169,75,0.4);background:transparent;color:var(--paper-dim);font-size:12px;line-height:1;flex:none;padding:0;}
+.mini-x{width:22px;height:22px;border-radius:50%;border:1px solid rgba(47,111,168,0.4);background:transparent;color:var(--paper-dim);font-size:12px;line-height:1;flex:none;padding:0;}
 .mini-x:active{background:rgba(179,64,47,0.3);}
-.btn-add-bot{width:100%;margin-top:8px;padding:11px;border-radius:10px;border:2px dashed rgba(215,169,75,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:13px;}
+.btn-add-bot{width:100%;margin-top:8px;padding:11px;border-radius:10px;border:2px dashed rgba(47,111,168,0.5);background:transparent;color:var(--gold);font-weight:700;font-size:13px;}
 
 /* ---------- MENU EXTRAS: reference + changelog ---------- */
 .menu-btn.secondary-link{border-style:dashed;font-size:13px;padding:12px 18px;}
-.ref-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;position:sticky;top:0;background:var(--ink2);padding:4px 0 8px;z-index:2;}
-.ref-tab{border:2px solid rgba(215,169,75,0.4);background:transparent;color:var(--paper);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;}
+.ref-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;position:sticky;top:0;background:var(--surface);padding:4px 0 8px;z-index:2;}
+.ref-tab{border:2px solid rgba(47,111,168,0.4);background:transparent;color:var(--paper);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;}
 .ref-tab.active{background:var(--gold);border-color:var(--gold);color:var(--ink2);}
-.ref-item{background:rgba(255,255,255,0.04);border-radius:8px;padding:9px 11px;margin-bottom:6px;font-size:12px;}
+.ref-item{background:rgba(18,52,86,0.04);border-radius:8px;padding:9px 11px;margin-bottom:6px;font-size:12px;}
 .ref-item .ri-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
 .ref-item .ri-swatch{width:10px;height:22px;border-radius:3px;flex:none;}
 .ref-item .ri-name{font-weight:800;flex:1;}
 .ref-item .ri-price{font-family:'Space Mono',monospace;color:var(--gold);font-size:11.5px;}
 .ref-item .ri-detail{color:var(--paper-dim);font-size:11px;line-height:1.5;}
 .ref-item .ri-detail b{color:var(--paper);}
-.changelog-entry{background:rgba(255,255,255,0.04);border:1px solid rgba(215,169,75,0.25);border-radius:10px;padding:12px 14px;margin-bottom:10px;text-align:left;}
+.changelog-entry{background:rgba(18,52,86,0.04);border:1px solid rgba(47,111,168,0.25);border-radius:10px;padding:12px 14px;margin-bottom:10px;text-align:left;}
 .changelog-entry .cl-date{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:6px;}
 .changelog-entry ul{margin:4px 0 0;padding-left:18px;}
 .changelog-entry li{font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:2px;}
@@ -487,9 +607,9 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 /* ---------- LELANG: info properti + stepper tawaran custom ---------- */
 .auction-status{margin-bottom:10px;}
 .bid-stepper{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px;}
-.bid-stepper button{width:36px;height:36px;border-radius:9px;border:2px solid rgba(215,169,75,0.5);background:transparent;color:var(--gold);font-size:18px;font-weight:800;line-height:1;padding:0;flex:none;}
-.bid-stepper button:active{background:rgba(215,169,75,0.2);}
-.bid-stepper input{width:100px;text-align:center;font-family:'Space Mono',monospace;font-size:15px;font-weight:800;padding:8px 4px;border-radius:9px;border:2px solid rgba(215,169,75,0.4);background:rgba(255,255,255,0.05);color:var(--paper);}
+.bid-stepper button{width:36px;height:36px;border-radius:9px;border:2px solid rgba(47,111,168,0.5);background:transparent;color:var(--gold);font-size:18px;font-weight:800;line-height:1;padding:0;flex:none;}
+.bid-stepper button:active{background:rgba(47,111,168,0.2);}
+.bid-stepper input{width:100px;text-align:center;font-family:'Space Mono',monospace;font-size:15px;font-weight:800;padding:8px 4px;border-radius:9px;border:2px solid rgba(47,111,168,0.4);background:rgba(18,52,86,0.05);color:var(--paper);}
 .bid-stepper input::-webkit-outer-spin-button,.bid-stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -526,33 +646,49 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   </div>
 </div>
 
-<!-- ================= MENU ================= -->
-<div id="screen-menu" class="screen">
-  <button class="menu-corner-btn corner-left" onclick="goToAccount()" id="btnAccountMenu" title="Akun" aria-label="Akun">👤</button>
-  <div class="stamp">
-    <span class="top">Est. Hari Ini</span>
-    <span class="mid">MONOPOLI</span>
-    <span class="bot">Dunia Edition</span>
+<!-- ================= MENU (redesign gaya "Checkmate", tema cream) ================= -->
+<div id="screen-menu" class="screen menu-blue">
+  <div class="mc-topbar">
+    <button class="mc-avatar-btn" onclick="goToAccount()" id="btnAccountMenu" title="Akun" aria-label="Akun">👤</button>
+    <button class="mc-icon-circle" onclick="quickToggleMusic()" id="btnMusicToggleMenu" title="Musik" aria-label="Musik">🎵</button>
   </div>
-  <h1>Monopoli Dunia</h1>
-  <div class="tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
-  <div class="menu-divider">✦ ✦ ✦</div>
-  <button class="menu-btn primary" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
-  <button class="menu-btn primary" onclick="goToModeSelect()">▶ Main</button>
-  <button class="menu-btn secondary-link" onclick="openReferenceModal()">📖 Daftar Properti &amp; Kartu</button>
-  <!-- Cara Bermain & Pengaturan: dulu tombol kotak kecil di pojok atas
-       (.menu-corner-btn corner-right / corner-right-2), sekarang
-       dipindah ke sini sebagai tombol daftar biasa, tepat di atas
-       "Apa yang Baru" -->
-  <button class="menu-btn secondary-link" onclick="openHowToModal()">📘 Cara Bermain</button>
-  <button class="menu-btn secondary-link" onclick="openMainMenuSettings()">⚙️ Pengaturan</button>
-  <button class="menu-btn secondary-link" onclick="openWhatsNewModal()">🆕 Apa yang Baru</button>
-  <div class="menu-footer" id="accountMenuStatus">Aturan bisa disesuaikan di layar berikutnya</div>
+
+  <div class="mc-logo">🎩</div>
+  <h1 class="mc-title">Monopoli Dunia</h1>
+  <div class="mc-tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
+
+  <button class="mc-btn-resume" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
+
+  <div class="mc-grid">
+    <button class="mc-card" onclick="goToModeSelect()">
+      <span class="mc-card-icon">▶️</span>
+      <span>Main<br>Sekarang</span>
+    </button>
+    <button class="mc-card" onclick="openReferenceModal()">
+      <span class="mc-card-icon">📖</span>
+      <span>Daftar Properti<br>&amp; Kartu</span>
+    </button>
+    <button class="mc-card" onclick="openHowToModal()">
+      <span class="mc-card-icon">📘</span>
+      <span>Cara<br>Bermain</span>
+    </button>
+    <button class="mc-card" onclick="openWhatsNewModal()">
+      <span class="mc-card-icon">🆕</span>
+      <span>Apa yang<br>Baru</span>
+    </button>
+  </div>
+
+  <div class="mc-grid mc-grid-dark">
+    <button class="mc-card-dark" onclick="goToAccount()">👤 Akun</button>
+    <button class="mc-card-dark" onclick="openMainMenuSettings()">⚙️ Pengaturan</button>
+  </div>
+
+  <div class="mc-footer" id="accountMenuStatus">Aturan bisa disesuaikan di layar berikutnya</div>
   <!-- Info versi + tanggal/jam rilis + dev, diisi otomatis oleh CI (build-android.yml)
        lewat sed ke placeholder __ANUMPOLY_*__ di bawah setiap kali APK dibuild.
        Kalau file ini dibuka mentah (belum lewat CI), placeholder-nya akan
        tampil apa adanya — itu tandanya bukan hasil build resmi. -->
-  <div class="menu-version-footer">v__ANUMPOLY_VERSION__ · build __ANUMPOLY_BUILD__<br>Rilis __ANUMPOLY_RELEASE_AT__<br>Dev: syharl</div>
+  <div class="mc-version-footer">v__ANUMPOLY_VERSION__ · build __ANUMPOLY_BUILD__<br>Rilis __ANUMPOLY_RELEASE_AT__<br>Dev: syharl</div>
 </div>
 
 <!-- ================= MODE SELECT ================= -->
@@ -586,11 +722,11 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   <!-- Belum login: form login/daftar -->
   <div id="accountAuthView" style="padding:0 18px;">
     <div style="max-width:420px;margin:0 auto;">
-      <div style="background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <div style="background:rgba(18,52,86,0.045);border:1px solid rgba(47,111,168,0.25);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;">
         <span style="opacity:.7;color:var(--gold);">👤</span>
         <input id="accountEmailInput" type="email" placeholder="Email" autocomplete="email" style="flex:1;background:none;border:none;outline:none;color:var(--paper);font-size:15px;">
       </div>
-      <div style="background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+      <div style="background:rgba(18,52,86,0.045);border:1px solid rgba(47,111,168,0.25);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:6px;">
         <span style="opacity:.7;color:var(--gold);">🔒</span>
         <input id="accountPasswordInput" type="password" placeholder="Kata sandi" autocomplete="current-password" style="flex:1;background:none;border:none;outline:none;color:var(--paper);font-size:15px;">
         <span onclick="toggleAccountPasswordVisibility()" style="cursor:pointer;opacity:.7;font-size:15px;">👁️</span>
@@ -598,15 +734,15 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
       <div id="accountError" style="display:none;color:#e8836b;font-size:12.5px;margin:6px 2px 0;line-height:1.5;"></div>
 
       <div style="display:flex;align-items:center;gap:12px;margin:22px 0;">
-        <div style="flex:1;height:1px;background:rgba(215,169,75,0.2);"></div>
+        <div style="flex:1;height:1px;background:rgba(47,111,168,0.2);"></div>
         <span style="color:var(--gold-dim);font-size:12px;letter-spacing:1px;">ATAU</span>
-        <div style="flex:1;height:1px;background:rgba(215,169,75,0.2);"></div>
+        <div style="flex:1;height:1px;background:rgba(47,111,168,0.2);"></div>
       </div>
 
-      <button type="button" onclick="signInWithGoogleNative()" style="width:100%;background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;gap:14px;color:var(--paper);font-weight:700;font-size:14.5px;cursor:pointer;margin-bottom:12px;">
+      <button type="button" onclick="signInWithGoogleNative()" style="width:100%;background:rgba(18,52,86,0.045);border:1px solid rgba(47,111,168,0.25);border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;gap:14px;color:var(--paper);font-weight:700;font-size:14.5px;cursor:pointer;margin-bottom:12px;">
         <span style="font-size:18px;">🔵</span> Masuk dengan Google
       </button>
-      <button type="button" onclick="hideAccountError();showAccountError('Login Facebook belum diaktifkan.')" style="width:100%;background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;gap:14px;color:var(--paper);font-weight:700;font-size:14.5px;cursor:pointer;">
+      <button type="button" onclick="hideAccountError();showAccountError('Login Facebook belum diaktifkan.')" style="width:100%;background:rgba(18,52,86,0.045);border:1px solid rgba(47,111,168,0.25);border-radius:var(--radius);padding:15px 18px;display:flex;align-items:center;gap:14px;color:var(--paper);font-weight:700;font-size:14.5px;cursor:pointer;">
         <span style="font-size:18px;">🔷</span> Masuk dengan Facebook
       </button>
 
@@ -620,15 +756,15 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 
   <!-- Sudah login: profil -->
   <div id="accountProfileView" style="display:none;padding:0 18px;">
-    <div style="max-width:420px;margin:0 auto;background:rgba(255,255,255,0.045);border:1px solid rgba(215,169,75,0.25);border-radius:var(--radius);padding:20px;">
+    <div style="max-width:420px;margin:0 auto;background:rgba(18,52,86,0.045);border:1px solid rgba(47,111,168,0.25);border-radius:var(--radius);padding:20px;">
       <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:18px;">
-        <div id="accountAvatarPreview" onclick="document.getElementById('accountAvatarInput').click()" style="width:84px;height:84px;border-radius:50%;border:3px solid var(--gold);background:rgba(215,169,75,0.12);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--gold);cursor:pointer;overflow:hidden;position:relative;">♟</div>
+        <div id="accountAvatarPreview" onclick="document.getElementById('accountAvatarInput').click()" style="width:84px;height:84px;border-radius:50%;border:3px solid var(--gold);background:rgba(47,111,168,0.12);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--gold);cursor:pointer;overflow:hidden;position:relative;">♟</div>
         <input id="accountAvatarInput" type="file" accept="image/*" style="display:none;" onchange="handleAccountAvatarChange(event)">
         <button type="button" onclick="document.getElementById('accountAvatarInput').click()" style="background:none;border:none;color:var(--gold);font-size:12.5px;font-weight:700;margin-top:8px;cursor:pointer;">✏️ Ubah Foto Profil</button>
       </div>
       <h3 style="color:var(--gold);margin:0 0 4px;font-family:'Playfair Display',serif;">Masuk sebagai</h3>
       <p id="accountEmailDisplay" style="font-family:'Space Mono',monospace;font-size:14px;color:var(--paper);word-break:break-all;margin:0 0 16px;"></p>
-      <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(215,169,75,0.2);border-radius:8px;padding:14px 16px;">
+      <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(47,111,168,0.2);border-radius:8px;padding:14px 16px;">
         <input id="accountDisplayNameInput" placeholder="Nama tampilan" maxlength="14" style="width:100%;background:none;border:none;outline:none;color:var(--paper);font-size:15px;">
       </div>
       <button class="menu-btn primary" style="width:100%;margin-top:14px;" onclick="saveAccountProfile()">Simpan Profil</button>
@@ -811,6 +947,7 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
       <div class="room-badge" id="roomBadge" style="display:none;"></div>
       <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
       <button class="icon-btn" id="btnMute" onclick="toggleMute()">🔊</button>
+      <button class="icon-btn" id="btnMusicGame" onclick="quickToggleMusic()">🎵</button>
       <button class="icon-btn" onclick="openSettingsMenu()">☰ Menu</button>
     </div>
   </div>
@@ -1345,6 +1482,7 @@ function ensureAudio(){
 function toggleMute(){
   soundMuted = !soundMuted;
   document.getElementById('btnMute').textContent = soundMuted ? '🔇' : '🔊';
+  saveSettings();
 }
 function beep(freq, dur, type, vol, delay){
   if(soundMuted) return;
@@ -1462,7 +1600,7 @@ function getBgmAudio(){
   return audio;
 }
 function startBgm(){
-  if(musicMuted) return;
+  if(!shouldPlayBgmNow()) return;
   const audio = getBgmAudio();
   if(!audio) return;
   const p = audio.play();
@@ -1472,8 +1610,21 @@ function stopBgm(){
   const audio = document.getElementById('bgmAudio');
   if(audio) audio.pause();
 }
+/* Musik bisa dimatikan globalnya (musicMuted), ATAU cuma dimatikan
+   pas lagi di papan permainan saja lewat opsi "Matikan musik saat
+   main" (appSettings.muteMusicInGame) — menu/lobi tetap ada musiknya. */
+function shouldPlayBgmNow(){
+  if(musicMuted) return false;
+  const gameScreen = document.getElementById('screen-game');
+  const gameActive = gameScreen && gameScreen.classList.contains('active');
+  if(gameActive && appSettings.muteMusicInGame) return false;
+  return true;
+}
+function refreshBgmPlayback(){
+  if(shouldPlayBgmNow()) startBgm(); else stopBgm();
+}
 document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden) stopBgm(); else if(!musicMuted) startBgm();
+  if(document.hidden) stopBgm(); else refreshBgmPlayback();
 });
 document.addEventListener('click', (e)=>{
   ensureAudio();
@@ -1484,7 +1635,7 @@ document.addEventListener('click', (e)=>{
 /* ============================================================
    PENGATURAN (SUARA / GETAR / GRAFIK) + SAVE-RESUME LOKAL
    ============================================================ */
-let appSettings = { vibration:true, reducedMotion:false };
+let appSettings = { vibration:true, reducedMotion:false, themeMode:'light', muteMusicInGame:false };
 (function loadSettings(){
   try{
     const raw = localStorage.getItem('anumpoly_settings');
@@ -1492,13 +1643,25 @@ let appSettings = { vibration:true, reducedMotion:false };
       const s = JSON.parse(raw);
       if(typeof s.vibration==='boolean') appSettings.vibration = s.vibration;
       if(typeof s.reducedMotion==='boolean') appSettings.reducedMotion = s.reducedMotion;
+      if(typeof s.themeMode==='string') appSettings.themeMode = s.themeMode;
+      if(typeof s.muteMusicInGame==='boolean') appSettings.muteMusicInGame = s.muteMusicInGame;
       if(typeof s.sound==='boolean') soundMuted = !s.sound;
       if(typeof s.music==='boolean') musicMuted = !s.music;
       if(typeof s.sfxVolume==='number') sfxVolume = Math.max(1, Math.min(10, s.sfxVolume));
       if(typeof s.musicVolume==='number') musicVolume = Math.max(1, Math.min(10, s.musicVolume));
     }
   }catch(e){}
+  applyThemeMode(appSettings.themeMode);
 })();
+// Kalau mode "Bawaan Sistem" dipakai, ikuti perubahan tema OS secara langsung
+// (mis. HP masuk mode gelap otomatis malam hari) tanpa perlu buka app lagi.
+if(window.matchMedia){
+  try{
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
+      if(appSettings.themeMode==='system') applyThemeMode('system');
+    });
+  }catch(e){}
+}
 // Coba langsung mainkan musik latar begitu game dibuka, tanpa menunggu klik
 // pertama. Ini baru berhasil kalau WebView aplikasi TIDAK mewajibkan gesture
 // pengguna untuk memutar audio (lihat MainActivity.java native, di-set lewat
@@ -1506,9 +1669,43 @@ let appSettings = { vibration:true, reducedMotion:false };
 // masih diblokir (mis. dibuka di browser Chrome biasa saat development),
 // listener 'click' di atas tetap jadi fallback otomatis begitu ada
 // interaksi pertama.
-if(!musicMuted) startBgm();
+refreshBgmPlayback();
 function saveSettings(){
-  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion, sfxVolume, musicVolume })); }catch(e){}
+  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion, themeMode:appSettings.themeMode, muteMusicInGame:appSettings.muteMusicInGame, sfxVolume, musicVolume })); }catch(e){}
+}
+/* ------------------------------------------------------------
+   TEMA (Terang / Gelap / Bawaan Sistem) — Pengaturan > Tema.
+   Cukup pasang atribut data-theme di <html>; semua warna sudah
+   didefinisikan lewat CSS var (lihat html[data-theme="dark"] di
+   <style>), jadi satu baris ini langsung nyebar ke seluruh app. */
+function themeModeLabel(mode){
+  return mode==='system' ? 'Bawaan Sistem' : (mode==='dark' ? 'Gelap' : 'Terang');
+}
+function applyThemeMode(mode){
+  let effective = mode;
+  if(mode==='system'){
+    effective = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', effective==='dark' ? 'dark' : 'light');
+}
+function selectThemeMode(mode){
+  appSettings.themeMode = mode;
+  applyThemeMode(mode);
+  saveSettings();
+  closeModal();
+  const lbl = document.getElementById('themeModeLabel');
+  if(lbl) lbl.textContent = themeModeLabel(mode);
+}
+function openThemePicker(){
+  const modes = ['system','light','dark'];
+  const optsHtml = modes.map(m=>
+    `<button type="button" class="picker-option${appSettings.themeMode===m?' selected':''}" onclick="selectThemeMode('${m}')"><span>${themeModeLabel(m)}</span><span class="pk-dot"></span></button>`
+  ).join('');
+  showModal({
+    title:'Tema',
+    desc:`<div class="picker-list">${optsHtml}</div>`,
+    buttons:[{label:'Batal', cls:'btn-no', onClick:closeModal}]
+  });
 }
 function vibrate(pattern){
   if(!appSettings.vibration) return;
@@ -1522,8 +1719,29 @@ function onToggleSound(checked){
 }
 function onToggleMusic(checked){
   musicMuted = !checked;
-  if(musicMuted) stopBgm(); else startBgm();
+  refreshBgmPlayback();
   saveSettings();
+}
+function onToggleMuteMusicInGame(checked){
+  appSettings.muteMusicInGame = checked;
+  refreshBgmPlayback();
+  saveSettings();
+}
+/* Tombol musik bulat di topbar menu utama, DAN tombol musik di topbar
+   layar game (id beda, fungsi sama) — toggle cepat tanpa buka panel
+   Pengaturan, lalu sinkronkan ikon di mana pun tombolnya lagi tampil. */
+function quickToggleMusic(){
+  onToggleMusic(musicMuted);
+  syncMenuMusicIcon();
+  syncGameMusicIcon();
+}
+function syncMenuMusicIcon(){
+  const btn = document.getElementById('btnMusicToggleMenu');
+  if(btn) btn.textContent = musicMuted ? '🔇' : '🎵';
+}
+function syncGameMusicIcon(){
+  const btn = document.getElementById('btnMusicGame');
+  if(btn) btn.textContent = musicMuted ? '🔇' : '🎵';
 }
 function onToggleVibration(checked){ appSettings.vibration = checked; saveSettings(); }
 function onToggleReducedMotion(checked){ appSettings.reducedMotion = checked; saveSettings(); }
@@ -1546,6 +1764,11 @@ function onMusicVolumeChange(val){
 function settingsPanelHTML(){
   return `
     <div style="display:flex;flex-direction:column;text-align:left;">
+      <button type="button" class="settings-nav-row" onclick="openThemePicker()">
+        <span class="snr-icon">◐</span>
+        <span class="snr-text"><span class="snr-title">Tema</span><span class="snr-sub" id="themeModeLabel">${themeModeLabel(appSettings.themeMode)}</span></span>
+        <span class="snr-chevron">›</span>
+      </button>
       <div class="rule-row"><div class="rule-label">Suara (efek)</div>
         <label class="switch"><input type="checkbox" id="setSound" ${soundMuted?'':'checked'} onchange="onToggleSound(this.checked)"><span class="slider"></span></label></div>
       <div class="rule-row" style="display:block;">
@@ -1560,6 +1783,8 @@ function settingsPanelHTML(){
         <input type="range" min="1" max="10" step="1" value="${musicVolume}" style="width:100%;margin-top:6px;"
           oninput="document.getElementById('musicVolLabel').textContent=this.value" onchange="onMusicVolumeChange(this.value)">
       </div>
+      <div class="rule-row"><div class="rule-label">Matikan musik saat main<small>Musik tetap nyala di menu &amp; lobi, tapi mati begitu masuk ke papan permainan</small></div>
+        <label class="switch"><input type="checkbox" id="setMuteMusicInGame" ${appSettings.muteMusicInGame?'checked':''} onchange="onToggleMuteMusicInGame(this.checked)"><span class="slider"></span></label></div>
       <div class="rule-row"><div class="rule-label">Getar (vibration)<small>Getar singkat saat lempar dadu, bayar, dll (HP saja)</small></div>
         <label class="switch"><input type="checkbox" id="setVibration" ${appSettings.vibration?'checked':''} onchange="onToggleVibration(this.checked)"><span class="slider"></span></label></div>
       <div class="rule-row"><div class="rule-label">Animasi ringan<small>Bidak langsung pindah tanpa animasi jalan, lebih ringan di HP lawas</small></div>
@@ -1745,6 +1970,9 @@ function forceEndTurn(){
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  if(id==='screen-menu') syncMenuMusicIcon();
+  if(id==='screen-game') syncGameMusicIcon();
+  refreshBgmPlayback();
 }
 function openHowToModal(){
   const html = `
@@ -1825,91 +2053,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 00:17 WITA — v1.8.23.0017</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update build-android.yml</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update versi.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Delete capacitor_config.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>chore: publikasikan anumpoly.apk v1.8.14 (build #40) [skip ci]</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>chore: publikasikan anumpoly.apk v5 [skip ci]</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>chore: publikasikan anumpoly.apk v4 [skip ci]</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>chore: publikasikan anumpoly.apk v4 [skip ci]</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>chore: publikasikan anumpoly.apk v4 [skip ci]</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Create apkinstaller_file_paths.xml</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Delete capacitor.config.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Delete plugins/capacitor-apk-installer/android/src/build.gradle</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Create ApkInstallerPlugin.java</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update capacitor_config.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Delete plugins/capacitor-apk-installer</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Create capacitor-apk-installer</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update capacitor.config.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update build-android.yml</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update build-android.yml</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update build-android.yml</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Create build-android.yml</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Create capacitor.config.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Create package.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update index.html</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Create versi.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update index.html</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update index.html</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Update index.html</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>renam to index.html</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>index.html</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <!-- Baris di atas ini JANGAN dihapus/dipindah — CI (build-android.yml,
          step "Tambah entri Apa Yang Baru") menyisipkan entri rilis baru
          TEPAT SETELAH marker itu secara otomatis, tiap kali ada rilis
@@ -3496,7 +3639,7 @@ function renderWinnerStats(rankByNetWorth){
   let players = state.players.slice();
   if(rankByNetWorth) players.sort((a,b)=>netWorthOf(b)-netWorthOf(a));
   const rows = players.map((p,i)=>`
-    <div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.08);">
+    <div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:7px 0;border-bottom:1px solid rgba(18,52,86,0.08);">
       <span style="font-weight:800;color:${p.bankrupt?'var(--paper-dim)':'var(--gold)'};">${rankByNetWorth?('#'+(i+1)+' '):''}${p.name}${p.bankrupt?' (bangkrut)':''}</span>
       <span style="color:var(--paper-dim);text-align:right;">${rankByNetWorth?`💎 Net Worth ${fmt(netWorthOf(p))}<br>`:''}🏠${p.propsBought||0} beli · 🔒${p.timesJailed||0}× penjara<br>💸${fmt(p.rentPaid||0)} sewa dibayar · 💰${fmt(p.rentCollected||0)} sewa didapat</span>
     </div>`).join('');
@@ -3936,7 +4079,7 @@ function openHistory(){
   const entries = (state.log||[]).slice().reverse();
   const html = entries.length===0
     ? '<div style="color:var(--paper-dim);font-size:12px;">Belum ada kejadian.</div>'
-    : `<div class="deed-list" style="max-height:380px;">${entries.map(m=>`<div style="padding:7px 9px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px;line-height:1.4;">${m&&m.msg!=null?m.msg:m}</div>`).join('')}</div>`;
+    : `<div class="deed-list" style="max-height:380px;">${entries.map(m=>`<div style="padding:7px 9px;border-bottom:1px solid rgba(18,52,86,0.06);font-size:12px;line-height:1.4;">${m&&m.msg!=null?m.msg:m}</div>`).join('')}</div>`;
   showModal({ title:'📜 Riwayat Permainan', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}] });
 }
 
@@ -4213,7 +4356,7 @@ function openTradeOffer(){
     return;
   }
   const activePlayers = state.players.filter(p=>!p.bankrupt);
-  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(215,169,75,0.4);background:var(--ink2);color:var(--paper);font-size:13px;';
+  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--surface);color:var(--paper);font-size:13px;';
   const playerOpts = activePlayers.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   const propOpts = ownedProps.map(pp=>`<option value="${pp.idx}">${pp.name} — milik ${pp.ownerName}</option>`).join('');
   const html = `
@@ -4273,7 +4416,7 @@ function openSellOffer(presetIdx){
     showModal({title:'🤝 Tawarkan Properti', desc:'Tidak ada pemain lain untuk ditawarkan.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModalMaybeReturnToDebt}]});
     return;
   }
-  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(215,169,75,0.4);background:var(--ink2);color:var(--paper);font-size:13px;';
+  const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--surface);color:var(--paper);font-size:13px;';
   const propOpts = myProps.map(i=>`<option value="${i}" ${presetIdx===i?'selected':''}>${BOARD[i].name}</option>`).join('');
   const buyerOpts = buyers.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
   const html = `
