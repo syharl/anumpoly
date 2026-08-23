@@ -347,6 +347,42 @@ select.rule-select{background:rgba(18,52,86,0.08);color:var(--paper);border:1px 
 .snr-title{font-size:14.5px;font-weight:700;}
 .snr-sub{font-size:12px;color:var(--paper-dim);}
 .snr-chevron{color:var(--paper-dim);font-size:18px;flex:none;}
+
+/* ---------- PAGE HEADER (bar berwarna di atas + panah kembali kiri-atas) ----------
+   Dipakai di semua layar sub (Pengaturan, Pilih Mode, Setup, Online, Akun)
+   supaya gaya navigasinya konsisten: bar gelap penuh lebar nempel di atas,
+   tombol panah kembali di kiri, judul (+ ikon opsional) di sebelahnya. */
+.page-header{
+  width:100%;display:flex;align-items:center;gap:10px;
+  padding:calc(14px + env(safe-area-inset-top)) 14px 14px 6px;
+  background:linear-gradient(135deg,#2E4A66,#16324F);
+  box-shadow:0 4px 14px rgba(0,0,0,0.25);position:relative;z-index:2;flex:none;
+}
+.page-header .ph-back{
+  flex:none;width:36px;height:36px;border-radius:50%;border:none;background:transparent;
+  color:#EAF4FC;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0;
+}
+.page-header .ph-back:active{background:rgba(255,255,255,0.14);}
+.page-header .ph-icon{flex:none;font-size:19px;}
+.page-header .ph-title{margin:0;color:#EAF4FC;font-size:20px;font-weight:800;font-family:'Playfair Display',serif;line-height:1.15;}
+.page-header .ph-sub{margin:1px 0 0;color:#9EC7EC;font-size:12px;font-weight:500;}
+html[data-theme="dark"] .page-header{background:linear-gradient(135deg,#0F2036,#0B1B2E);}
+
+/* ---------- Isi layar di bawah page-header, lebar konsisten ---------- */
+.page-body{width:100%;max-width:520px;padding:18px 18px 90px;}
+
+/* ---------- Label section ala referensi ("Umum", dst) + garis pemisah ---------- */
+.settings-section-label{color:var(--gold);font-size:13px;font-weight:800;letter-spacing:.6px;margin:20px 2px 8px;}
+.settings-section-label:first-child{margin-top:2px;}
+.settings-divider{height:1px;background:rgba(47,111,168,0.18);margin-bottom:2px;}
+
+/* ---------- Baris toggle ala referensi: ikon kiri + judul/subjudul + switch kanan ---------- */
+.settings-toggle-row{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid rgba(47,111,168,0.15);}
+.settings-toggle-row:last-child{border-bottom:none;}
+.str-icon{flex:none;width:22px;text-align:center;font-size:19px;}
+.str-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.str-title{font-size:14.5px;font-weight:700;color:var(--paper);}
+.str-sub{font-size:11.5px;color:var(--paper-dim);line-height:1.4;}
 .switch{position:relative;width:44px;height:24px;flex:none;}
 .switch input{opacity:0;width:0;height:0;}
 .slider{position:absolute;inset:0;background:rgba(18,52,86,0.15);border-radius:999px;transition:.2s;cursor:pointer;}
@@ -716,27 +752,40 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 </div>
 
 <!-- ================= MODE SELECT ================= -->
-<div id="screen-mode" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
-  <div class="setup-header">
-    <h2>Pilih Mode Main</h2>
-    <p>Gantian di 1 HP, atau tiap pemain pegang HP sendiri?</p>
+<div id="screen-mode" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
+  <div class="page-header">
+    <button type="button" class="ph-back" onclick="goToMenu()">←</button>
+    <span class="ph-icon">🎮</span>
+    <div><h2 class="ph-title">Pilih Mode Main</h2><p class="ph-sub">Gantian di 1 HP, atau tiap pemain pegang HP sendiri?</p></div>
   </div>
-  <div class="card" style="cursor:pointer" onclick="goToSetup()">
-    <h3>📱 Offline — Bergantian di 1 HP</h3>
-    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Semua pemain main bergantian di HP yang sama, seperti catur mabar offline. Tidak perlu internet. Bisa tambah pemain bot 🤖 kalau pemain kurang.</p>
+  <div class="page-body">
+    <div class="card" style="cursor:pointer" onclick="goToSetup()">
+      <h3>📱 Offline — Bergantian di 1 HP</h3>
+      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Semua pemain main bergantian di HP yang sama, seperti catur mabar offline. Tidak perlu internet. Bisa tambah pemain bot 🤖 kalau pemain kurang.</p>
+    </div>
+    <div class="card" style="cursor:pointer" onclick="goToOnline()">
+      <h3>🌐 Online — Multiplayer antar HP</h3>
+      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing dan main di waktu bersamaan lewat kode Room. Butuh internet — semua pemain buka aplikasi ini lalu gabung pakai kode Room yang sama. Host bisa tambah bot 🤖 juga.</p>
+    </div>
   </div>
-  <div class="card" style="cursor:pointer" onclick="goToOnline()">
-    <h3>🌐 Online — Multiplayer antar HP</h3>
-    <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing dan main di waktu bersamaan lewat kode Room. Butuh internet — semua pemain buka aplikasi ini lalu gabung pakai kode Room yang sama. Host bisa tambah bot 🤖 juga.</p>
+</div>
+
+<!-- ================= PENGATURAN (layar penuh, bukan modal) ================= -->
+<div id="screen-settings" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
+  <div class="page-header">
+    <button type="button" class="ph-back" onclick="goToMenu()">←</button>
+    <span class="ph-icon">⚙️</span>
+    <h2 class="ph-title">Pengaturan</h2>
   </div>
-  <div style="height:70px"></div>
-  <div class="sticky-bottom"><button class="btn-ghost" onclick="goToMenu()">Kembali</button></div>
+  <div class="page-body" id="settingsScreenBody"></div>
 </div>
 
 <!-- ================= AKUN (LOGIN/DAFTAR/PROFIL) ================= -->
 <div id="screen-account" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
-  <div style="display:flex;align-items:center;padding:18px 16px 6px;">
-    <button onclick="goToMenu()" style="background:none;border:none;color:var(--gold);font-size:22px;padding:6px 10px 6px 0;cursor:pointer;">←</button>
+  <div class="page-header">
+    <button type="button" class="ph-back" onclick="goToMenu()">←</button>
+    <span class="ph-icon">👤</span>
+    <h2 class="ph-title">Akun</h2>
   </div>
   <div style="text-align:center;padding:8px 20px 4px;">
     <div class="display" style="font-weight:800;font-size:15px;letter-spacing:2px;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px;">♟ Monopoli Dunia</div>
@@ -803,22 +852,24 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
 </div>
 
 <!-- ================= ONLINE (BUAT/GABUNG + LOBBY) ================= -->
-<div id="screen-online" class="screen" style="padding:20px 16px 90px;width:100%;max-width:480px;align-items:stretch;">
-  <div class="setup-header">
-    <h2>Main Online</h2>
-    <p id="onlineSubText">Buat Room lalu bagikan kodenya ke pemain lain, atau gabung pakai kode yang sudah ada.</p>
+<div id="screen-online" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
+  <div class="page-header">
+    <button type="button" class="ph-back" onclick="leaveOnline()">←</button>
+    <span class="ph-icon">🌐</span>
+    <div><h2 class="ph-title">Main Online</h2><p class="ph-sub" id="onlineSubText">Buat Room lalu bagikan kodenya ke pemain lain, atau gabung pakai kode yang sudah ada.</p></div>
   </div>
+  <div class="page-body">
 
   <div id="onlineChooseView">
     <div class="card">
       <h3>Buat Room Baru</h3>
-      <div class="player-row"><input id="createNameInput" placeholder="Nama kamu" maxlength="14"></div>
+      <div class="player-row"><input id="createNameInput" placeholder="Nama kamu" maxlength="14" autocomplete="off" autocorrect="off" spellcheck="false"></div>
       <button class="btn-big" style="width:100%;margin-top:8px;" onclick="createRoomFlow()">Buat Room</button>
     </div>
     <div class="card">
       <h3>Gabung Room</h3>
       <div class="player-row"><input id="joinCodeInput" placeholder="Kode Room (4 huruf/angka)" maxlength="4" style="text-transform:uppercase;"></div>
-      <div class="player-row"><input id="joinNameInput" placeholder="Nama kamu" maxlength="14"></div>
+      <div class="player-row"><input id="joinNameInput" placeholder="Nama kamu" maxlength="14" autocomplete="off" autocorrect="off" spellcheck="false"></div>
       <button class="btn-big" style="width:100%;margin-top:8px;" onclick="joinRoomFlow()">Gabung</button>
     </div>
   </div>
@@ -846,33 +897,81 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
     </div>
     <div class="card" id="lobbyRulesCard2">
       <h3>Aturan (diatur host)</h3>
-      <div class="rule-row"><div class="rule-label">Uang awal</div>
-        <select class="rule-select" id="lobbyStartMoney" onchange="markModeCustom('lobby')"><option value="1000">$1.000</option><option value="1500" selected>$1.500</option><option value="2000">$2.000</option><option value="2500">$2.500</option></select></div>
-      <div class="rule-row"><div class="rule-label">Gaji lewat Mulai</div>
-        <select class="rule-select" id="lobbyGoSalary" onchange="markModeCustom('lobby')"><option value="100">$100</option><option value="150">$150</option><option value="200" selected>$200</option><option value="300">$300</option></select></div>
-      <div class="rule-row"><div class="rule-label">3× Dobel = Penjara</div><label class="switch"><input type="checkbox" id="lobbyDoublesJail" checked onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Dana Parkir Bebas</div><label class="switch"><input type="checkbox" id="lobbyFreeParking" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div><label class="switch"><input type="checkbox" id="lobbyHouseFreeBuild" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Sewa properti ×1,5<small>Dipakai Quick Match</small></div><label class="switch"><input type="checkbox" id="lobbyRentBoost" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Harga rumah lebih murah<small>Dipakai Quick Match</small></div><label class="switch"><input type="checkbox" id="lobbyCheapHouses" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">🔨 Lelang Saja (wajib lelang)<small>Tanah kosong selalu dilelang, tidak bisa dibeli langsung</small></div><label class="switch"><input type="checkbox" id="lobbyAuctionOnly" onchange="markModeCustom('lobby')"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">⏱️ Time Attack<small>Menang berdasar Net Worth saat waktu habis</small></div>
-        <select class="rule-select" id="lobbyTimeAttack" onchange="markModeCustom('lobby')"><option value="0" selected>Nonaktif</option><option value="15">15 menit</option><option value="30">30 menit</option><option value="45">45 menit</option><option value="60">60 menit</option></select></div>
+      <div class="rule-row">
+        <div class="rule-label">Uang awal<small>Modal setiap pemain di awal permainan</small></div>
+        <select class="rule-select" id="lobbyStartMoney" onchange="markModeCustom('lobby')">
+          <option value="1000">$1.000</option>
+          <option value="1500" selected>$1.500</option>
+          <option value="2000">$2.000</option>
+          <option value="2500">$2.500</option>
+        </select>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">Gaji lewat Mulai<small>Uang saat melewati/mendarat di petak Mulai</small></div>
+        <select class="rule-select" id="lobbyGoSalary" onchange="markModeCustom('lobby')">
+          <option value="100">$100</option>
+          <option value="150">$150</option>
+          <option value="200" selected>$200</option>
+          <option value="300">$300</option>
+        </select>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">3× Dobel = Penjara<small>Aturan resmi standar</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyDoublesJail" checked onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">Dana Parkir Bebas<small>Pajak &amp; denda terkumpul, diambil siapa saja yang mendarat di Parkir Bebas (house rule populer)</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyFreeParking" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">💰 Bonus Tetap $500 di Parkir Bebas<small>Dapat $500 flat tiap kali mendarat di Parkir Bebas — bisa digabung dengan Dana Parkir Bebas di atas atau dipakai sendirian (house rule populer lain)</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyFreeParkingFixedBonus" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">Sewa properti kosong tanpa rumah<small>2× sewa dasar jika satu pemain kuasai satu set warna penuh</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyMonopolyRent" checked onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyHouseFreeBuild" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">Sewa properti ×1,5<small>Semua sewa properti/stasiun/perusahaan naik 1,5× — bikin ekonomi berputar lebih cepat (dipakai Quick Match)</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyRentBoost" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">Harga rumah lebih murah<small>Biaya bangun rumah/hotel dipotong ±30% (dipakai Quick Match)</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyCheapHouses" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">🔨 Lelang Saja (wajib lelang)<small>Tanah kosong tidak bisa dibeli langsung — selalu dilelang ke semua pemain</small></div>
+        <label class="switch"><input type="checkbox" id="lobbyAuctionOnly" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+      </div>
+      <div class="rule-row">
+        <div class="rule-label">⏱️ Time Attack<small>Permainan otomatis berhenti setelah waktu habis, menang berdasar Net Worth tertinggi</small></div>
+        <select class="rule-select" id="lobbyTimeAttack" onchange="markModeCustom('lobby')">
+          <option value="0" selected>Nonaktif</option>
+          <option value="15">15 menit</option>
+          <option value="30">30 menit</option>
+          <option value="45">45 menit</option>
+          <option value="60">60 menit</option>
+        </select>
+      </div>
     </div>
     <div id="lobbyWaitingNote" style="text-align:center;color:var(--paper-dim);font-size:13px;margin-top:6px;"></div>
     <button class="btn-big" style="width:100%;margin-top:12px;" id="lobbyStartBtn" onclick="hostStartOnline()">Mulai Permainan</button>
   </div>
-
-  <div style="height:70px"></div>
-  <div class="sticky-bottom"><button class="btn-ghost" onclick="leaveOnline()">Kembali</button></div>
+  </div>
 </div>
 
 <!-- ================= SETUP ================= -->
-<div id="screen-setup" class="screen">
-  <div class="setup-header">
-    <h2>Pengaturan Permainan</h2>
-    <p>Atur pemain lalu sesuaikan aturan bila perlu</p>
+<div id="screen-setup" class="screen" style="padding:0;align-items:stretch;">
+  <div class="page-header">
+    <button type="button" class="ph-back" onclick="goToMenu()">←</button>
+    <span class="ph-icon">🛠️</span>
+    <div><h2 class="ph-title">Pengaturan Permainan</h2><p class="ph-sub">Atur pemain lalu sesuaikan aturan bila perlu</p></div>
   </div>
+  <div class="page-body" style="max-width:520px;">
 
   <div class="card">
     <h3>🎮 Mode Permainan</h3>
@@ -925,6 +1024,10 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
       <label class="switch"><input type="checkbox" id="ruleFreeParking" onchange="markModeCustom('setup')"><span class="slider"></span></label>
     </div>
     <div class="rule-row">
+      <div class="rule-label">💰 Bonus Tetap $500 di Parkir Bebas<small>Dapat $500 flat tiap kali mendarat di Parkir Bebas — bisa digabung dengan Dana Parkir Bebas di atas atau dipakai sendirian (house rule populer lain)</small></div>
+      <label class="switch"><input type="checkbox" id="ruleFreeParkingFixedBonus" onchange="markModeCustom('setup')"><span class="slider"></span></label>
+    </div>
+    <div class="rule-row">
       <div class="rule-label">Sewa properti kosong tanpa rumah<small>2× sewa dasar jika satu pemain kuasai satu set warna penuh</small></div>
       <label class="switch"><input type="checkbox" id="ruleMonopolyRent" checked onchange="markModeCustom('setup')"><span class="slider"></span></label>
     </div>
@@ -957,8 +1060,8 @@ input:disabled + .slider{opacity:0.4;cursor:default;}
   </div>
 
   <div style="height:70px"></div>
+  </div>
   <div class="sticky-bottom">
-    <button class="btn-ghost" onclick="goToMenu()">Kembali</button>
     <button class="btn-big" onclick="startGame()">Mulai Permainan</button>
   </div>
 </div>
@@ -1790,39 +1893,65 @@ function onMusicVolumeChange(val){
 function settingsPanelHTML(){
   return `
     <div style="display:flex;flex-direction:column;text-align:left;">
+      <div class="settings-section-label">Umum</div>
+      <div class="settings-divider"></div>
       <button type="button" class="settings-nav-row" onclick="openThemePicker()">
         <span class="snr-icon">◐</span>
         <span class="snr-text"><span class="snr-title">Tema</span><span class="snr-sub" id="themeModeLabel">${themeModeLabel(appSettings.themeMode)}</span></span>
         <span class="snr-chevron">›</span>
       </button>
-      <div class="rule-row"><div class="rule-label">Suara (efek)</div>
-        <label class="switch"><input type="checkbox" id="setSound" ${soundMuted?'':'checked'} onchange="onToggleSound(this.checked)"><span class="slider"></span></label></div>
-      <div class="rule-row" style="display:block;">
-        <div class="rule-label">Volume efek suara<small>Level <span id="sfxVolLabel">${sfxVolume}</span>/10</small></div>
-        <input type="range" min="1" max="10" step="1" value="${sfxVolume}" style="width:100%;margin-top:6px;"
+
+      <div class="settings-section-label">Suara &amp; Musik</div>
+      <div class="settings-divider"></div>
+      <div class="settings-toggle-row">
+        <span class="str-icon">🎵</span>
+        <span class="str-text"><span class="str-title">Suara (efek)</span></span>
+        <label class="switch"><input type="checkbox" id="setSound" ${soundMuted?'':'checked'} onchange="onToggleSound(this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="settings-toggle-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span class="str-icon">🎚️</span>
+          <span class="str-text"><span class="str-title">Volume efek suara</span><span class="str-sub">Level <span id="sfxVolLabel">${sfxVolume}</span>/10</span></span>
+        </div>
+        <input type="range" min="1" max="10" step="1" value="${sfxVolume}" style="width:100%;"
           oninput="document.getElementById('sfxVolLabel').textContent=this.value" onchange="onSfxVolumeChange(this.value)">
       </div>
-      <div class="rule-row"><div class="rule-label">Musik latar</div>
-        <label class="switch"><input type="checkbox" id="setMusic" ${musicMuted?'':'checked'} onchange="onToggleMusic(this.checked)"><span class="slider"></span></label></div>
-      <div class="rule-row" style="display:block;">
-        <div class="rule-label">Volume musik latar<small>Level <span id="musicVolLabel">${musicVolume}</span>/10</small></div>
-        <input type="range" min="1" max="10" step="1" value="${musicVolume}" style="width:100%;margin-top:6px;"
+      <div class="settings-toggle-row">
+        <span class="str-icon">🎶</span>
+        <span class="str-text"><span class="str-title">Musik</span></span>
+        <label class="switch"><input type="checkbox" id="setMusic" ${musicMuted?'':'checked'} onchange="onToggleMusic(this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="settings-toggle-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span class="str-icon">🎚️</span>
+          <span class="str-text"><span class="str-title">Volume musik</span><span class="str-sub">Level <span id="musicVolLabel">${musicVolume}</span>/10</span></span>
+        </div>
+        <input type="range" min="1" max="10" step="1" value="${musicVolume}" style="width:100%;"
           oninput="document.getElementById('musicVolLabel').textContent=this.value" onchange="onMusicVolumeChange(this.value)">
       </div>
-      <div class="rule-row"><div class="rule-label">Matikan musik saat main<small>Musik tetap nyala di menu &amp; lobi, tapi mati begitu masuk ke papan permainan</small></div>
-        <label class="switch"><input type="checkbox" id="setMuteMusicInGame" ${appSettings.muteMusicInGame?'checked':''} onchange="onToggleMuteMusicInGame(this.checked)"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Getar (vibration)<small>Getar singkat saat lempar dadu, bayar, dll (HP saja)</small></div>
-        <label class="switch"><input type="checkbox" id="setVibration" ${appSettings.vibration?'checked':''} onchange="onToggleVibration(this.checked)"><span class="slider"></span></label></div>
-      <div class="rule-row"><div class="rule-label">Animasi ringan<small>Bidak langsung pindah tanpa animasi jalan, lebih ringan di HP lawas</small></div>
-        <label class="switch"><input type="checkbox" id="setReduced" ${appSettings.reducedMotion?'checked':''} onchange="onToggleReducedMotion(this.checked)"><span class="slider"></span></label></div>
+      <div class="settings-toggle-row">
+        <span class="str-icon">🔇</span>
+        <span class="str-text"><span class="str-title">Matikan musik saat main</span><span class="str-sub">Musik tetap nyala di menu &amp; lobi, tapi mati begitu masuk ke papan permainan</span></span>
+        <label class="switch"><input type="checkbox" id="setMuteMusicInGame" ${appSettings.muteMusicInGame?'checked':''} onchange="onToggleMuteMusicInGame(this.checked)"><span class="slider"></span></label>
+      </div>
+
+      <div class="settings-section-label">Lainnya</div>
+      <div class="settings-divider"></div>
+      <div class="settings-toggle-row">
+        <span class="str-icon">📳</span>
+        <span class="str-text"><span class="str-title">Getar (vibration)</span><span class="str-sub">Getar singkat saat lempar dadu, bayar, dll (HP saja)</span></span>
+        <label class="switch"><input type="checkbox" id="setVibration" ${appSettings.vibration?'checked':''} onchange="onToggleVibration(this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="settings-toggle-row">
+        <span class="str-icon">🎞️</span>
+        <span class="str-text"><span class="str-title">Animasi ringan</span><span class="str-sub">Bidak langsung pindah tanpa animasi jalan, lebih ringan di HP lawas</span></span>
+        <label class="switch"><input type="checkbox" id="setReduced" ${appSettings.reducedMotion?'checked':''} onchange="onToggleReducedMotion(this.checked)"><span class="slider"></span></label>
+      </div>
     </div>`;
 }
 function openMainMenuSettings(){
-  showModal({
-    title:'⚙️ Pengaturan',
-    desc: settingsPanelHTML(),
-    buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]
-  });
+  document.getElementById('settingsScreenBody').innerHTML = settingsPanelHTML();
+  showScreen('screen-settings');
 }
 
 function saveGameLocal(){
@@ -2011,7 +2140,7 @@ function openHowToModal(){
     • <b>Pajak</b> → bayar sejumlah nominal ke bank.<br>
     • <b>Masuk Penjara</b> → bidak langsung dipindah ke Penjara, giliran berakhir.<br>
     • <b>Penjara / Hanya Lewat</b> → aman, tidak terjadi apa-apa kalau cuma mampir.<br>
-    • <b>Parkir Bebas</b> → kalau aturan "Dana Parkir Bebas" aktif, ambil semua uang yang terkumpul dari pajak/denda pemain lain.<br>
+    • <b>Parkir Bebas</b> → kalau aturan "Dana Parkir Bebas" aktif, ambil semua uang yang terkumpul dari pajak/denda pemain lain; kalau aturan "Bonus Tetap $500 di Parkir Bebas" aktif, dapat tambahan $500 flat juga (keduanya bisa aktif bersamaan).<br>
     • <b>Mulai</b> → tiap kali lewat atau mendarat tepat di petak ini, dapat gaji sesuai aturan room.</p>
     <p><b>Dadu dobel:</b> Kalau dua dadu sama, lempar lagi setelah giliranmu selesai. Tapi kalau dobel 3× berturut-turut (dan aturan itu aktif), langsung masuk penjara tanpa jalan.</p>
     <p><b>Di penjara:</b> Tiap giliran pilih salah satu — coba lempar dobel untuk bebas, bayar $50 untuk bebas langsung, atau pakai kartu "Bebas dari Penjara" kalau punya. Gagal dobel 3× berturut-turut = wajib bayar $50 dan keluar.</p>
@@ -2079,15 +2208,19 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">23 Agustus 2026, 10:47 WITA — v1.8.23.1047</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <!-- Baris di atas ini JANGAN dihapus/dipindah — CI (build-android.yml,
          step "Tambah entri Apa Yang Baru") menyisipkan entri rilis baru
          TEPAT SETELAH marker itu secara otomatis, tiap kali ada rilis
          (sekalipun kecil). Entri-entri lama di bawah ini tetap seperti
          biasa, ditulis manual oleh developer untuk rilis-rilis penting. -->
+    <div class="changelog-entry">
+      <div class="cl-date">23 Agustus 2026 — Pengaturan Layar Penuh &amp; Room Online Otomatis Dibersihkan</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Layar Pengaturan (⚙️) di menu utama sekarang layar penuh, bukan lagi jendela pop-up — sama seperti Pilih Mode Main, Main Online, dan Akun, semuanya sekarang pakai tombol "← Kembali" konsisten di kiri atas.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Aturan "Sewa properti kosong tanpa rumah" sekarang bisa diatur host di mode Online juga (sebelumnya cuma ada di mode Offline dan online-nya selalu aktif dipaksa).</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>House rule baru: <b>💰 Bonus Tetap $500 di Parkir Bebas</b> — dapat $500 flat tiap mendarat di Parkir Bebas, bisa digabung atau dipakai terpisah dari "Dana Parkir Bebas".</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Kolom nama pemain di layar Pengaturan Permainan (Offline) kadang terisi otomatis sendiri dengan teks aneh (mis. "on") akibat autofill HP — sekarang kolom nama selalu kosong sampai diketik sendiri.</div>
+      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag fix">Perbaikan</span>Data room online (kode Room &amp; state permainan) sekarang otomatis dihapus dari server begitu semua pemain manusia sudah keluar dari room itu — tidak lagi numpuk jadi room "hantu" yang cuma tersisa bot tanpa ada yang menonton.</div>
+    </div>
     <div class="changelog-entry">
       <div class="cl-date">22 Agustus 2026 — Lelang Lebih Nekat &amp; Bisa Kelola Properti Dulu</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Lelang sekarang dimulai dari <b>harga beli normal</b> properti itu di papan (sebelumnya dimulai dari 10% harga, kadang bikin properti mahal jatuh ke tangan orang dengan harga terlalu murah).</div>
@@ -2312,7 +2445,8 @@ async function hostStartOnline(){
     goSalary: parseInt(document.getElementById('lobbyGoSalary').value),
     doublesToJail: document.getElementById('lobbyDoublesJail').checked,
     freeParkingPot: document.getElementById('lobbyFreeParking').checked,
-    monopolyDoubleRent: true,
+    freeParkingFixedBonus: document.getElementById('lobbyFreeParkingFixedBonus').checked,
+    monopolyDoubleRent: document.getElementById('lobbyMonopolyRent').checked,
     houseFreeBuild: document.getElementById('lobbyHouseFreeBuild').checked,
     ...readModeExtraRules('lobby'),
   };
@@ -2331,7 +2465,7 @@ async function hostStartOnline(){
     turnPhase:'canRoll', lastRoll:[1,1], propStates,
     chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
     chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
-    rev:0, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, auction:null, lastMoveMeta:null, timeAttackEndedShown:false
+    rev:0, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, auction:null, lastMoveMeta:null, timeAttackEndedShown:false, leftSlots:[]
   };
   log(`Room ${lobby.code} dimulai dengan ${players.length} pemain online. Uang awal ${fmt(rules.startMoney)}.`);
   if(rules.timeAttackEndsAt) log(`⏱️ Mode Time Attack aktif — permainan berhenti otomatis dalam ${Math.round((rules.timeAttackEndsAt-Date.now())/60000)} menit, menang berdasar Net Worth tertinggi.`);
@@ -2359,7 +2493,7 @@ async function beginOnlineGameFromLobby(){
       turnPhase:payload.turnPhase, propStates:payload.propStates, lastRoll:payload.lastRoll,
       chanceDeckIds:payload.chanceDeckIds, chestDeckIds:payload.chestDeckIds, rev:payload.rev,
       pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:payload.pendingTradeOffer||null,
-      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null
+      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null, leftSlots: payload.leftSlots||[]
     };
     buildBoardDOM();
     showScreen('screen-game');
@@ -2449,6 +2583,7 @@ function applyRemoteState(payload){
   state.pendingTradeOffer = payload.pendingTradeOffer||null;
   state.auction = payload.auction||null;
   state.lastMoveMeta = payload.lastMoveMeta||null;
+  state.leftSlots = payload.leftSlots||[];
 
   remoteAnimQueue.push({payload, prevOffer, prevPlayers, movedEntries, newLogEntries, rolledNew});
   runNextRemoteAnim();
@@ -2586,6 +2721,7 @@ function serializeState(){
     pendingTradeOffer: state.pendingTradeOffer||null,
     auction: state.auction||null,
     lastMoveMeta: state.lastMoveMeta||null,
+    leftSlots: state.leftSlots||[],
   };
 }
 async function syncPush(){
@@ -2645,6 +2781,7 @@ async function syncPush(){
           state.pendingTradeOffer = remote.pendingTradeOffer||null;
           state.auction = remote.auction||null;
           state.lastMoveMeta = remote.lastMoveMeta||null;
+          state.leftSlots = remote.leftSlots||[];
           myIds.forEach(id=>{
             if(localPlayersSnap[id]){
               const idx = state.players.findIndex(pl=>pl.id===id);
@@ -2726,6 +2863,12 @@ function renderPlayerInputs(){
     const input=document.createElement('input');
     input.placeholder='Nama Pemain '+(i+1)+' ('+TOKEN_NAMES[i]+')';
     input.maxLength=14;
+    input.type='text';
+    input.autocomplete='off';
+    input.setAttribute('autocapitalize','words');
+    input.setAttribute('autocorrect','off');
+    input.setAttribute('spellcheck','false');
+    input.name='pemainNama_'+i+'_'+Date.now();
     input.value = prevVals[i] || (i===0 && currentProfile && currentProfile.display_name ? currentProfile.display_name : '');
     input.id='playerName'+i;
     row.appendChild(dot); row.appendChild(input);
@@ -2748,34 +2891,34 @@ const MODE_PRESETS = {
   classic: {
     label:'🏠 Classic Mode',
     desc:'Mode default, paling dekat dengan Monopoly tradisional. Pemain terakhir yang tidak bangkrut menang.',
-    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, monopolyRent:true,
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:0
   },
   quick: {
     label:'⚡ Quick Match',
     desc:'Cocok untuk main cepat/digital: sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, tanpa aturan komplek untuk membangun. Ekonomi berputar lebih cepat, pemain bangkrut lebih cepat juga.',
-    startMoney:2000, goSalary:300, doublesJail:true, freeParking:false, monopolyRent:true,
+    startMoney:2000, goSalary:300, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:true, rentBoost:true, cheapHouses:true, auctionOnly:false, timeAttack:0
   },
   timeattack: {
     label:'⏱️ Time Attack',
     desc:'Tidak ada yang menang sampai bangkrut — permainan berhenti otomatis setelah waktu habis. Pemenang ditentukan dari Net Worth tertinggi (uang tunai + properti + rumah − hutang).',
-    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, monopolyRent:true,
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:30
   },
   auction: {
     label:'🔨 Auction Only',
     desc:'Tanah kosong tidak bisa dibeli langsung — selalu masuk lelang ke semua pemain. Memunculkan bluffing, bidding, strategi ekonomi, dan perang harga. Bisa jadi mode paling strategis.',
-    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, monopolyRent:true,
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:true, timeAttack:0
   }
 };
 function ruleElId(scope, base){
   const setupMap = { StartMoney:'ruleStartMoney', GoSalary:'ruleGoSalary', DoublesJail:'ruleDoublesJail',
-    FreeParking:'ruleFreeParking', MonopolyRent:'ruleMonopolyRent', HouseFreeBuild:'ruleHouseFreeBuild',
+    FreeParking:'ruleFreeParking', FreeParkingFixedBonus:'ruleFreeParkingFixedBonus', MonopolyRent:'ruleMonopolyRent', HouseFreeBuild:'ruleHouseFreeBuild',
     RentBoost:'ruleRentBoost', CheapHouses:'ruleCheapHouses', AuctionOnly:'ruleAuctionOnly', TimeAttack:'ruleTimeAttack' };
   const lobbyMap = { StartMoney:'lobbyStartMoney', GoSalary:'lobbyGoSalary', DoublesJail:'lobbyDoublesJail',
-    FreeParking:'lobbyFreeParking', HouseFreeBuild:'lobbyHouseFreeBuild', RentBoost:'lobbyRentBoost',
+    FreeParking:'lobbyFreeParking', FreeParkingFixedBonus:'lobbyFreeParkingFixedBonus', MonopolyRent:'lobbyMonopolyRent', HouseFreeBuild:'lobbyHouseFreeBuild', RentBoost:'lobbyRentBoost',
     CheapHouses:'lobbyCheapHouses', AuctionOnly:'lobbyAuctionOnly', TimeAttack:'lobbyTimeAttack' };
   return (scope==='lobby' ? lobbyMap : setupMap)[base] || null;
 }
@@ -2843,6 +2986,7 @@ function selectModePreset(preset, scope){
   setRuleField(scope,'GoSalary',cfg.goSalary);
   setRuleField(scope,'DoublesJail',cfg.doublesJail);
   setRuleField(scope,'FreeParking',cfg.freeParking);
+  setRuleField(scope,'FreeParkingFixedBonus',cfg.freeParkingFixedBonus);
   setRuleField(scope,'MonopolyRent',cfg.monopolyRent);
   setRuleField(scope,'HouseFreeBuild',cfg.houseFreeBuild);
   setRuleField(scope,'RentBoost',cfg.rentBoost);
@@ -2882,6 +3026,7 @@ function startGame(){
     goSalary: parseInt(document.getElementById('ruleGoSalary').value),
     doublesToJail: document.getElementById('ruleDoublesJail').checked,
     freeParkingPot: document.getElementById('ruleFreeParking').checked,
+    freeParkingFixedBonus: document.getElementById('ruleFreeParkingFixedBonus').checked,
     monopolyDoubleRent: document.getElementById('ruleMonopolyRent').checked,
     houseFreeBuild: document.getElementById('ruleHouseFreeBuild').checked,
     ...readModeExtraRules('setup'),
@@ -2923,6 +3068,41 @@ function startGame(){
   beginPlayerTurn();
 }
 
+/* ------------------------------------------------------------
+   Saat pemain online menekan "Keluar ke Menu Utama" (baik masih
+   hidup, sudah bangkrut/menonton, atau menang), tandai slotnya
+   sebagai "sudah keluar" di server (leftSlots). Kalau ternyata itu
+   pemain manusia TERAKHIR yang tersisa (semua pemain non-bot
+   lainnya sudah sama-sama keluar), room ini sudah tidak berguna
+   lagi — cuma menyisakan bot yang tidak akan pernah ada yang
+   melihat hasilnya — jadi datanya (mpstate_ dan mproom_) langsung
+   dihapus dari server supaya tidak numpuk/bebani penyimpanan. */
+async function leaveOnlineGameAndCleanup(){
+  if(!state || state.mode!=='online' || !state.roomCode || myOnlineSlot==null) return;
+  const roomCode = state.roomCode;
+  try{
+    let leftSlots = state.leftSlots||[];
+    let players = state.players||[];
+    try{
+      const res = await window.storage.get('mpstate_'+roomCode, true);
+      if(res){
+        const remote = JSON.parse(res.value);
+        leftSlots = remote.leftSlots||[];
+        players = remote.players||players;
+      }
+    }catch(e){}
+    if(!leftSlots.includes(myOnlineSlot)) leftSlots = [...leftSlots, myOnlineSlot];
+    const humanIds = players.filter(p=>!p.isBot).map(p=>p.id);
+    const allHumansGone = humanIds.length>0 && humanIds.every(id=>leftSlots.includes(id));
+    if(allHumansGone){
+      await window.storage.delete('mpstate_'+roomCode, true);
+      try{ await window.storage.delete('mproom_'+roomCode, true); }catch(e){}
+    }else{
+      const payload = { ...serializeState(), leftSlots };
+      await window.storage.set('mpstate_'+roomCode, JSON.stringify(payload), true);
+    }
+  }catch(e){}
+}
 function confirmQuit(){
   const isHotseat = state && state.mode==='hotseat';
   showModal({
@@ -2932,10 +3112,11 @@ function confirmQuit(){
       : 'Kamu akan meninggalkan room online ini.',
     buttons:[
       {label:'Batal', cls:'btn-no', onClick:closeModal},
-      {label:'Ya, Keluar', cls:'btn-danger', onClick:()=>{
+      {label:'Ya, Keluar', cls:'btn-danger', onClick:async ()=>{
         closeModal();
         stopTurnTimer();
         if(isHotseat) saveGameLocal();
+        else await leaveOnlineGameAndCleanup();
         clearInterval(gamePollTimer);
         // PENTING: sebelumnya di sini cuma clearInterval(gamePollTimer),
         // TAPI channel Supabase Realtime (gameRealtimeChannel) tidak
@@ -3399,11 +3580,18 @@ function landOnTile(p, wasDouble, fromCard, forceDoubleRent){
   if(t.type==='go'){ finishLanding(p, wasDouble); return; }
   if(t.type==='jail'){ finishLanding(p, wasDouble); return; }
   if(t.type==='freeparking'){
+    let bonus = 0;
     if(state.rules.freeParkingPot && state.freeParkingPot>0){
-      p.money += state.freeParkingPot;
-      showMoneyFx(p.id, state.freeParkingPot);
-      log(`${p.name} mengambil Dana Parkir Bebas sebesar ${fmt(state.freeParkingPot)}!`);
+      bonus += state.freeParkingPot;
       state.freeParkingPot=0;
+    }
+    if(state.rules.freeParkingFixedBonus){
+      bonus += 500;
+    }
+    if(bonus>0){
+      p.money += bonus;
+      showMoneyFx(p.id, bonus);
+      log(`${p.name} mengambil ${fmt(bonus)} di Parkir Bebas!`);
     }
     finishLanding(p, wasDouble); return;
   }
