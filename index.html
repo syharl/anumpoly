@@ -571,6 +571,13 @@ html[data-theme="dark"] input:checked + .slider:before{background:var(--ink2);}
 .player-chip .row1 .token{flex:none;}
 .player-chip .row2{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--gold);margin-top:2px;position:relative;overflow:visible;white-space:nowrap;text-overflow:ellipsis;}
 .bot-tag{font-size:9px;color:var(--gold-dim);border:1px solid rgba(47,111,168,0.4);border-radius:5px;padding:0 4px;font-weight:700;letter-spacing:0.5px;flex:none;}
+.signal-badge{flex:none;font-size:10px;line-height:1;}
+.signal-badge.sig-weak{filter:saturate(1.4);animation:sigPulse 1.1s ease-in-out infinite;}
+.signal-badge.sig-offline{opacity:0.9;}
+@keyframes sigPulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+.afk-badge{flex:none;font-size:9px;color:#ff9d3d;border:1px solid rgba(255,157,61,0.5);border-radius:5px;padding:0 4px;font-weight:700;background:rgba(255,157,61,0.12);}
+.reconnect-card{border-color:rgba(255,157,61,0.55) !important;}
+.reconnect-card h3{color:#ff9d3d;}
 .money-fx{
   position:absolute;right:0;top:-1px;font-family:'Space Mono',monospace;font-weight:800;font-size:12px;
   pointer-events:none;z-index:9;white-space:nowrap;animation:moneyFxSlide 3s ease forwards;
@@ -796,6 +803,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
   <div class="mc-tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
 
   <button class="mc-btn-resume" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
+  <button class="mc-btn-resume" id="btnResumeOnline" style="display:none;background:#ff9d3d;" onclick="attemptOnlineReconnect()">🔄 Sambung Lagi ke Game Online</button>
 
   <div class="mc-grid" style="grid-template-columns:1fr;">
     <button class="mc-card" onclick="goToModeSelect()">
@@ -947,6 +955,12 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
   <div class="page-body">
 
   <div id="onlineChooseView">
+    <div class="card reconnect-card" id="reconnectCard" style="display:none;">
+      <h3>🔄 Sesi Sebelumnya Terputus</h3>
+      <p style="font-size:12px;color:var(--paper-dim);margin:0 0 8px;" id="reconnectDesc">Kamu masih punya game online yang belum selesai.</p>
+      <button class="btn-big" style="width:100%;background:#ff9d3d;" onclick="attemptOnlineReconnect()">Sambung Lagi</button>
+      <button class="btn-big" style="width:100%;margin-top:6px;background:transparent;border:1px solid var(--paper-dim);" onclick="clearOnlineSession()">Lupakan Sesi Ini</button>
+    </div>
     <div class="card">
       <h3>Buat Room Baru</h3>
       <div class="player-row"><input id="createNameInput" placeholder="Nama kamu" maxlength="14" autocomplete="off" autocorrect="off" spellcheck="false"></div>
@@ -1701,6 +1715,23 @@ let myOnlineSlot = null;
 let lobby = null;
 let lobbyPollTimer = null;
 let gamePollTimer = null;
+/* ============================================================
+   PRESENCE (indikator sinyal) & AFK WATCHDOG — lihat penjelasan
+   lengkap di dekat definisi fungsinya masing-masing di bawah.
+   ============================================================ */
+const PRESENCE_HEARTBEAT_MS = 4000;   // seberapa sering tiap HP "lapor hadir"
+const PRESENCE_STALE_WARN_MS = 9000;  // lebih tua dari ini = dianggap sinyal lemah
+const PRESENCE_STALE_OFFLINE_MS = 20000; // lebih tua dari ini = dianggap terputus
+const AFK_GRACE_MS = 12000; // toleransi tambahan di atas TURN_TIME_LIMIT sebelum HP lain turun tangan
+const AFK_MAX_WARNINGS = 2; // lewat timeout ke-(AFK_MAX_WARNINGS+1) berturut-turut -> bangkrut otomatis
+let presenceMap = {};
+let presenceHeartbeatTimer = null;
+let presencePollTimer = null;
+let afkWatchdogTimer = null;
+let watchdogActingId = null; // id pemain AFK yang SEDANG diskip oleh HP ini (lindungi dari race saat push)
+let watchdogCurrentIndexOverride = null;
+let watchdogTurnStartedOverride = null;
+const ONLINE_SESSION_KEY = 'anumpoly_online_session';
 
 function shuffle(arr){ arr=[...arr]; for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
 function mod(n,m){ return ((n%m)+m)%m; }
@@ -1866,6 +1897,20 @@ function refreshBgmPlayback(){
 }
 document.addEventListener('visibilitychange', ()=>{
   if(document.hidden) stopBgm(); else refreshBgmPlayback();
+  // Begitu app kembali ke depan (mis. tadi minim/terkunci karena sinyal jelek
+  // atau pindah app lain), langsung lapor hadir + tarik state terbaru supaya
+  // pemain lain segera lihat kita "hidup" lagi tanpa menunggu interval biasa,
+  // dan kita sendiri tidak ketinggalan aksi yang terjadi selama itu.
+  if(!document.hidden && typeof state!=='undefined' && state && state.mode==='online'){
+    if(typeof sendPresenceHeartbeat==='function') sendPresenceHeartbeat();
+    if(typeof ensureFresh==='function') ensureFresh();
+  }
+});
+window.addEventListener('online', ()=>{
+  if(typeof state!=='undefined' && state && state.mode==='online'){
+    if(typeof sendPresenceHeartbeat==='function') sendPresenceHeartbeat();
+    if(typeof ensureFresh==='function') ensureFresh();
+  }
 });
 document.addEventListener('click', (e)=>{
   ensureAudio();
@@ -2128,6 +2173,8 @@ function hasSavedGame(){
 function refreshResumeButton(){
   const btn = document.getElementById('btnResumeSaved');
   if(btn) btn.style.display = hasSavedGame() ? 'block' : 'none';
+  const onlineBtn = document.getElementById('btnResumeOnline');
+  if(onlineBtn) onlineBtn.style.display = (typeof hasOnlineSession==='function' && hasOnlineSession()) ? 'block' : 'none';
 }
 function resumeSavedGame(){
   try{
@@ -2276,6 +2323,7 @@ function forceEndTurn(){
   state.turnPhase = 'canRoll';
   state.pendingBuy = null;
   state.pendingHouseBuild = null;
+  state.turnStartedAt = Date.now();
   commit();
   playSound('turn');
   if(state.mode==='hotseat' && !state.players[next].isBot) showPassOverlay(); else beginPlayerTurn();
@@ -2376,10 +2424,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">25 Agustus 2026, 11:46 WITA — v1.8.25.1146</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -2535,6 +2579,17 @@ function goToOnline(){
   showScreen('screen-online');
   document.getElementById('onlineChooseView').style.display='block';
   document.getElementById('onlineLobbyView').style.display='none';
+  const sess = (typeof readOnlineSession==='function') ? readOnlineSession() : null;
+  const reconnectCard = document.getElementById('reconnectCard');
+  if(reconnectCard){
+    if(sess){
+      reconnectCard.style.display='block';
+      const descEl = document.getElementById('reconnectDesc');
+      if(descEl) descEl.textContent = `Kamu masih punya game online di room ${sess.roomCode} yang belum selesai. Sambung lagi untuk lanjut main.`;
+    } else {
+      reconnectCard.style.display='none';
+    }
+  }
   if(currentProfile && currentProfile.display_name){
     const createInput = document.getElementById('createNameInput');
     const joinInput = document.getElementById('joinNameInput');
@@ -2544,6 +2599,7 @@ function goToOnline(){
 }
 async function leaveOnline(){
   clearInterval(lobbyPollTimer); clearInterval(gamePollTimer);
+  stopOnlineExtras();
   try{ if(lobbyRealtimeChannel){ sbClient.removeChannel(lobbyRealtimeChannel); lobbyRealtimeChannel=null; } }catch(e){}
   try{ if(gameRealtimeChannel){ sbClient.removeChannel(gameRealtimeChannel); gameRealtimeChannel=null; } }catch(e){}
   // Kalau kita sedang di dalam sebuah room (lobby) yang belum mulai,
@@ -2776,7 +2832,7 @@ async function mmStartMatch(q, matchedEntries, fillWithBots){
     chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
     chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
     rev:1, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null,
-    auction:null, lastMoveMeta:null, timeAttackEndedShown:false, leftSlots:[]
+    auction:null, lastMoveMeta:null, timeAttackEndedShown:false, leftSlots:[], turnStartedAt: Date.now()
   };
   const humanEntries = entries.filter(pl=>pl.userId);
   try{
@@ -2806,7 +2862,8 @@ async function mmEnterMatchedGame(roomCode){
       propStates:payload.propStates, lastRoll:payload.lastRoll,
       chanceDeckIds:payload.chanceDeckIds, chestDeckIds:payload.chestDeckIds, rev:payload.rev,
       pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:payload.pendingTradeOffer||null,
-      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null, leftSlots: payload.leftSlots||[]
+      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null, leftSlots: payload.leftSlots||[],
+      turnStartedAt: payload.turnStartedAt || Date.now()
     };
     buildBoardDOM();
     showScreen('screen-game');
@@ -2844,7 +2901,17 @@ async function joinRoomFlow(){
   let remote;
   try{ const res = await window.storage.get('mproom_'+code, true); if(!res) throw 'no'; remote = JSON.parse(res.value); }
   catch(e){ alertModal('Room tidak ditemukan. Cek kode lagi.'); return; }
-  if(remote.started){ alertModal('Permainan di room ini sudah dimulai.'); return; }
+  if(remote.started){
+    // Kalau room ini sudah mulai TAPI kita punya sesi tersimpan persis untuk
+    // kode room yang sama, ini kemungkinan besar bukan "gabung baru" tapi
+    // pemain yang tadinya terputus dan mencoba masuk lagi lewat kode room
+    // (mis. di HP/instalasi lain) -> arahkan ke alur sambung-lagi alih-alih
+    // langsung menolak.
+    const sess = readOnlineSession();
+    if(sess && sess.roomCode===code){ await attemptOnlineReconnect(); return; }
+    alertModal('Permainan di room ini sudah dimulai. Kalau kamu salah satu pemainnya dan terputus, coba tombol "Sambung Lagi ke Game Online" di menu utama.');
+    return;
+  }
   if(remote.players.length>=4){ alertModal('Room sudah penuh (4 pemain).'); return; }
   lobby = remote;
   const used = lobby.players.map(p=>p.slot);
@@ -2970,7 +3037,7 @@ async function hostStartOnline(){
     turnPhase:'canRoll', lastRoll:[1,1], propStates,
     chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
     chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
-    rev:0, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, auction:null, lastMoveMeta:null, timeAttackEndedShown:false, leftSlots:[]
+    rev:0, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null, auction:null, lastMoveMeta:null, timeAttackEndedShown:false, leftSlots:[], turnStartedAt: Date.now()
   };
   log(`Room ${lobby.code} dimulai dengan ${players.length} pemain online. Uang awal ${fmt(rules.startMoney)}.`);
   if(rules.timeAttackEndsAt) log(`⏱️ Mode Time Attack aktif — permainan berhenti otomatis dalam ${Math.round((rules.timeAttackEndsAt-Date.now())/60000)} menit, menang berdasar Net Worth tertinggi.`);
@@ -2998,7 +3065,8 @@ async function beginOnlineGameFromLobby(){
       turnPhase:payload.turnPhase, propStates:payload.propStates, lastRoll:payload.lastRoll,
       chanceDeckIds:payload.chanceDeckIds, chestDeckIds:payload.chestDeckIds, rev:payload.rev,
       pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:payload.pendingTradeOffer||null,
-      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null, leftSlots: payload.leftSlots||[]
+      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null, leftSlots: payload.leftSlots||[],
+      turnStartedAt: payload.turnStartedAt || Date.now()
     };
     buildBoardDOM();
     showScreen('screen-game');
@@ -3021,6 +3089,8 @@ function startGamePolling(){
       .on('postgres_changes', {event:'*', schema:'public', table:'kv_store', filter:'key=eq.mpstate_'+state.roomCode}, ()=>pollGameState())
       .subscribe();
   }catch(e){}
+  startOnlineExtras();
+  saveOnlineSession();
 }
 async function pollGameState(){
   if(!state || state.mode!=='online') return;
@@ -3089,6 +3159,7 @@ function applyRemoteState(payload){
   state.auction = payload.auction||null;
   state.lastMoveMeta = payload.lastMoveMeta||null;
   state.leftSlots = payload.leftSlots||[];
+  state.turnStartedAt = payload.turnStartedAt || Date.now();
 
   remoteAnimQueue.push({payload, prevOffer, prevPlayers, movedEntries, newLogEntries, rolledNew});
   runNextRemoteAnim();
@@ -3216,7 +3287,7 @@ function serializeState(){
   return {
     rev: (state.rev||0)+1,
     rules: state.rules,
-    players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,bankruptAt:p.bankruptAt||null,doublesCount:p.doublesCount,properties:p.properties||[],propsBought:p.propsBought||0,timesJailed:p.timesJailed||0,rentPaid:p.rentPaid||0,rentCollected:p.rentCollected||0,isBot:!!p.isBot,personality:p.personality||null,userId:p.userId||null})),
+    players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,bankruptAt:p.bankruptAt||null,doublesCount:p.doublesCount,properties:p.properties||[],propsBought:p.propsBought||0,timesJailed:p.timesJailed||0,rentPaid:p.rentPaid||0,rentCollected:p.rentCollected||0,isBot:!!p.isBot,personality:p.personality||null,userId:p.userId||null,missedTurns:p.missedTurns||0})),
     currentIndex: state.currentIndex,
     freeParkingPot: state.freeParkingPot,
     log: state.log.slice(-60),
@@ -3229,6 +3300,7 @@ function serializeState(){
     auction: state.auction||null,
     lastMoveMeta: state.lastMoveMeta||null,
     leftSlots: state.leftSlots||[],
+    turnStartedAt: state.turnStartedAt || Date.now(),
   };
 }
 async function syncPush(){
@@ -3277,6 +3349,9 @@ async function syncPush(){
     //    menimpa balik data pemain lain yang sebenarnya sudah lebih baru
     //    di server dengan salinan lokal yang basi — persis bug lama yang
     //    ingin dihindari oleh fungsi ini.
+    //  - watchdogActingId: sama seperti myActingBotId, tapi untuk kasus HP
+    //    ini (sebagai "arbiter" AFK watchdog, lihat afkWatchdogTick) sedang
+    //    men-skip/bangkrutkan giliran pemain lain yang macet/AFK.
     const myActingBotId = botDriving ? state.currentIndex : null;
     try{
       const res = await window.storage.get('mpstate_'+state.roomCode, true);
@@ -3284,7 +3359,7 @@ async function syncPush(){
         const remote = JSON.parse(res.value);
         state.log = mergeLogs(remote.log, state.log);
         if(remote.rev > (state.rev||0)){
-          const myIds = new Set([myActingBotId, myOnlineSlot].filter(x=>x!=null));
+          const myIds = new Set([myActingBotId, myOnlineSlot, watchdogActingId].filter(x=>x!=null));
           const localPlayersSnap = {};
           myIds.forEach(id=>{
             const lp = (state.players||[]).find(pl=>pl.id===id);
@@ -3309,6 +3384,17 @@ async function syncPush(){
           state.auction = remote.auction||null;
           state.lastMoveMeta = remote.lastMoveMeta||null;
           state.leftSlots = remote.leftSlots||[];
+          // watchdogActingId juga "melindungi" currentIndex/turnPhase/
+          // turnStartedAt kalau HP ini baru saja memindahkan giliran
+          // (skip/bangkrut otomatis) supaya tidak ketiban balik oleh
+          // remote yang sedikit lebih baru tapi belum tahu soal itu.
+          if(watchdogActingId!=null){
+            state.currentIndex = (typeof watchdogCurrentIndexOverride==='number') ? watchdogCurrentIndexOverride : state.currentIndex;
+            state.turnPhase = 'canRoll';
+            state.turnStartedAt = watchdogTurnStartedOverride || Date.now();
+          } else {
+            state.turnStartedAt = remote.turnStartedAt || Date.now();
+          }
           myIds.forEach(id=>{
             if(localPlayersSnap[id]){
               const idx = state.players.findIndex(pl=>pl.id===id);
@@ -3337,6 +3423,266 @@ async function ensureFresh(){
     }
   }catch(e){}
 }
+
+/* ============================================================
+   PRESENCE (indikator sinyal per pemain)
+   ------------------------------------------------------------
+   Tiap HP yang sedang di dalam game online "lapor hadir" secara
+   berkala ke key terpisah (presence_<roomCode>) — SENGAJA terpisah
+   dari mpstate_<roomCode> supaya heartbeat ini tidak ikut menaikkan
+   rev/memicu animasi/log di HP lain, dan tidak bentrok dengan logic
+   merge yang dipakai syncPush untuk data permainan sesungguhnya.
+   Tiap entri presence dibaca lagi oleh SEMUA HP (termasuk milik
+   sendiri) untuk memutuskan status sinyal:
+     - segar (< PRESENCE_STALE_WARN_MS)      -> dianggap normal
+     - agak basi (< PRESENCE_STALE_OFFLINE_MS) -> "sinyal lemah" 📶
+     - sangat basi / tidak ada sama sekali    -> "terputus" 🔴
+   ============================================================ */
+async function sendPresenceHeartbeat(){
+  if(!state || state.mode!=='online' || !state.roomCode || myOnlineSlot==null) return;
+  try{
+    const key = 'presence_'+state.roomCode;
+    let map = {};
+    try{ const res = await window.storage.get(key, true); if(res) map = JSON.parse(res.value)||{}; }catch(e){}
+    map[myOnlineSlot] = { ts: Date.now(), name: (localPlayer()&&localPlayer().name)||'' };
+    await window.storage.set(key, JSON.stringify(map), true);
+  }catch(e){}
+}
+async function pollPresence(){
+  if(!state || state.mode!=='online' || !state.roomCode) return;
+  try{
+    const res = await window.storage.get('presence_'+state.roomCode, true);
+    presenceMap = res ? (JSON.parse(res.value)||{}) : {};
+    renderPlayersStrip();
+  }catch(e){}
+}
+function presenceStatusFor(playerId){
+  // Pemain diri sendiri di HP ini dianggap selalu "segar" (device jelas hidup),
+  // walau entri heartbeat sendiri belum sempat terkirim/terpoll balik.
+  if(playerId===myOnlineSlot) return 'good';
+  const entry = presenceMap[playerId];
+  const age = entry ? (Date.now()-entry.ts) : Infinity;
+  if(age <= PRESENCE_STALE_WARN_MS) return 'good';
+  if(age <= PRESENCE_STALE_OFFLINE_MS) return 'weak';
+  return 'offline';
+}
+function startOnlineExtras(){
+  stopOnlineExtras();
+  sendPresenceHeartbeat();
+  pollPresence();
+  presenceHeartbeatTimer = setInterval(sendPresenceHeartbeat, PRESENCE_HEARTBEAT_MS);
+  presencePollTimer = setInterval(pollPresence, PRESENCE_HEARTBEAT_MS);
+  afkWatchdogTimer = setInterval(afkWatchdogTick, 3000);
+}
+function stopOnlineExtras(){
+  if(presenceHeartbeatTimer){ clearInterval(presenceHeartbeatTimer); presenceHeartbeatTimer=null; }
+  if(presencePollTimer){ clearInterval(presencePollTimer); presencePollTimer=null; }
+  if(afkWatchdogTimer){ clearInterval(afkWatchdogTimer); afkWatchdogTimer=null; }
+  presenceMap = {};
+}
+
+/* ============================================================
+   AFK WATCHDOG
+   ------------------------------------------------------------
+   Masalah: timer giliran (TURN_TIME_LIMIT) SELALU cuma berjalan di
+   HP pemain yang sedang gilirannya sendiri (lihat beginPlayerTurn).
+   Kalau HP pemain itu justru yang mati sinyal/nge-freeze/ditutup,
+   timer itu tidak akan pernah berjalan sama sekali, jadi timeout
+   otomatis TIDAK PERNAH terpicu dan seluruh permainan macet
+   menunggu dia selamanya.
+   Solusi: HP pemain LAIN yang masih hadir (bukan gilirannya)
+   memantau state.turnStartedAt. Kalau sudah lewat TURN_TIME_LIMIT+
+   AFK_GRACE_MS dan pemain yang macet itu terdeteksi TIDAK hadir
+   (lihat presenceStatusFor), salah satu HP yang hadir ("arbiter" —
+   dipilih deterministik: pemain manusia hadir dengan slot id
+   terkecil, supaya semua HP setuju siapa yang bertindak dan tidak
+   dobel-push) akan melewati gilirannya secara paksa, PERSIS seperti
+   handleTurnTimeout tapi dijalankan dari HP lain atas nama pemain
+   yang macet itu.
+   Eskalasi: setiap kali seorang pemain di-skip paksa dengan cara
+   ini, missedTurns miliknya +1. Setelah AFK_MAX_WARNINGS kali
+   berturut-turut (dapat log peringatan tiap kali), skip berikutnya
+   otomatis membuatnya dinyatakan bangkrut supaya pemain lain bisa
+   lanjut main tanpa menunggu dia selamanya. missedTurns direset ke
+   0 begitu pemain itu benar-benar bertindak sendiri lagi (lempar
+   dadu / aksi di penjara).
+   ============================================================ */
+function afkWatchdogArbiterSlot(excludeId){
+  const candidates = state.players
+    .map((p,idx)=>idx)
+    .filter(idx=> idx!==excludeId && !state.players[idx].bankrupt && !state.players[idx].isBot)
+    .filter(idx=> presenceStatusFor(idx)!=='offline');
+  if(candidates.length===0) return null;
+  return Math.min(...candidates);
+}
+async function afkWatchdogTick(){
+  if(!state || state.mode!=='online' || !state.roomCode || myOnlineSlot==null) return;
+  if(document.getElementById('winnerOverlay') && document.getElementById('winnerOverlay').classList.contains('show')) return;
+  const curId = state.currentIndex;
+  const cur = state.players[curId];
+  if(!cur || cur.bankrupt || cur.isBot) return;
+  if(myOnlineSlot===curId) return; // giliran sendiri -> biar timer normal (beginPlayerTurn) yang urus
+  if(!state.turnStartedAt) return;
+  // Selagi pemain sedang menyelesaikan utang (state.pendingDebt), timer normal
+  // di HP-nya sendiri SENGAJA berhenti total (lihat beginPlayerTurn) supaya
+  // proses gadai/jual properti untuk cari uang tidak diburu-buru dan tidak
+  // memicu bangkrut otomatis di tengah jalan. Watchdog ini menghormati niat
+  // yang sama dengan memberi jangka waktu jauh lebih longgar (bukan tanpa
+  // batas sama sekali) selama masih pendingDebt, supaya tetap ada jalan
+  // keluar kalau ternyata pemain itu sungguh sudah tidak ada di sana.
+  const threshold = state.pendingDebt
+    ? (TURN_TIME_LIMIT*1000*2 + AFK_GRACE_MS)
+    : (TURN_TIME_LIMIT*1000 + AFK_GRACE_MS);
+  if(Date.now()-state.turnStartedAt < threshold) return;
+  const arbiter = afkWatchdogArbiterSlot(curId);
+  if(arbiter==null || arbiter!==myOnlineSlot) return; // bukan giliran HP ini jadi arbiter
+  // Tarik data terbaru dulu supaya tidak dobel-aksi kalau HP lain (atau
+  // pemain yang "macet" itu sendiri, ternyata baru saja kembali) sudah
+  // lebih dulu mengubah giliran/mengirim aksi sesaat sebelum ini berjalan.
+  await ensureFresh();
+  if(state.currentIndex!==curId) return; // sudah berubah, tidak perlu diapa-apakan lagi
+  if(Date.now()-state.turnStartedAt < threshold) return;
+  await forceSkipAfkPlayer(curId);
+}
+async function forceSkipAfkPlayer(playerId){
+  const p = state.players.find(pl=>pl.id===playerId);
+  if(!p || p.bankrupt) return;
+  watchdogActingId = playerId;
+  p.missedTurns = (p.missedTurns||0)+1;
+  stopTurnTimer();
+  if(p.missedTurns > AFK_MAX_WARNINGS){
+    log(`⛔ ${p.name} tidak merespons ${p.missedTurns}× giliran berturut-turut (kemungkinan sinyal terputus atau keluar). Dinyatakan bangkrut otomatis supaya permainan bisa lanjut.`);
+    p.bankrupt = true;
+    p.bankruptAt = Date.now();
+    (p.properties||[]).forEach(i=>{
+      const ps = state.propStates[i];
+      if(ps){ ps.houses=0; ps.owner=null; ps.mortgaged=false; }
+    });
+    p.money = 0;
+    p.properties = [];
+  } else {
+    log(`⏱️ ${p.name} tidak merespons, giliran dilewati otomatis. Peringatan ${p.missedTurns}/${AFK_MAX_WARNINGS} — kalau terus berlanjut, akan dinyatakan bangkrut otomatis.`);
+    p.doublesCount = 0;
+  }
+  let next = state.currentIndex;
+  do{ next = mod(next+1, state.players.length); } while(state.players[next].bankrupt && next!==state.currentIndex);
+  state.currentIndex = next;
+  state.turnPhase = 'canRoll';
+  state.pendingBuy = null;
+  state.pendingHouseBuild = null;
+  state.turnStartedAt = Date.now();
+  watchdogCurrentIndexOverride = next;
+  watchdogTurnStartedOverride = state.turnStartedAt;
+  renderAll();
+  await syncPush();
+  watchdogActingId = null;
+  watchdogCurrentIndexOverride = null;
+  watchdogTurnStartedOverride = null;
+  if(!document.getElementById('winnerOverlay').classList.contains('show')){
+    checkGameOver();
+    if(!document.getElementById('winnerOverlay').classList.contains('show')) beginPlayerTurn();
+  }
+}
+
+/* ============================================================
+   RECONNECT KE GAME ONLINE SEBELUMNYA
+   ------------------------------------------------------------
+   Kode room + slot pemain disimpan di localStorage begitu benar-
+   benar masuk lobby/game online, supaya kalau app tertutup paksa,
+   HP restart, atau koneksi putus lalu dibuka lagi, pemain bisa
+   pilih "Sambung Lagi" dan langsung kembali ke posisinya semula
+   di room yang sama alih-alih terlempar balik ke menu utama tanpa
+   jalan keluar (dan kalau ternyata gilirannya lama tidak jalan
+   selama itu, AFK watchdog di atas yang menjaga permainan tetap
+   berjalan buat pemain lain sampai dia sambung lagi).
+   ============================================================ */
+function saveOnlineSession(){
+  if(!state || state.mode!=='online' || !state.roomCode || myOnlineSlot==null) return;
+  try{
+    localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({
+      roomCode: state.roomCode,
+      slot: myOnlineSlot,
+      userId: currentUser ? currentUser.id : null,
+      name: (localPlayer() && localPlayer().name) || '',
+      ts: Date.now()
+    }));
+  }catch(e){}
+  refreshResumeButton();
+}
+function readOnlineSession(){
+  try{
+    const raw = localStorage.getItem(ONLINE_SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function hasOnlineSession(){ return !!readOnlineSession(); }
+function clearOnlineSession(){
+  try{ localStorage.removeItem(ONLINE_SESSION_KEY); }catch(e){}
+  refreshResumeButton();
+  const card = document.getElementById('reconnectCard');
+  if(card) card.style.display='none';
+}
+async function attemptOnlineReconnect(){
+  const sess = readOnlineSession();
+  if(!sess){ alertModal('Tidak ada sesi game online tersimpan untuk disambung.'); return; }
+  if(!ensureStorage()) return;
+  try{
+    const res = await window.storage.get('mpstate_'+sess.roomCode, true);
+    if(res){
+      const payload = JSON.parse(res.value);
+      const leftSlots = payload.leftSlots||[];
+      if(leftSlots.includes(sess.slot)){
+        alertModal('Kamu sudah keluar dari room ini sebelumnya, jadi tidak bisa disambung lagi.');
+        clearOnlineSession();
+        return;
+      }
+      const stillThere = (payload.players||[]).some(pl=>pl.id===sess.slot);
+      if(!stillThere){
+        alertModal('Slot kamu di room ini sudah tidak ditemukan.');
+        clearOnlineSession();
+        return;
+      }
+      myOnlineSlot = sess.slot;
+      lobby = null;
+      state = {
+        mode:'online', roomCode: sess.roomCode, rankMode: !!payload.rankMode, matchmaking: !!payload.matchmaking,
+        rules: payload.rules, players: payload.players, currentIndex: payload.currentIndex,
+        freeParkingPot: payload.freeParkingPot, log: payload.log, turnPhase: payload.turnPhase,
+        propStates: payload.propStates, lastRoll: payload.lastRoll,
+        chanceDeckIds: payload.chanceDeckIds, chestDeckIds: payload.chestDeckIds, rev: payload.rev,
+        turnStartedAt: payload.turnStartedAt || Date.now(),
+        pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer: payload.pendingTradeOffer||null,
+        auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null, timeAttackEndedShown:false,
+        leftSlots: leftSlots
+      };
+      buildBoardDOM();
+      showScreen('screen-game');
+      renderAll();
+      startGamePolling();
+      log(`${localPlayer()?localPlayer().name:'Pemain'} tersambung kembali ke permainan.`);
+      commit();
+      beginPlayerTurn();
+      return;
+    }
+    // Belum sempat mulai (mungkin masih di lobby) -> coba sambung ke lobby.
+    const roomRes = await window.storage.get('mproom_'+sess.roomCode, true);
+    if(roomRes){
+      const remoteLobby = JSON.parse(roomRes.value);
+      if(!remoteLobby.started){
+        lobby = remoteLobby;
+        myOnlineSlot = sess.slot;
+        enterLobbyScreen();
+        startLobbyPolling();
+        return;
+      }
+    }
+    alertModal('Room game ini sudah tidak ada lagi (mungkin sudah selesai atau dibersihkan dari server).');
+    clearOnlineSession();
+  }catch(e){
+    alertModal('Gagal menyambung ke game online. Pastikan HP terhubung internet lalu coba lagi.');
+  }
+}
+
 function commit(){
   renderAll();
   if(state.mode==='online') syncPush();
@@ -3655,6 +4001,8 @@ function confirmQuit(){
         // channel-nya dilepas + state di-null-kan supaya benar-benar
         // putus dari room, bukan cuma pindah layar.
         try{ if(gameRealtimeChannel){ sbClient.removeChannel(gameRealtimeChannel); gameRealtimeChannel=null; } }catch(e){}
+        stopOnlineExtras();
+        if(!isHotseat) clearOnlineSession();
         state = null;
         goToMenu();
         refreshResumeButton();
@@ -3884,11 +4232,22 @@ function renderTokensAndHouses(animatePlayerId, overridePos){
 function renderPlayersStrip(){
   const strip = document.getElementById('playersStrip');
   strip.innerHTML='';
+  const isOnline = state.mode==='online';
   state.players.forEach(p=>{
     const chip=document.createElement('div');
     chip.id = 'chip'+p.id;
     chip.className='player-chip'+(p.id===state.currentIndex?' current':'')+(p.bankrupt?' bankrupt':'');
-    chip.innerHTML = `<div class="row1"><span class="token" style="background:${p.color};position:static;display:inline-block;">&nbsp;</span> ${p.name}${p.isBot?' <span class="bot-tag">Bot</span>':''}</div>
+    let sigHtml = '';
+    if(isOnline && !p.isBot && !p.bankrupt){
+      const sig = presenceStatusFor(p.id);
+      if(sig==='weak') sigHtml = `<span class="signal-badge sig-weak" title="Sinyal ${p.name} lemah/lag">📶</span>`;
+      else if(sig==='offline') sigHtml = `<span class="signal-badge sig-offline" title="${p.name} terputus / tidak aktif">🔴</span>`;
+    }
+    let afkHtml = '';
+    if(isOnline && !p.bankrupt && (p.missedTurns||0)>0){
+      afkHtml = `<span class="afk-badge" title="Peringatan giliran terlewat ${p.missedTurns}/${AFK_MAX_WARNINGS} — kalau terus, bangkrut otomatis">⚠️${p.missedTurns}</span>`;
+    }
+    chip.innerHTML = `<div class="row1"><span class="token" style="background:${p.color};position:static;display:inline-block;">&nbsp;</span> ${p.name}${p.isBot?' <span class="bot-tag">Bot</span>':''}${sigHtml}${afkHtml}</div>
       <div class="row2" id="money${p.id}">${p.bankrupt?'Bangkrut':fmt(p.money)}</div>`;
     strip.appendChild(chip);
   });
@@ -4080,6 +4439,9 @@ function onRoll(){
   if(!myTurnOK()) return;
   if(state.turnPhase!=='canRoll') return;
   const p = currentPlayer();
+  // Pemain benar-benar bertindak sendiri lagi -> reset hitungan giliran
+  // terlewat (lihat forceSkipAfkPlayer), tandakan dia sudah hadir/kembali.
+  p.missedTurns = 0;
   state.pendingHouseBuild = null;
   if(p.inJail){ handleJailRoll(p); return; }
   // Kunci fase ke 'rolling' SEBELUM animasi dadu/jalan token mulai (yang
@@ -4495,6 +4857,7 @@ function checkGameOver(){
     stopTurnTimer();
     playSound('win');
     clearSavedGame();
+    if(state.mode==='online'){ stopOnlineExtras(); clearOnlineSession(); }
     applyRankForGame(computePlacementOrder(false));
   }
 }
@@ -4695,6 +5058,7 @@ function endGameTimeAttack(){
   stopTurnTimer();
   playSound('win');
   clearSavedGame();
+  if(state.mode==='online'){ stopOnlineExtras(); clearOnlineSession(); }
   applyRankForGame(computePlacementOrder(true));
 }
 
@@ -5060,6 +5424,7 @@ function endTurn(){
   do{ next = mod(next+1, state.players.length); } while(state.players[next].bankrupt && next!==state.currentIndex);
   state.currentIndex = next;
   state.turnPhase='canRoll';
+  state.turnStartedAt = Date.now();
   commit();
   playSound('turn');
   if(state.mode==='hotseat' && !state.players[next].isBot) showPassOverlay(); else beginPlayerTurn();
