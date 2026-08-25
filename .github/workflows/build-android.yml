@@ -75,8 +75,8 @@ jobs:
         # SEBELUM "Kumpulkan file web ke folder www/" — karena step
         # "Tambah entri Apa Yang Baru" perlu MENGUBAH index.html (source,
         # di root repo) SEBELUM index.html itu di-rsync ke www/, supaya
-        # entri changelog baru ikut kebawa ke build APK & dist.zip rilis
-        # ini juga (bukan baru muncul di rilis berikutnya).
+        # entri changelog baru ikut kebawa ke build APK rilis ini juga
+        # (bukan baru muncul di rilis berikutnya).
         id: versi
         run: |
           echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
@@ -230,8 +230,16 @@ jobs:
             --exclude='www' --exclude='android' --exclude='node_modules' \
             --exclude='.git' --exclude='.github' --exclude='package.json' \
             --exclude='package-lock.json' --exclude='capacitor.config.json' \
-            --exclude='plugins' --exclude='anumpoly.apk' \
+            --exclude='plugins' --exclude='anumpoly.apk' --exclude='dist.zip' \
             ./ www/
+          # "--exclude='dist.zip'" WAJIB ADA di sini. Ini akar bug lama:
+          # dist.zip (fitur hot-update, sudah dihapus total) dulu TIDAK
+          # di-exclude, jadi ikut ke-rsync ke www/ -> ikut disinkron ke
+          # assets/public -> ikut dibundel ke DALAM APK -> ikut di-zip
+          # ulang jadi dist.zip rilis berikutnya (berisi dist.zip rilis
+          # sebelumnya di dalamnya) -> membengkak terus tiap rilis sampai
+          # 74MB. Kalaupun ada dist.zip nyasar lagi di repo suatu saat,
+          # baris exclude ini mencegahnya ikut masuk lagi ke build.
 
       - name: Tambah platform Android
         run: npx cap add android
@@ -306,68 +314,6 @@ jobs:
           sed -i "s/__ANUMPOLY_BUILD__/${{ steps.versi.outputs.build }}/" "$ASSET"
           sed -i "s/__ANUMPOLY_RELEASE_AT__/${{ steps.rilis.outputs.tanggal }}/" "$ASSET"
 
-      - name: Bikin dist.zip untuk hot update konten (bukan APK)
-        # Ini yang dipakai fitur "update dalam-game" ala MLBB/PUBG/FF di
-        # update-check.js (lewat plugin @capgo/capacitor-updater) — beda
-        # dari anumpoly.apk di bawah yang WAJIB lewat dialog Install
-        # Android. Di-zip dari SALINAN yang sudah diisi placeholder versi
-        # di atas, jadi isinya persis sama dengan yang terpasang di APK
-        # native rilis ini (bukan file sumber mentah di repo).
-        #
-        # PENGECUALIAN: anumpoly-bgm.mp3 SENGAJA tidak ikut di-zip ke sini.
-        # File musik itu jarang berubah tapi ukurannya jauh lebih besar
-        # dari index.html sendiri, jadi kalau ikut dibawa di SETIAP
-        # hot-update, unduhannya jadi berat & gampang timeout di jaringan
-        # lambat — padahal isinya nyaris selalu sama dengan yang sudah ada
-        # di HP. File ini tetap ikut dibundel penuh di APK biasa (lihat
-        # step "Build APK" di bawah, yang pakai seluruh isi assets/public
-        # apa adanya, TERMASUK mp3-nya). Di sisi game (index.html), audio
-        # otomatis fallback ambil dari GitHub Pages kalau salinan lokalnya
-        # tidak ketemu (mis. abis hot-update) — lihat getBgmAudio().
-        run: |
-          cd android/app/src/main/assets/public
-          zip -r "$GITHUB_WORKSPACE/dist.zip" . -x "anumpoly-bgm.mp3"
-
-      - name: Validasi integritas dist.zip sebelum dipublish
-        # Ini menangkap kasus dist.zip korup/tidak lengkap SEJAK DI SUMBERNYA
-        # (di runner CI), SEBELUM sempat dipublish ke GitHub Pages dan
-        # ke-download pemain dalam kondisi rusak. Kalau langkah ini gagal,
-        # seluruh build dihentikan (release TIDAK dipublish) — lebih baik
-        # rilis tertunda daripada pemain dapat hot-update yang gagal
-        # terus-menerus di persentase yang sama.
-        #
-        # 3 pengecekan:
-        #   1) "unzip -t" — verifikasi checksum internal tiap entry di zip
-        #      (CRC), mendeteksi file yang korup walau ukurannya normal.
-        #   2) Ukuran file tidak boleh 0 byte / sangat kecil dibanding
-        #      sumbernya (mis. kalau step "zip -r" di atas diam-diam gagal
-        #      sebagian, hasilnya bisa berupa zip valid tapi nyaris kosong).
-        #   3) Jumlah entry di dalam zip dibandingkan jumlah file asli di
-        #      folder assets/public (minus bgm.mp3 yang memang dikecualikan)
-        #      — mendeteksi kalau ada file yang "hilang" saat proses zip.
-        run: |
-          echo "== 1) Cek checksum internal (CRC) tiap entry =="
-          unzip -t "$GITHUB_WORKSPACE/dist.zip"
-
-          echo "== 2) Cek ukuran file wajar =="
-          UKURAN=$(stat -c%s "$GITHUB_WORKSPACE/dist.zip")
-          echo "Ukuran dist.zip: $UKURAN byte"
-          if [ "$UKURAN" -lt 10240 ]; then
-            echo "::error::dist.zip cuma $UKURAN byte — kemungkinan besar zip gagal terisi penuh. Build dihentikan."
-            exit 1
-          fi
-
-          echo "== 3) Cek jumlah file yang ter-zip vs sumber asli =="
-          JUMLAH_SUMBER=$(cd android/app/src/main/assets/public && find . -type f ! -name "anumpoly-bgm.mp3" | wc -l)
-          JUMLAH_ZIP=$(unzip -l "$GITHUB_WORKSPACE/dist.zip" | awk 'NF>3 && $4!="" {c++} END{print c+0}')
-          echo "File di sumber: $JUMLAH_SUMBER, file di dalam zip: $JUMLAH_ZIP"
-          if [ "$JUMLAH_ZIP" -lt "$JUMLAH_SUMBER" ]; then
-            echo "::error::Jumlah file di dist.zip ($JUMLAH_ZIP) lebih sedikit dari sumber ($JUMLAH_SUMBER) — ada file yang hilang. Build dihentikan."
-            exit 1
-          fi
-
-          echo "dist.zip lolos validasi."
-
       - name: Build APK (release, ditandatangani)
         working-directory: android
         env:
@@ -403,6 +349,28 @@ jobs:
             --title "Monopoli Dunia v${{ steps.rilis.outputs.terbaru }}" \
             --notes "Update otomatis dari CI (build #${{ steps.versi.outputs.build }}). Lihat riwayat commit untuk detail perubahan."
 
+      - name: Bersihkan GitHub Release lama (cuma simpan 5 terbaru)
+        # Beda dari bug dist.zip kemarin — ini bukan soal ukuran APK,
+        # cuma daftar Release yang numpuk terus karena tiap build bikin
+        # tag/versi baru yang unik, dan tidak pernah ada yang menghapus
+        # rilis LAMA (step di atas cuma hapus rilis dengan tag yang SAMA
+        # kalau kebetulan bentrok, bukan rilis-rilis sebelumnya).
+        # Di sini semua release diurutkan dari yang paling baru, lalu
+        # cuma 5 teratas (termasuk yang baru saja dibuat) yang
+        # dipertahankan — sisanya dihapus beserta tag git-nya. Mau
+        # simpan riwayat lebih banyak/sedikit? tinggal ubah angka "6" di
+        # "tail -n +6" (mis. "+11" buat simpan 10 rilis terakhir).
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release list --limit 100 --json tagName,publishedAt \
+            --jq 'sort_by(.publishedAt) | reverse | .[].tagName' \
+            | tail -n +6 \
+            | while read -r TAG; do
+                echo "Menghapus release lama: $TAG"
+                gh release delete "$TAG" --yes --cleanup-tag || true
+              done
+
       - name: Publikasikan APK & catat nomor build ke GitHub Pages
         # Fitur update dalam-game mengunduh APK lewat fetch() di dalam
         # WebView aplikasi — alamat GitHub Pages (domain *.github.io) yang
@@ -428,8 +396,6 @@ jobs:
         #     "Deteksi perubahan native".
         # "terbaru" sekarang OTOMATIS dari step "Hitung tanggal, jam rilis
         # & nomor versi otomatis (WITA)" di atas, tidak diedit manual lagi.
-        # Field "tanggal_rilis" & "link_bundle" (dist.zip, buat hot-update)
-        # tetap seperti sebelumnya.
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
           COMMIT_SEKARANG=$(git rev-parse HEAD)
@@ -441,13 +407,13 @@ jobs:
             v.nativeBuild = ${{ steps.native.outputs.nativeBuild }};
             v.lastBuildCommit = '$COMMIT_SEKARANG';
             v.tanggal_rilis = '${{ steps.rilis.outputs.tanggal }}';
-            v.link_bundle = 'https://syharl.github.io/anumpoly/dist.zip';
             delete v.terbaruBuild; // field lama, sudah digantikan contentBuild/nativeBuild
+            delete v.link_bundle; // fitur hot-update (dist.zip) sudah dihapus total
             fs.writeFileSync('versi.json', JSON.stringify(v, null, 2) + '\n');
           "
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add anumpoly.apk dist.zip versi.json index.html
+          git add anumpoly.apk versi.json index.html
           if git diff --cached --quiet; then
             echo "Tidak ada perubahan, tidak perlu commit baru."
           else
@@ -461,62 +427,14 @@ jobs:
             #
             # Fix: fetch origin/main lalu "reset --soft" ke situ. Ini
             # menaruh HEAD ke commit main paling baru TANPA membuang file
-            # hasil build yang sudah di-stage (anumpoly.apk, dist.zip,
-            # versi.json tetap ada di working directory/index). Jadi commit
-            # publish ini dibuat ulang di atas fondasi main yang paling
-            # mutakhir - bukan digabung dengan riwayat lama - sehingga tidak
-            # pernah ada conflict merge/rebase di file binary lagi.
+            # hasil build yang sudah di-stage (anumpoly.apk, versi.json
+            # tetap ada di working directory/index). Jadi commit publish
+            # ini dibuat ulang di atas fondasi main yang paling mutakhir -
+            # bukan digabung dengan riwayat lama - sehingga tidak pernah
+            # ada conflict merge/rebase di file binary lagi.
             git fetch origin main
             git reset --soft origin/main
-            git add anumpoly.apk dist.zip versi.json index.html
+            git add anumpoly.apk versi.json index.html
             git commit -m "chore: publikasikan anumpoly.apk v${{ steps.rilis.outputs.terbaru }} (build #${{ steps.versi.outputs.build }}) [bot-publish]"
             git push origin HEAD:main
           fi
-
-      - name: Verifikasi dist.zip yang live di GitHub Pages cocok dengan yang dipublish
-        # Validasi sebelumnya ("Validasi integritas dist.zip") cuma
-        # membuktikan file di RUNNER CI sudah benar. Step ini mengecek
-        # lapisan berikutnya: file yang BENAR-BENAR tersaji ke pemain lewat
-        # https://syharl.github.io/anumpoly/dist.zip setelah GitHub Pages
-        # selesai redeploy — supaya kalau ada masalah propagasi/CDN
-        # (misalnya edge Pages sempat menyajikan gabungan versi lama/baru),
-        # ketahuan di sini lewat log Actions, bukan baru ketahuan dari
-        # keluhan pemain yang gagal update di persentase tertentu.
-        #
-        # GitHub Pages (mode "pages build and deployment") butuh waktu
-        # setelah push sebelum versi baru benar-benar tersaji di semua edge
-        # CDN — makanya di-retry beberapa kali dengan jeda, bukan dicek
-        # sekali langsung. Dibandingkan pakai SHA-256, bukan cuma ukuran
-        # byte, supaya lebih ketat (ukuran sama tapi isi beda tetap
-        # ketahuan).
-        #
-        # SENGAJA tidak menggagalkan build kalau masih belum cocok setelah
-        # semua percobaan (Pages kadang butuh lebih dari beberapa menit) —
-        # cukup ditandai jelas di log Actions ("::warning::") supaya
-        # developer tahu harus cek manual, tanpa memblokir rilis yang
-        # sebenarnya sudah benar di sisi repo.
-        run: |
-          HASH_LOKAL=$(sha256sum dist.zip | awk '{print $1}')
-          echo "Hash lokal (yang baru saja di-push): $HASH_LOKAL"
-
-          COCOK=0
-          for PERCOBAAN in 1 2 3 4 5 6; do
-            echo "Percobaan $PERCOBAAN/6 — mengambil dist.zip live dari GitHub Pages..."
-            if curl -fsSL --retry 2 -o /tmp/dist-live.zip "https://syharl.github.io/anumpoly/dist.zip?cachebust=$(date +%s)"; then
-              HASH_LIVE=$(sha256sum /tmp/dist-live.zip | awk '{print $1}')
-              echo "Hash live: $HASH_LIVE"
-              if [ "$HASH_LIVE" = "$HASH_LOKAL" ]; then
-                echo "Cocok. GitHub Pages sudah menyajikan dist.zip versi ini dengan benar."
-                COCOK=1
-                break
-              fi
-            else
-              echo "Gagal mengambil dist.zip live (mungkin Pages belum selesai redeploy)."
-            fi
-            sleep 20
-          done
-
-          if [ "$COCOK" -ne 1 ]; then
-            echo "::warning::dist.zip yang live di GitHub Pages belum cocok dengan yang baru dipublish, setelah 6x percobaan (~2 menit). Ini BUKAN berarti build gagal — Pages kadang butuh waktu lebih lama untuk redeploy. Tapi kalau pemain masih laporan hot-update gagal setelah ini, cek manual: buka https://syharl.github.io/anumpoly/dist.zip di browser dan bandingkan ukurannya dengan dist.zip di artifact build ini."
-          fi
-
