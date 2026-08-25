@@ -1,9 +1,9 @@
 {
-  "terbaru": "1.8.25.1146",
-  "contentBuild": 93,
+  "terbaru": "1.8.25.1347",
+  "contentBuild": 94,
   "nativeBuild": 89,
-  "lastBuildCommit": "bcdad14d5960fae4f528c03111c85ce4d067a657",
-  "tanggal_rilis": "25 Agustus 2026, 11:46 WITA",
+  "lastBuildCommit": "8ef875fef81fbaac32857b7d526c66e268ce211b",
+  "tanggal_rilis": "25 Agustus 2026, 13:47 WITA",
   "link_apk": "https://syharl.github.io/anumpoly/anumpoly.apk",
   "link_bundle": "https://syharl.github.io/anumpoly/dist.zip"
 }
