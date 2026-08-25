@@ -786,8 +786,9 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
     </button>
   </div>
 
-  <div class="mc-grid mc-grid-dark" style="grid-template-columns:1fr;">
+  <div class="mc-grid mc-grid-dark" style="grid-template-columns:1fr 1fr;">
     <button class="mc-card-dark" onclick="openMainMenuSettings()">⚙️ Pengaturan</button>
+    <button class="mc-card-dark" onclick="openLeaderboardModal()">🏆 Peringkat</button>
   </div>
 
   <div class="mc-footer" id="accountMenuStatus">Aturan bisa disesuaikan di layar berikutnya</div>
@@ -803,7 +804,30 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
   <div class="page-header">
     <button type="button" class="ph-back" onclick="goToMenu()">←</button>
     <span class="ph-icon">🎮</span>
-    <div><h2 class="ph-title">Pilih Mode Main</h2><p class="ph-sub">Gantian di 1 HP, atau tiap pemain pegang HP sendiri?</p></div>
+    <div><h2 class="ph-title">Pilih Mode Main</h2><p class="ph-sub">Dicariin lawan otomatis, atau main bareng teman sendiri?</p></div>
+  </div>
+  <div class="page-body">
+    <div class="card" style="cursor:pointer" onclick="goToMatchmaking(true)">
+      <h3>🏆 Matchmaking Rank</h3>
+      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Sistem carikan lawan online secara otomatis dari pemain lain yang juga lagi mencari. Hasil akhir memengaruhi Rank musiman kamu. Butuh akun, dan bisa makan waktu cukup lama menunggu pemain lain.</p>
+    </div>
+    <div class="card" style="cursor:pointer" onclick="goToMatchmaking(false)">
+      <h3>🎲 Matchmaking Santai</h3>
+      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Sama seperti Matchmaking Rank — dicarikan lawan otomatis — tapi hasilnya TIDAK memengaruhi Rank. Cocok buat pemanasan atau coba-coba aturan baru.</p>
+    </div>
+    <div class="card" style="cursor:pointer" onclick="goToCustomRoom()">
+      <h3>🎛️ Custom Room</h3>
+      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Main offline bergantian di 1 HP, atau online bareng teman sendiri pakai kode Room yang kamu bagikan sendiri. Tidak memengaruhi Rank.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= CUSTOM ROOM (dulu isi MODE SELECT: Offline / Online kode) ================= -->
+<div id="screen-custom" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
+  <div class="page-header">
+    <button type="button" class="ph-back" onclick="goToModeSelect()">←</button>
+    <span class="ph-icon">🎛️</span>
+    <div><h2 class="ph-title">Custom Room</h2><p class="ph-sub">Gantian di 1 HP, atau tiap pemain pegang HP sendiri?</p></div>
   </div>
   <div class="page-body">
     <div class="card" style="cursor:pointer" onclick="goToSetup()">
@@ -811,11 +835,30 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
       <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Semua pemain main bergantian di HP yang sama, seperti catur mabar offline. Tidak perlu internet. Bisa tambah pemain bot 🤖 kalau pemain kurang.</p>
     </div>
     <div class="card" style="cursor:pointer" onclick="goToOnline()">
-      <h3>🌐 Online — Multiplayer antar HP</h3>
-      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing dan main di waktu bersamaan lewat kode Room. Butuh internet — semua pemain buka aplikasi ini lalu gabung pakai kode Room yang sama. Host bisa tambah bot 🤖 juga.</p>
+      <h3>🌐 Online — Multiplayer pakai kode Room</h3>
+      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Tiap pemain pegang HP masing-masing dan main di waktu bersamaan lewat kode Room yang kamu bagikan sendiri. Butuh internet — semua pemain buka aplikasi ini lalu gabung pakai kode Room yang sama. Host bisa tambah bot 🤖 juga.</p>
     </div>
   </div>
 </div>
+
+<!-- ================= MATCHMAKING (Rank / Santai) ================= -->
+<div id="screen-matchmaking" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
+  <div class="page-header">
+    <button type="button" class="ph-back" onclick="leaveMatchmaking()">←</button>
+    <span class="ph-icon" id="mmIcon">🏆</span>
+    <div><h2 class="ph-title" id="mmTitle">Matchmaking Rank</h2><p class="ph-sub" id="mmSub">Mencari pemain lain...</p></div>
+  </div>
+  <div class="page-body" style="align-items:center;text-align:center;">
+    <div class="card" style="width:100%;">
+      <div style="font-size:44px;margin:6px 0;">🔎</div>
+      <div style="font-family:'Space Mono',monospace;font-size:28px;color:var(--gold);font-weight:700;" id="mmTimer">00:00</div>
+      <p style="font-size:13px;color:var(--paper-dim);margin:10px 0 0;" id="mmCountText">Bergabung ke antrian...</p>
+      <p style="font-size:12px;color:var(--paper-dim);margin:8px 0 0;line-height:1.5;">Bisa makan waktu lama tergantung berapa banyak pemain lain yang online bersamaan. Biarkan aplikasi ini tetap terbuka sambil menunggu.</p>
+    </div>
+    <button class="btn-big" style="width:100%;max-width:360px;margin-top:16px;background:rgba(232,131,107,0.15);color:#e8836b;" onclick="leaveMatchmaking()">Batalkan</button>
+  </div>
+</div>
+
 
 <!-- ================= PENGATURAN (layar penuh, bukan modal) ================= -->
 <div id="screen-settings" class="screen" style="padding:0;width:100%;max-width:480px;align-items:stretch;min-height:100dvh;">
@@ -865,6 +908,8 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
       </div>
       <button class="menu-btn primary" style="width:100%;margin-top:14px;" onclick="saveAccountProfile()">Simpan Profil</button>
       <div id="accountProfileMsg" style="display:none;color:var(--paper-dim);font-size:12.5px;margin-top:10px;"></div>
+      <div id="accountRankCard" style="display:none;margin-top:16px;padding:14px 16px;border-radius:8px;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.2);text-align:center;"></div>
+      <button type="button" style="width:100%;margin-top:10px;background:none;border:1px solid rgba(47,111,168,0.25);border-radius:8px;padding:10px;color:var(--paper);font-weight:700;font-size:13px;cursor:pointer;" onclick="openLeaderboardModal()">🏆 Lihat Papan Peringkat</button>
     </div>
     <div style="text-align:center;margin-top:18px;">
       <button type="button" onclick="doAccountSignOut()" style="background:none;border:none;color:#e8836b;font-size:13.5px;font-weight:700;cursor:pointer;">Keluar dari Akun</button>
@@ -990,7 +1035,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
 <!-- ================= SETUP ================= -->
 <div id="screen-setup" class="screen" style="padding:0;align-items:stretch;">
   <div class="page-header">
-    <button type="button" class="ph-back" onclick="goToMenu()">←</button>
+    <button type="button" class="ph-back" onclick="goToCustomRoom()">←</button>
     <span class="ph-icon">🛠️</span>
     <div><h2 class="ph-title">Pengaturan Permainan</h2><p class="ph-sub">Atur pemain lalu sesuaikan aturan bila perlu</p></div>
   </div>
@@ -1165,6 +1210,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
   <h2 id="winnerName" style="color:var(--gold);margin:14px 0 6px;">-</h2>
   <p style="color:var(--paper-dim);max-width:280px;" id="winnerSub"></p>
   <div id="winnerStats" style="margin-top:14px;width:100%;max-width:340px;text-align:left;"></div>
+  <div id="winnerRankResult" style="display:none;width:100%;max-width:340px;"></div>
   <button class="btn-big" style="margin-top:20px;" onclick="clearSavedGame();location.reload()">Main Lagi</button>
 </div>
 
@@ -1325,11 +1371,27 @@ function renderAccountScreen(){
     const preview = document.getElementById('accountAvatarPreview');
     if(preview) preview.innerHTML = (currentProfile && currentProfile.avatar) ? `<img src="${currentProfile.avatar}" alt="Foto profil" style="width:100%;height:100%;object-fit:cover;">` : '♟';
     document.getElementById('accountProfileMsg').style.display = 'none';
+    renderAccountRankCard();
   } else {
     authView.style.display = 'block';
     profileView.style.display = 'none';
     hideAccountError();
   }
+}
+async function renderAccountRankCard(){
+  const card = document.getElementById('accountRankCard');
+  if(!card || !currentUser) return;
+  card.style.display = 'block';
+  card.innerHTML = `<span style="color:var(--paper-dim);font-size:12.5px;">Memuat peringkat…</span>`;
+  const data = await getRankData(currentUser.id);
+  const tier = rankTierOf(data.points);
+  const calibrating = data.games <= RANK_CALIBRATION_GAMES;
+  card.innerHTML = `
+    <div style="font-size:26px;">${tier.icon}</div>
+    <div style="color:var(--gold);font-weight:800;font-size:16px;margin-top:2px;">${tier.name}</div>
+    <div style="color:var(--paper-dim);font-size:12.5px;margin-top:2px;">${data.points} poin · ${data.games} game · musim ${rankSeasonLabel(data.season)}</div>
+    ${calibrating?`<div style="color:var(--paper-dim);font-size:11.5px;margin-top:4px;">Kalibrasi (${data.games}/${RANK_CALIBRATION_GAMES} game) — rank masih menyesuaikan</div>`:''}
+  `;
 }
 const GOOGLE_WEB_CLIENT_ID = '20871874824-opbcpkk10t9p21i5vs96rtarn0ibs087.apps.googleusercontent.com';
 
@@ -2101,6 +2163,7 @@ function surrenderPlayer(playerId){
   if(!state) { closeModal(); return; }
   const p = state.players.find(pl=>pl.id===playerId) || localPlayer();
   p.bankrupt = true;
+  p.bankruptAt = Date.now();
   log(`${p.name} menyerah dan dinyatakan bangkrut.`);
   (p.properties||[]).forEach(i=>{
     const ps = state.propStates[i];
@@ -2292,15 +2355,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">24 Agustus 2026, 22:44 WITA — v1.8.24.2244</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Delete capacitor_config.json</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">24 Agustus 2026, 07:00 WITA — v1.8.24.0700</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2313,6 +2367,7 @@ function openWhatsNewModal(){
 }
 function goToMenu(){ showScreen('screen-menu'); }
 function goToModeSelect(){ showScreen('screen-mode'); }
+function goToCustomRoom(){ showScreen('screen-custom'); }
 
 /* ============================================================
    TOMBOL BACK ANDROID (hardware/gesture back)
@@ -2474,8 +2529,209 @@ async function leaveOnline(){
     }catch(e){}
   }
   lobby=null; myOnlineSlot=null;
+  showScreen('screen-custom');
+}
+
+/* ============================================================
+   MATCHMAKING (Rank & Santai) — beda dari Custom Room:
+   - Tidak pakai kode Room manual (mencegah 1 orang gabung 2x pakai
+     beberapa HP buat "menang lawan diri sendiri").
+   - Antrian bersama disimpan di kv_store (key mm_queue_rank /
+     mm_queue_norank), tiap HP polling+heartbeat berkala.
+   - Begitu terkumpul minimal 2 orang, dikasih jeda (grace period)
+     20 detik siapa tahu ada tambahan sampai maksimal 4, baru game
+     dibuat otomatis oleh salah satu HP yang ditunjuk "leader" ---
+     leader = orang yang paling awal gabung di antrian saat itu
+     (deterministik, semua HP menghitung leader yang sama dari data
+     antrian yang sama, jadi tidak perlu server terpisah).
+   - Leader membuat game state (mpstate_<roomCode>) lalu menaruh
+     "surat panggilan" di key khusus tiap pemain (mm_assign_<userId>)
+     supaya HP lain otomatis pindah ke game begitu polling berikutnya.
+   - Entri antrian yang tidak "heartbeat" >90 detik (mis. app ditutup)
+     otomatis dibuang oleh HP manapun yang membaca antrian itu.
+   ============================================================ */
+const MM_GRACE_MS = 20000;
+const MM_STALE_MS = 90000;
+let mmPollTimer = null;
+let mmActive = false;
+let mmRankMode = false;
+let mmQueueKey = null;
+let mmStartedAt = null;
+
+function mmQueueKeyFor(rankMode){ return rankMode ? 'mm_queue_rank' : 'mm_queue_norank'; }
+
+async function goToMatchmaking(rankMode){
+  if(!ensureStorage()) return;
+  if(!currentUser){
+    alertModal('Matchmaking butuh akun supaya bisa dicocokkan dengan pemain lain (dan biar Rank tersimpan ke akunmu). Hubungkan akun Google dulu di menu Akun ya.');
+    goToAccount();
+    return;
+  }
+  mmRankMode = !!rankMode;
+  mmQueueKey = mmQueueKeyFor(mmRankMode);
+  mmStartedAt = Date.now();
+  document.getElementById('mmIcon').textContent = mmRankMode ? '🏆' : '🎲';
+  document.getElementById('mmTitle').textContent = mmRankMode ? 'Matchmaking Rank' : 'Matchmaking Santai';
+  document.getElementById('mmSub').textContent = 'Mencari pemain lain...';
+  document.getElementById('mmTimer').textContent = '00:00';
+  document.getElementById('mmCountText').textContent = 'Bergabung ke antrian...';
+  showScreen('screen-matchmaking');
+  mmActive = true;
+  await mmJoinQueue();
+  clearInterval(mmPollTimer);
+  mmPollTimer = setInterval(mmPollTick, 2000);
+  mmPollTick();
+}
+async function leaveMatchmaking(){
+  mmActive = false;
+  clearInterval(mmPollTimer);
+  if(currentUser && mmQueueKey){
+    try{
+      const q = await mmReadQueue();
+      q.players = q.players.filter(e=>e.userId!==currentUser.id);
+      if(q.players.length<2) q.graceStartedAt = null;
+      await mmWriteQueue(q);
+    }catch(e){}
+  }
   showScreen('screen-mode');
 }
+async function mmReadQueue(){
+  let q = null;
+  try{
+    const res = await window.storage.get(mmQueueKey, true);
+    q = res ? JSON.parse(res.value) : null;
+  }catch(e){ q = null; }
+  if(!q || !Array.isArray(q.players)) q = { players:[], graceStartedAt:null };
+  return q;
+}
+async function mmWriteQueue(q){
+  try{ await window.storage.set(mmQueueKey, JSON.stringify(q), true); }catch(e){}
+}
+function mmDisplayName(){
+  return (currentProfile && currentProfile.display_name) || (currentUser.email||'Pemain').split('@')[0];
+}
+async function mmJoinQueue(){
+  const q = await mmReadQueue();
+  const now = Date.now();
+  q.players = q.players.filter(e=>e.userId!==currentUser.id && (now-(e.lastSeen||e.joinedAt))<MM_STALE_MS);
+  q.players.push({ userId: currentUser.id, name: mmDisplayName(), joinedAt: now, lastSeen: now });
+  if(q.players.length<2) q.graceStartedAt = null;
+  await mmWriteQueue(q);
+}
+async function mmPollTick(){
+  if(!mmActive || !currentUser) return;
+  // 1) Sudah ada "surat panggilan" ke game buat kita?
+  try{
+    const res = await window.storage.get('mm_assign_'+currentUser.id, true);
+    if(res){
+      const assign = JSON.parse(res.value);
+      mmActive = false;
+      clearInterval(mmPollTimer);
+      try{ await window.storage.delete('mm_assign_'+currentUser.id, true); }catch(e){}
+      await mmEnterMatchedGame(assign.roomCode);
+      return;
+    }
+  }catch(e){ /* belum ada panggilan, lanjut cek antrian di bawah */ }
+  if(!mmActive) return;
+
+  // 2) Heartbeat diri sendiri + buang entri yang sudah basi (app ditutup dll)
+  const q = await mmReadQueue();
+  const now = Date.now();
+  q.players = q.players.filter(e=>(now-(e.lastSeen||e.joinedAt))<MM_STALE_MS);
+  const me = q.players.find(e=>e.userId===currentUser.id);
+  if(me) me.lastSeen = now;
+  else q.players.push({ userId: currentUser.id, name: mmDisplayName(), joinedAt: mmStartedAt, lastSeen: now });
+  if(q.players.length<2) q.graceStartedAt = null;
+
+  const countEl = document.getElementById('mmCountText');
+  if(countEl) countEl.textContent = q.players.length+' pemain di antrian';
+  const elapsed = Math.floor((now-mmStartedAt)/1000);
+  const timerEl = document.getElementById('mmTimer');
+  if(timerEl) timerEl.textContent = String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');
+
+  // 3) Leader = pemain paling awal gabung (tie-break by userId) -> dialah
+  //    yang bertugas membuat game kalau syarat sudah terpenuhi. Semua HP
+  //    menghitung leader yang SAMA dari data antrian yang sama, jadi tidak
+  //    perlu koordinasi tambahan.
+  const sorted = q.players.slice().sort((a,b)=> a.joinedAt-b.joinedAt || (a.userId<b.userId?-1:1));
+  const isLeader = sorted[0] && sorted[0].userId===currentUser.id;
+
+  if(isLeader && q.players.length>=2){
+    if(q.players.length>=4){
+      await mmStartMatch(q, sorted.slice(0,4));
+      return;
+    }
+    if(!q.graceStartedAt){
+      q.graceStartedAt = now;
+      const subEl = document.getElementById('mmSub');
+      if(subEl) subEl.textContent = 'Ada '+q.players.length+' pemain — menunggu sebentar siapa tahu ada tambahan...';
+    } else if(now - q.graceStartedAt >= MM_GRACE_MS){
+      await mmStartMatch(q, sorted.slice(0, Math.min(4,q.players.length)));
+      return;
+    }
+  }
+  await mmWriteQueue(q);
+}
+async function mmStartMatch(q, matchedEntries){
+  const roomCode = randomRoomCode();
+  const rules = {
+    startMoney:1500, goSalary:200, doublesToJail:true, freeParkingPot:false,
+    freeParkingFixedBonus:false, monopolyDoubleRent:true, houseFreeBuild:false,
+    rentMultiplier:1, houseCostMultiplier:1, auctionOnly:false, timeAttackEndsAt:null
+  };
+  const players = matchedEntries.map((pl,i)=>({
+    id:i, name:pl.name, color:TOKEN_COLORS[i], token:TOKEN_NAMES[i],
+    money:rules.startMoney, pos:0, inJail:false, jailTurns:0, jailCards:0,
+    bankrupt:false, bankruptAt:null, doublesCount:0, properties:[], isBot:false, personality:null,
+    propsBought:0, timesJailed:0, rentPaid:0, rentCollected:0, userId: pl.userId
+  }));
+  const propStates = {};
+  BOARD.forEach((t,i)=>{ if(t.type==='property'||t.type==='railroad'||t.type==='utility'){ propStates[i]={owner:null,houses:0,mortgaged:false}; } });
+  const gameState = {
+    mode:'online', roomCode, rankMode:mmRankMode, matchmaking:true, rules, players,
+    currentIndex:0, freeParkingPot:0, log:[], turnPhase:'canRoll', lastRoll:[1,1], propStates,
+    chanceDeckIds: shuffle([...Array(CHANCE_CARDS.length).keys()]),
+    chestDeckIds: shuffle([...Array(CHEST_CARDS.length).keys()]),
+    rev:1, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null,
+    auction:null, lastMoveMeta:null, timeAttackEndedShown:false, leftSlots:[]
+  };
+  try{
+    await window.storage.set('mpstate_'+roomCode, JSON.stringify(gameState), true);
+    for(const pl of matchedEntries){
+      await window.storage.set('mm_assign_'+pl.userId, JSON.stringify({roomCode}), true);
+    }
+  }catch(e){ return; } // gagal buat room -> biarkan tetap di antrian, dicoba lagi tick berikutnya
+  const matchedIds = matchedEntries.map(e=>e.userId);
+  q.players = q.players.filter(e=>!matchedIds.includes(e.userId));
+  if(q.players.length<2) q.graceStartedAt = null;
+  await mmWriteQueue(q);
+  // Leader juga menunggu "surat panggilan"-nya sendiri lewat tick berikutnya
+  // seperti pemain lain, supaya alurnya seragam (tidak ada jalur pintas khusus host).
+}
+async function mmEnterMatchedGame(roomCode){
+  try{
+    const res = await window.storage.get('mpstate_'+roomCode, true);
+    if(!res){ setTimeout(()=>mmEnterMatchedGame(roomCode), 1000); return; }
+    const payload = JSON.parse(res.value);
+    const mySlot = (payload.players||[]).findIndex(pl=>pl.userId===currentUser.id);
+    myOnlineSlot = mySlot>=0 ? mySlot : null;
+    state = {
+      mode:'online', roomCode, rankMode:!!payload.rankMode, matchmaking:true,
+      rules:payload.rules, players:payload.players, currentIndex:payload.currentIndex,
+      freeParkingPot:payload.freeParkingPot, log:payload.log, turnPhase:payload.turnPhase,
+      propStates:payload.propStates, lastRoll:payload.lastRoll,
+      chanceDeckIds:payload.chanceDeckIds, chestDeckIds:payload.chestDeckIds, rev:payload.rev,
+      pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:payload.pendingTradeOffer||null,
+      auction: payload.auction||null, lastMoveMeta: payload.lastMoveMeta||null, leftSlots: payload.leftSlots||[]
+    };
+    buildBoardDOM();
+    showScreen('screen-game');
+    renderAll();
+    startGamePolling();
+    beginPlayerTurn();
+  }catch(e){ setTimeout(()=>mmEnterMatchedGame(roomCode), 1200); }
+}
+
 async function saveLobby(){
   try{ await window.storage.set('mproom_'+lobby.code, JSON.stringify(lobby), true); return true; }
   catch(e){ alertModal('Gagal menyimpan data room. Coba lagi.'); return false; }
@@ -2489,7 +2745,7 @@ async function createRoomFlow(){
   if(!ensureStorage()) return;
   const name = (document.getElementById('createNameInput').value||'').trim() || 'Pemain 1';
   const code = randomRoomCode();
-  lobby = { code, players:[{slot:0,name}], started:false, hostSlot:0 };
+  lobby = { code, players:[{slot:0,name,userId: currentUser?currentUser.id:null}], started:false, hostSlot:0 };
   myOnlineSlot = 0;
   const ok = await saveLobby();
   if(!ok) return;
@@ -2509,7 +2765,7 @@ async function joinRoomFlow(){
   lobby = remote;
   const used = lobby.players.map(p=>p.slot);
   let slot=0; while(used.includes(slot)) slot++;
-  lobby.players.push({slot,name});
+  lobby.players.push({slot,name,userId: currentUser?currentUser.id:null});
   myOnlineSlot = slot;
   const ok = await saveLobby();
   if(!ok) return;
@@ -2618,8 +2874,10 @@ async function hostStartOnline(){
     money: rules.startMoney, pos:0, inJail:false, jailTurns:0, jailCards:0,
     bankrupt:false, doublesCount:0, properties:[], isBot: !!pl.isBot,
     personality: pl.isBot ? (pl.personality || pickBotPersonality()) : null,
-    propsBought:0, timesJailed:0, rentPaid:0, rentCollected:0
+    propsBought:0, timesJailed:0, rentPaid:0, rentCollected:0,
+    userId: pl.userId || null
   }));
+  lastRankResult = null;
   const propStates = {};
   BOARD.forEach((t,i)=>{ if(t.type==='property'||t.type==='railroad'||t.type==='utility'){ propStates[i]={owner:null,houses:0,mortgaged:false}; } });
   state = {
@@ -2874,7 +3132,7 @@ function serializeState(){
   return {
     rev: (state.rev||0)+1,
     rules: state.rules,
-    players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,doublesCount:p.doublesCount,properties:p.properties||[],propsBought:p.propsBought||0,timesJailed:p.timesJailed||0,rentPaid:p.rentPaid||0,rentCollected:p.rentCollected||0,isBot:!!p.isBot,personality:p.personality||null})),
+    players: state.players.map(p=>({id:p.id,name:p.name,color:p.color,token:p.token,money:p.money,pos:p.pos,inJail:p.inJail,jailTurns:p.jailTurns,jailCards:p.jailCards,bankrupt:p.bankrupt,bankruptAt:p.bankruptAt||null,doublesCount:p.doublesCount,properties:p.properties||[],propsBought:p.propsBought||0,timesJailed:p.timesJailed||0,rentPaid:p.rentPaid||0,rentCollected:p.rentCollected||0,isBot:!!p.isBot,personality:p.personality||null,userId:p.userId||null})),
     currentIndex: state.currentIndex,
     freeParkingPot: state.freeParkingPot,
     log: state.log.slice(-60),
@@ -3632,7 +3890,12 @@ function updateTurnBanner(){
   const badge = document.getElementById('roomBadge');
   if(state.mode==='online'){
     badge.style.display='inline-block';
-    badge.textContent = 'Room '+state.roomCode+(myOnlineSlot!=null?' • Kamu: '+state.players[myOnlineSlot].name:'');
+    const who = myOnlineSlot!=null ? ' • Kamu: '+state.players[myOnlineSlot].name : '';
+    if(state.matchmaking){
+      badge.textContent = (state.rankMode ? '🏆 Rank Match' : '🎲 Match Santai') + who;
+    } else {
+      badge.textContent = 'Room '+state.roomCode+who;
+    }
   } else {
     badge.style.display='none';
   }
@@ -4088,6 +4351,7 @@ function declareBankrupt(){
   const debt = state.pendingDebt;
   const p = debt ? (state.players.find(pl=>pl.id===debt.playerId) || currentPlayer()) : currentPlayer();
   p.bankrupt = true;
+  p.bankruptAt = Date.now();
   log(`${p.name} dinyatakan BANGKRUT.`);
   (p.properties||[]).forEach(i=>{
     const ps = state.propStates[i];
@@ -4136,6 +4400,9 @@ function checkGameOver(){
   if(state.timeAttackEndedShown) return; // permainan sudah selesai lewat Time Attack
   const alive = state.players.filter(p=>!p.bankrupt);
   if(alive.length<=1){
+    lastRankResult = null;
+    const rrEl = document.getElementById('winnerRankResult');
+    if(rrEl) rrEl.style.display = 'none';
     const winner = alive[0];
     document.getElementById('winnerName').textContent = winner ? winner.name+' MENANG!' : 'Permainan Selesai';
     document.getElementById('winnerSub').textContent = winner ? `${winner.name} adalah satu-satunya pemain yang tidak bangkrut.` : '';
@@ -4144,6 +4411,7 @@ function checkGameOver(){
     stopTurnTimer();
     playSound('win');
     clearSavedGame();
+    applyRankForGame(computePlacementOrder(false));
   }
 }
 function renderWinnerStats(rankByNetWorth){
@@ -4157,6 +4425,151 @@ function renderWinnerStats(rankByNetWorth){
       <span style="color:var(--paper-dim);text-align:right;">${rankByNetWorth?`💎 Net Worth ${fmt(netWorthOf(p))}<br>`:''}🏠${p.propsBought||0} beli · 🔒${p.timesJailed||0}× penjara<br>💸${fmt(p.rentPaid||0)} sewa dibayar · 💰${fmt(p.rentCollected||0)} sewa didapat</span>
     </div>`).join('');
   el.innerHTML = `<div style="font-size:10px;color:var(--gold-dim);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;text-align:center;">${rankByNetWorth?'Ranking Net Worth':'Statistik Permainan'}</div>${rows}`;
+}
+
+/* ============================================================
+   RANK / PERINGKAT MUSIMAN
+   ------------------------------------------------------------
+   Sengaja TIDAK pakai menang/kalah biner (Elo klasik), karena
+   Monopoli sangat bergantung hoki dadu/kartu — satu kekalahan
+   karena sial bisa bikin frustrasi kalau langsung menjatuhkan rank.
+   Sebagai gantinya dipakai "placement points": poin sesuai posisi
+   akhir (juara 1/2/3/4), jadi posisi 2-3 tetap dihargai dan dalam
+   jangka panjang hoki cenderung saling menetralkan.
+   - Musiman: reset otomatis tiap bulan kalender.
+   - Hanya berlaku utk game ONLINE dgn pemain yg login (bot & mode
+     hotseat tidak dapat rank, karena tidak terikat 1 akun).
+   - 10 game pertama tiap musim ditandai "Kalibrasi" di UI.
+   ============================================================ */
+const RANK_PLACEMENT_POINTS = [25, 15, 5, 0]; // index0 = juara 1, dst
+const RANK_CALIBRATION_GAMES = 10;
+const RANK_TIERS = [
+  {min:0,   name:'Kayu',     icon:'🪵'},
+  {min:60,  name:'Perunggu', icon:'🥉'},
+  {min:150, name:'Perak',    icon:'🥈'},
+  {min:300, name:'Emas',     icon:'🥇'},
+  {min:500, name:'Platinum', icon:'💠'},
+  {min:800, name:'Master',   icon:'👑'},
+];
+let lastRankResult = null; // {placement, pointsGained, data} utk pemain lokal, dipakai di layar menang
+function rankSeasonId(d){
+  d = d || new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function rankSeasonLabel(seasonId){
+  const [y,m] = (seasonId||rankSeasonId()).split('-');
+  const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return bulan[parseInt(m,10)-1]+' '+y;
+}
+function rankTierOf(points){
+  let t = RANK_TIERS[0];
+  for(const tier of RANK_TIERS){ if(points>=tier.min) t = tier; }
+  return t;
+}
+async function getRankData(userId){
+  const season = rankSeasonId();
+  let data = null;
+  try{
+    const res = await window.storage.get('rank_'+userId, true);
+    data = res ? JSON.parse(res.value) : null;
+  }catch(e){ data = null; }
+  if(!data || data.season !== season){
+    data = {
+      season, points:0, games:0, wins:0,
+      lastSeason: (data && data.season) ? {season:data.season, points:data.points, games:data.games, wins:data.wins} : (data && data.lastSeason) || null
+    };
+  }
+  return data;
+}
+async function saveRankData(userId, data){
+  try{ await window.storage.set('rank_'+userId, JSON.stringify(data), true); }catch(e){}
+}
+async function updateLeaderboardEntry(userId, name, data){
+  const key = 'leaderboard_'+data.season;
+  let board = [];
+  try{
+    const res = await window.storage.get(key, true);
+    board = res ? JSON.parse(res.value) : [];
+  }catch(e){ board = []; }
+  board = board.filter(e=>e.userId!==userId);
+  board.push({userId, name, points:data.points, games:data.games, wins:data.wins});
+  board.sort((a,b)=>b.points-a.points);
+  board = board.slice(0,100);
+  try{ await window.storage.set(key, JSON.stringify(board), true); }catch(e){}
+}
+/* Urutkan pemain dari juara 1 -> terakhir.
+   - byNetWorth (Time Attack): murni net worth tertinggi.
+   - default (menang krn sisa 1 hidup): yg tidak bangkrut di posisi 1,
+     sisanya diurutkan dari yg PALING LAMA bertahan (bangkrut belakangan
+     = peringkat lebih tinggi). */
+function computePlacementOrder(byNetWorth){
+  const players = state.players.slice();
+  if(byNetWorth) return players.sort((a,b)=> netWorthOf(b)-netWorthOf(a));
+  return players.sort((a,b)=>{
+    if(!!a.bankrupt !== !!b.bankrupt) return a.bankrupt ? 1 : -1;
+    return (b.bankruptAt||0) - (a.bankruptAt||0);
+  });
+}
+async function applyRankForGame(orderedPlayers){
+  // Setiap HP di game online cenderung SAMA-SAMA memanggil checkGameOver()
+  // sendiri-sendiri begitu melihat status akhir game (baik lewat aksi lokal
+  // maupun lewat sinkronisasi dari HP lain). Makanya di sini SENGAJA hanya
+  // meng-update rank milik pemain LOKAL (currentUser) saja, bukan loop semua
+  // pemain — supaya poin tidak tergandakan berkali-kali lipat gara-gara tiap
+  // HP menulis rank utk semua orang. Tiap pemain bertanggung jawab menyimpan
+  // rank dirinya sendiri, dari device-nya sendiri.
+  if(!state || !state.rankMode) return;
+  if(state.rankApplied) return; // sudah pernah diterapkan di HP ini utk game ini
+  state.rankApplied = true;
+  if(!currentUser) return;
+  const idx = orderedPlayers.findIndex(p=>p.userId===currentUser.id);
+  if(idx<0) return;
+  const p = orderedPlayers[idx];
+  if(p.isBot) return;
+  const pts = RANK_PLACEMENT_POINTS[Math.min(idx, RANK_PLACEMENT_POINTS.length-1)];
+  const data = await getRankData(currentUser.id);
+  data.points += pts;
+  data.games += 1;
+  if(idx===0) data.wins += 1;
+  await saveRankData(currentUser.id, data);
+  await updateLeaderboardEntry(currentUser.id, p.name, data);
+  lastRankResult = { placement:idx+1, pointsGained:pts, data };
+  renderRankResultInWinnerOverlay();
+}
+function renderRankResultInWinnerOverlay(){
+  const el = document.getElementById('winnerRankResult');
+  if(!el || !lastRankResult) return;
+  const tier = rankTierOf(lastRankResult.data.points);
+  const calibrating = lastRankResult.data.games <= RANK_CALIBRATION_GAMES;
+  el.style.display = 'block';
+  el.innerHTML = `<div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.25);text-align:center;font-size:12.5px;">
+    Peringkat #${lastRankResult.placement} · <b style="color:var(--gold)">${lastRankResult.pointsGained>=0?'+':''}${lastRankResult.pointsGained} poin</b><br>
+    ${tier.icon} ${tier.name} — ${lastRankResult.data.points} poin musim ${rankSeasonLabel(lastRankResult.data.season)}
+    ${calibrating?`<br><span style="color:var(--paper-dim);">Kalibrasi (${lastRankResult.data.games}/${RANK_CALIBRATION_GAMES} game)</span>`:''}
+  </div>`;
+}
+async function openLeaderboardModal(){
+  const season = rankSeasonId();
+  const key = 'leaderboard_'+season;
+  let board = [];
+  try{
+    const res = await window.storage.get(key, true);
+    board = res ? JSON.parse(res.value) : [];
+  }catch(e){}
+  const rows = board.length ? board.map((e,i)=>{
+    const tier = rankTierOf(e.points);
+    const isMe = currentUser && e.userId===currentUser.id;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(18,52,86,0.08);${isMe?'color:var(--gold);font-weight:800;':''}">
+      <span style="width:26px;text-align:right;">${i+1}.</span>
+      <span style="flex:1;">${tier.icon} ${e.name}${isMe?' (kamu)':''}</span>
+      <span>${e.points} pts</span>
+    </div>`;
+  }).join('') : `<p style="color:var(--paper-dim);font-size:13px;">Belum ada data peringkat musim ini. Main mode Online buat mulai dapat poin!</p>`;
+  showModal({
+    title: '🏆 Papan Peringkat — '+rankSeasonLabel(season),
+    desc: `<div style="text-align:left;">${rows}</div>`,
+    buttons: [{label:'Tutup', cls:'btn-secondary', onClick:closeModal}]
+  });
 }
 
 /* ============================================================
@@ -4184,6 +4597,9 @@ function checkTimeAttackExpiry(){
   }
 }
 function endGameTimeAttack(){
+  lastRankResult = null;
+  const rrEl0 = document.getElementById('winnerRankResult');
+  if(rrEl0) rrEl0.style.display = 'none';
   const alive = state.players.filter(p=>!p.bankrupt);
   if(alive.length===0) return;
   let winner = alive[0];
@@ -4195,6 +4611,7 @@ function endGameTimeAttack(){
   stopTurnTimer();
   playSound('win');
   clearSavedGame();
+  applyRankForGame(computePlacementOrder(true));
 }
 
 /* ============================================================
