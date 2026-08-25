@@ -330,6 +330,13 @@ html[data-theme="dark"] .deed-details{background:rgba(0,0,0,0.28);}
 .setup-header p{margin:0;color:var(--paper-dim);font-size:13px;}
 .card{background:rgba(18,52,86,0.045);border:1px solid rgba(47,111,168,0.25);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
 .card h3{margin:0 0 10px;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);}
+.rules-summary{margin:0;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;user-select:none;}
+.rules-summary::-webkit-details-marker{display:none;}
+.rules-summary::marker{content:'';}
+.rules-summary .dd-arrow{display:inline-block;transition:transform 0.2s;font-size:12px;}
+details.rules-details[open]>.rules-summary .dd-arrow{transform:rotate(180deg);}
+details.rules-details[open]>.rules-summary{margin-bottom:10px;}
+details.rules-details>.rule-row:first-of-type{margin-top:2px;}
 .pill-row{display:flex;gap:8px;flex-wrap:wrap;}
 .pill{
   border:2px solid rgba(47,111,168,0.4);background:transparent;color:var(--paper);
@@ -975,13 +982,14 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
       <p id="modePresetDesc-lobby" style="font-size:12px;color:var(--paper-dim);margin:10px 0 0;line-height:1.5;">Cocok untuk main cepat/digital: sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, tanpa aturan komplek untuk membangun. Ekonomi berputar lebih cepat, pemain bangkrut lebih cepat juga.</p>
     </div>
     <div class="card" id="lobbyRulesCard2">
-      <h3>Aturan (diatur host)</h3>
+      <details class="rules-details">
+      <summary class="rules-summary">Aturan (diatur host)<span class="dd-arrow">▾</span></summary>
       <div class="rule-row">
         <div class="rule-label">Uang awal<small>Modal setiap pemain di awal permainan</small></div>
         <select class="rule-select" id="lobbyStartMoney" onchange="markModeCustom('lobby')">
-          <option value="200" selected>$200</option>
+          <option value="200">$200</option>
           <option value="1000">$1.000</option>
-          <option value="1500">$1.500</option>
+          <option value="1500" selected>$1.500</option>
           <option value="2000">$2.000</option>
           <option value="2500">$2.500</option>
         </select>
@@ -991,8 +999,8 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
         <select class="rule-select" id="lobbyGoSalary" onchange="markModeCustom('lobby')">
           <option value="100">$100</option>
           <option value="150">$150</option>
-          <option value="200">$200</option>
-          <option value="300" selected>$300</option>
+          <option value="200" selected>$200</option>
+          <option value="300">$300</option>
         </select>
       </div>
       <div class="rule-row">
@@ -1037,6 +1045,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
           <option value="60">60 menit</option>
         </select>
       </div>
+      </details>
     </div>
     <div id="lobbyWaitingNote" style="text-align:center;color:var(--paper-dim);font-size:13px;margin-top:6px;"></div>
     <button class="btn-big" style="width:100%;margin-top:12px;" id="lobbyStartBtn" onclick="hostStartOnline()">Mulai Permainan</button>
@@ -1080,9 +1089,9 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
     <div class="rule-row">
       <div class="rule-label">Uang awal<small>Modal setiap pemain di awal permainan</small></div>
       <select class="rule-select" id="ruleStartMoney" onchange="markModeCustom('setup')">
-        <option value="200" selected>$200</option>
+        <option value="200">$200</option>
         <option value="1000">$1.000</option>
-        <option value="1500">$1.500</option>
+        <option value="1500" selected>$1.500</option>
         <option value="2000">$2.000</option>
         <option value="2500">$2.500</option>
       </select>
@@ -2368,10 +2377,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">25 Agustus 2026, 10:26 WITA — v1.8.25.1026</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2744,10 +2749,14 @@ async function mmStartMatch(q, matchedEntries, fillWithBots){
     }
   }
   const roomCode = randomRoomCode();
+  // Matchmaking (Rank & Santai) pakai gabungan Quick Match + Auction Only, tapi
+  // sewa & harga rumah dibiarkan normal (×1): bangun rumah bebas set warna, tanah
+  // kosong wajib dilelang — supaya begitu pemain ketemu, langsung main tanpa perlu
+  // atur apa-apa lagi.
   const rules = {
-    startMoney:200, goSalary:200, doublesToJail:true, freeParkingPot:false,
-    freeParkingFixedBonus:false, monopolyDoubleRent:true, houseFreeBuild:false,
-    rentMultiplier:1, houseCostMultiplier:1, auctionOnly:false, timeAttackEndsAt:null
+    startMoney:1500, goSalary:200, doublesToJail:true, freeParkingPot:false,
+    freeParkingFixedBonus:false, monopolyDoubleRent:true, houseFreeBuild:true,
+    rentMultiplier:1, houseCostMultiplier:1, auctionOnly:true, timeAttackEndsAt:null
   };
   const players = entries.map((pl,i)=>({
     id:i, name:pl.name, color:TOKEN_COLORS[i], token:TOKEN_NAMES[i],
@@ -3405,25 +3414,25 @@ const MODE_PRESETS = {
   classic: {
     label:'🏠 Classic Mode',
     desc:'Mode default, paling dekat dengan Monopoly tradisional. Pemain terakhir yang tidak bangkrut menang.',
-    startMoney:200, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:0
   },
   quick: {
     label:'⚡ Quick Match',
     desc:'Cocok untuk main cepat/digital: sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, tanpa aturan komplek untuk membangun. Ekonomi berputar lebih cepat, pemain bangkrut lebih cepat juga.',
-    startMoney:200, goSalary:300, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:true, rentBoost:true, cheapHouses:true, auctionOnly:false, timeAttack:0
   },
   timeattack: {
     label:'⏱️ Time Attack',
     desc:'Tidak ada yang menang sampai bangkrut — permainan berhenti otomatis setelah waktu habis. Pemenang ditentukan dari Net Worth tertinggi (uang tunai + properti + rumah − hutang).',
-    startMoney:200, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:30
   },
   auction: {
     label:'🔨 Auction Only',
     desc:'Tanah kosong tidak bisa dibeli langsung — selalu masuk lelang ke semua pemain. Memunculkan bluffing, bidding, strategi ekonomi, dan perang harga. Bisa jadi mode paling strategis.',
-    startMoney:200, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:true, timeAttack:0
   }
 };
