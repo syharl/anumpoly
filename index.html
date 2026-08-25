@@ -51,7 +51,14 @@ html[data-theme="dark"]{
   --modal-border:rgba(127,178,224,0.3);
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;height:100%;}
+/* overflow-x:hidden di html JUGA (bukan cuma body) + width:100% supaya
+   tidak ada elemen manapun yang bisa membuat viewport bisa digeser/
+   di-drag ke kiri-kanan (mis. bar page-header yang position:sticky
+   ikut "kebawa" geser secara horizontal kalau halaman sempat overflow
+   ke samping). touch-action:pan-y di body mengunci gestur sentuh cuma
+   bisa scroll vertikal, jadi drag kiri-kanan pada layar (mis. "Pilih
+   Mode Main") tidak lagi menggeser halaman sama sekali. */
+html,body{margin:0;padding:0;height:100%;width:100%;overflow-x:hidden;}
 body{
   font-family:'Inter',sans-serif;
   /* Warna polos sebagai fallback saja — gradien + motif sesungguhnya
@@ -61,6 +68,8 @@ body{
   color:var(--paper);
   min-height:100vh;
   overflow-x:hidden;
+  overscroll-behavior-x:none;
+  touch-action:pan-y;
   position:relative;
 }
 h1,h2,h3,.display{font-family:'Playfair Display',serif;}
@@ -369,7 +378,9 @@ select.rule-select{background:rgba(18,52,86,0.08);color:var(--paper);border:1px 
   width:100%;display:flex;align-items:center;gap:10px;
   padding:calc(14px + env(safe-area-inset-top)) 14px 14px 6px;
   background:linear-gradient(135deg,#DCEAFC,#C9DFFA);
-  box-shadow:0 4px 14px rgba(47,111,168,0.18);position:sticky;top:0;z-index:2;flex:none;
+  box-shadow:0 4px 14px rgba(47,111,168,0.18);
+  position:sticky;top:0;left:0;right:0;z-index:2;flex:none;
+  max-width:100%;
 }
 .page-header .ph-back{
   flex:none;width:36px;height:36px;border-radius:50%;border:none;background:transparent;
@@ -956,20 +967,21 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
     <div class="card" id="lobbyRulesCard">
       <h3>Mode Permainan (diatur host)</h3>
       <div class="pill-row" id="modePresetRow-lobby">
-        <button type="button" class="pill mode-pill active" data-preset="classic" onclick="selectModePreset('classic','lobby')">🏠 Classic</button>
-        <button type="button" class="pill mode-pill" data-preset="quick" onclick="selectModePreset('quick','lobby')">⚡ Quick Match</button>
+        <button type="button" class="pill mode-pill" data-preset="classic" onclick="selectModePreset('classic','lobby')">🏠 Classic</button>
+        <button type="button" class="pill mode-pill active" data-preset="quick" onclick="selectModePreset('quick','lobby')">⚡ Quick Match</button>
         <button type="button" class="pill mode-pill" data-preset="timeattack" onclick="selectModePreset('timeattack','lobby')">⏱️ Time Attack</button>
         <button type="button" class="pill mode-pill" data-preset="auction" onclick="selectModePreset('auction','lobby')">🔨 Auction Only</button>
       </div>
-      <p id="modePresetDesc-lobby" style="font-size:12px;color:var(--paper-dim);margin:10px 0 0;line-height:1.5;">Mode default, paling dekat dengan Monopoly tradisional. Pemain terakhir yang tidak bangkrut menang.</p>
+      <p id="modePresetDesc-lobby" style="font-size:12px;color:var(--paper-dim);margin:10px 0 0;line-height:1.5;">Cocok untuk main cepat/digital: sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, tanpa aturan komplek untuk membangun. Ekonomi berputar lebih cepat, pemain bangkrut lebih cepat juga.</p>
     </div>
     <div class="card" id="lobbyRulesCard2">
       <h3>Aturan (diatur host)</h3>
       <div class="rule-row">
         <div class="rule-label">Uang awal<small>Modal setiap pemain di awal permainan</small></div>
         <select class="rule-select" id="lobbyStartMoney" onchange="markModeCustom('lobby')">
+          <option value="200" selected>$200</option>
           <option value="1000">$1.000</option>
-          <option value="1500" selected>$1.500</option>
+          <option value="1500">$1.500</option>
           <option value="2000">$2.000</option>
           <option value="2500">$2.500</option>
         </select>
@@ -979,8 +991,8 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
         <select class="rule-select" id="lobbyGoSalary" onchange="markModeCustom('lobby')">
           <option value="100">$100</option>
           <option value="150">$150</option>
-          <option value="200" selected>$200</option>
-          <option value="300">$300</option>
+          <option value="200">$200</option>
+          <option value="300" selected>$300</option>
         </select>
       </div>
       <div class="rule-row">
@@ -1001,15 +1013,15 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
       </div>
       <div class="rule-row">
         <div class="rule-label">Bangun rumah bebas set warna<small>Rumah/hotel boleh dibangun tanpa kuasai satu set warna penuh, tapi hanya bisa dibeli tepat saat mendarat di petak itu</small></div>
-        <label class="switch"><input type="checkbox" id="lobbyHouseFreeBuild" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+        <label class="switch"><input type="checkbox" id="lobbyHouseFreeBuild" checked onchange="markModeCustom('lobby')"><span class="slider"></span></label>
       </div>
       <div class="rule-row">
         <div class="rule-label">Sewa properti ×1,5<small>Semua sewa properti/stasiun/perusahaan naik 1,5× — bikin ekonomi berputar lebih cepat (dipakai Quick Match)</small></div>
-        <label class="switch"><input type="checkbox" id="lobbyRentBoost" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+        <label class="switch"><input type="checkbox" id="lobbyRentBoost" checked onchange="markModeCustom('lobby')"><span class="slider"></span></label>
       </div>
       <div class="rule-row">
         <div class="rule-label">Harga rumah lebih murah<small>Biaya bangun rumah/hotel dipotong ±30% (dipakai Quick Match)</small></div>
-        <label class="switch"><input type="checkbox" id="lobbyCheapHouses" onchange="markModeCustom('lobby')"><span class="slider"></span></label>
+        <label class="switch"><input type="checkbox" id="lobbyCheapHouses" checked onchange="markModeCustom('lobby')"><span class="slider"></span></label>
       </div>
       <div class="rule-row">
         <div class="rule-label">🔨 Lelang Saja (wajib lelang)<small>Tanah kosong tidak bisa dibeli langsung — selalu dilelang ke semua pemain</small></div>
@@ -1068,8 +1080,9 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
     <div class="rule-row">
       <div class="rule-label">Uang awal<small>Modal setiap pemain di awal permainan</small></div>
       <select class="rule-select" id="ruleStartMoney" onchange="markModeCustom('setup')">
+        <option value="200" selected>$200</option>
         <option value="1000">$1.000</option>
-        <option value="1500" selected>$1.500</option>
+        <option value="1500">$1.500</option>
         <option value="2000">$2.000</option>
         <option value="2500">$2.500</option>
       </select>
@@ -2355,10 +2368,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">25 Agustus 2026, 09:16 WITA — v1.8.25.0916</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2428,17 +2437,32 @@ function tanganiTombolBackAndroid(){
   const winnerOverlay = document.getElementById('winnerOverlay');
   if(winnerOverlay && winnerOverlay.classList.contains('show')) return;
 
+  // PENTING: pemetaan di bawah ini HARUS persis sama dengan tujuan
+  // tombol panah (←) on-screen di tiap layar (lihat .page-header >
+  // .ph-back masing-masing div layar di atas). Kalau salah satu diubah,
+  // yang satu lagi wajib ikut diubah — supaya back tombol HP dan back
+  // tombol di layar selalu konsisten (tidak ada yang "loncat" langsung
+  // ke menu utama, dan tidak ada yang malah nanya konfirmasi keluar
+  // aplikasi padahal semestinya cuma mundur satu layar).
   const layarAktif = document.querySelector('.screen.active');
   const idLayar = layarAktif ? layarAktif.id : '';
   switch(idLayar){
-    case 'screen-mode':
-    case 'screen-settings':
-    case 'screen-account':
-    case 'screen-setup':
+    case 'screen-mode':       // ph-back -> goToMenu()
+    case 'screen-settings':   // ph-back -> goToMenu()
+    case 'screen-account':    // ph-back -> goToMenu()
       goToMenu();
       return;
-    case 'screen-online':
+    case 'screen-custom':     // ph-back -> goToModeSelect()
+      goToModeSelect();
+      return;
+    case 'screen-setup':      // ph-back -> goToCustomRoom()
+      goToCustomRoom();
+      return;
+    case 'screen-online':     // ph-back -> leaveOnline()
       leaveOnline();
+      return;
+    case 'screen-matchmaking': // ph-back -> leaveMatchmaking()
+      leaveMatchmaking();
       return;
     case 'screen-game':
       // Belum ada tombol panah (←) khusus di layar ini — back di sini
@@ -2556,6 +2580,14 @@ async function leaveOnline(){
    ============================================================ */
 const MM_GRACE_MS = 20000;
 const MM_STALE_MS = 90000;
+/* Khusus Matchmaking Santai (bukan Rank): kalau sudah menunggu selama
+   ini dan slot masih belum penuh 4 pemain manusia, sisa slotnya boleh
+   diisi bot supaya pemain tidak menunggu selamanya. Bot yang dipakai
+   PERSIS bot yang sama (personality + logic AI) dengan bot di Custom
+   Room/Setup offline — bukan bot "spesial" yang hoki/dicurangi, jadi
+   tetap adil, cuma memang dituntut main cukup baik lewat AI-nya, bukan
+   lewat keberuntungan dadu yang tetap fair/acak untuk semua pemain. */
+const MM_BOT_FILL_MS = 45000;
 let mmPollTimer = null;
 let mmActive = false;
 let mmRankMode = false;
@@ -2659,12 +2691,22 @@ async function mmPollTick(){
   //    perlu koordinasi tambahan.
   const sorted = q.players.slice().sort((a,b)=> a.joinedAt-b.joinedAt || (a.userId<b.userId?-1:1));
   const isLeader = sorted[0] && sorted[0].userId===currentUser.id;
+  const waitedMs = now - mmStartedAt;
 
+  if(isLeader && q.players.length>=4){
+    await mmStartMatch(q, sorted.slice(0,4));
+    return;
+  }
+  // Santai (bukan Rank) & sudah menunggu terlalu lama & masih kurang dari
+  // 4 pemain manusia -> daripada terus menunggu tanpa kepastian, sisa
+  // slotnya diisi bot supaya tetap bisa langsung main. Sengaja TIDAK
+  // berlaku di Rank, supaya hasil yang memengaruhi Rank tetap murni
+  // lawan sesama manusia.
+  if(isLeader && !mmRankMode && q.players.length>=1 && waitedMs >= MM_BOT_FILL_MS){
+    await mmStartMatch(q, sorted, true);
+    return;
+  }
   if(isLeader && q.players.length>=2){
-    if(q.players.length>=4){
-      await mmStartMatch(q, sorted.slice(0,4));
-      return;
-    }
     if(!q.graceStartedAt){
       q.graceStartedAt = now;
       const subEl = document.getElementById('mmSub');
@@ -2673,20 +2715,40 @@ async function mmPollTick(){
       await mmStartMatch(q, sorted.slice(0, Math.min(4,q.players.length)));
       return;
     }
+  } else if(!mmRankMode && q.players.length===1){
+    const subEl = document.getElementById('mmSub');
+    const sisaDetik = Math.max(0, Math.ceil((MM_BOT_FILL_MS-waitedMs)/1000));
+    if(subEl) subEl.textContent = 'Belum ada pemain lain — isi bot dalam '+sisaDetik+' detik kalau masih sendirian...';
   }
   await mmWriteQueue(q);
 }
-async function mmStartMatch(q, matchedEntries){
+async function mmStartMatch(q, matchedEntries, fillWithBots){
+  // matchedEntries = pemain manusia (dari antrian). Kalau fillWithBots
+  // aktif dan jumlahnya belum 4, sisanya diisi bot memakai AI yang PERSIS
+  // sama dengan bot Custom Room (lihat pickBotPersonality/BOT_PERSONALITIES)
+  // — jadi bot "lumayan jago" karena main sesuai personality-nya secara
+  // konsisten, BUKAN karena dadunya dicurangi lebih hoki. Dadu tetap acak
+  // fair untuk semua pemain, manusia maupun bot.
+  let entries = matchedEntries.slice(0,4).map(pl=>({ userId:pl.userId, name:pl.name, isBot:false, personality:null }));
+  if(fillWithBots){
+    const usedNames = entries.map(e=>e.name);
+    while(entries.length<4){
+      const personality = pickBotPersonality();
+      const name = pickBotName(usedNames);
+      usedNames.push(name);
+      entries.push({ userId:null, name, isBot:true, personality });
+    }
+  }
   const roomCode = randomRoomCode();
   const rules = {
-    startMoney:1500, goSalary:200, doublesToJail:true, freeParkingPot:false,
+    startMoney:200, goSalary:200, doublesToJail:true, freeParkingPot:false,
     freeParkingFixedBonus:false, monopolyDoubleRent:true, houseFreeBuild:false,
     rentMultiplier:1, houseCostMultiplier:1, auctionOnly:false, timeAttackEndsAt:null
   };
-  const players = matchedEntries.map((pl,i)=>({
+  const players = entries.map((pl,i)=>({
     id:i, name:pl.name, color:TOKEN_COLORS[i], token:TOKEN_NAMES[i],
     money:rules.startMoney, pos:0, inJail:false, jailTurns:0, jailCards:0,
-    bankrupt:false, bankruptAt:null, doublesCount:0, properties:[], isBot:false, personality:null,
+    bankrupt:false, bankruptAt:null, doublesCount:0, properties:[], isBot:!!pl.isBot, personality: pl.isBot?pl.personality:null,
     propsBought:0, timesJailed:0, rentPaid:0, rentCollected:0, userId: pl.userId
   }));
   const propStates = {};
@@ -2699,13 +2761,14 @@ async function mmStartMatch(q, matchedEntries){
     rev:1, pendingDebt:null, pendingBuy:null, pendingHouseBuild:null, pendingTradeOffer:null,
     auction:null, lastMoveMeta:null, timeAttackEndedShown:false, leftSlots:[]
   };
+  const humanEntries = entries.filter(pl=>pl.userId);
   try{
     await window.storage.set('mpstate_'+roomCode, JSON.stringify(gameState), true);
-    for(const pl of matchedEntries){
+    for(const pl of humanEntries){
       await window.storage.set('mm_assign_'+pl.userId, JSON.stringify({roomCode}), true);
     }
   }catch(e){ return; } // gagal buat room -> biarkan tetap di antrian, dicoba lagi tick berikutnya
-  const matchedIds = matchedEntries.map(e=>e.userId);
+  const matchedIds = humanEntries.map(e=>e.userId);
   q.players = q.players.filter(e=>!matchedIds.includes(e.userId));
   if(q.players.length<2) q.graceStartedAt = null;
   await mmWriteQueue(q);
@@ -3338,25 +3401,25 @@ const MODE_PRESETS = {
   classic: {
     label:'🏠 Classic Mode',
     desc:'Mode default, paling dekat dengan Monopoly tradisional. Pemain terakhir yang tidak bangkrut menang.',
-    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:200, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:0
   },
   quick: {
     label:'⚡ Quick Match',
     desc:'Cocok untuk main cepat/digital: sewa ×1,5, gaji lewat Mulai ×2, rumah lebih murah, tanpa aturan komplek untuk membangun. Ekonomi berputar lebih cepat, pemain bangkrut lebih cepat juga.',
-    startMoney:2000, goSalary:300, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:200, goSalary:300, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:true, rentBoost:true, cheapHouses:true, auctionOnly:false, timeAttack:0
   },
   timeattack: {
     label:'⏱️ Time Attack',
     desc:'Tidak ada yang menang sampai bangkrut — permainan berhenti otomatis setelah waktu habis. Pemenang ditentukan dari Net Worth tertinggi (uang tunai + properti + rumah − hutang).',
-    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:200, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:false, timeAttack:30
   },
   auction: {
     label:'🔨 Auction Only',
     desc:'Tanah kosong tidak bisa dibeli langsung — selalu masuk lelang ke semua pemain. Memunculkan bluffing, bidding, strategi ekonomi, dan perang harga. Bisa jadi mode paling strategis.',
-    startMoney:1500, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
+    startMoney:200, goSalary:200, doublesJail:true, freeParking:false, freeParkingFixedBonus:false, monopolyRent:true,
     houseFreeBuild:false, rentBoost:false, cheapHouses:false, auctionOnly:true, timeAttack:0
   }
 };
@@ -5690,6 +5753,14 @@ const BOT_RETRY_MS = 4000; // kalau kondisi persis sama masih "macet" setelah se
 function amIBotDriver(){
   if(!state) return false;
   if(state.mode!=='online') return true;
+  if(state.matchmaking){
+    // Room hasil Matchmaking (Rank/Santai) tidak punya objek `lobby`/host
+    // seperti Custom Room — jadi yang menggerakkan bot ditentukan sebagai
+    // pemain manusia dengan slot terkecil (yaitu leader antrian yang
+    // membuat room lewat mmStartMatch()), bukan lobby.hostSlot.
+    const firstHuman = (state.players||[]).find(p=>!p.isBot);
+    return !!(firstHuman && myOnlineSlot===firstHuman.id);
+  }
   return !!(lobby && myOnlineSlot===lobby.hostSlot);
 }
 function scheduleBotAction(sig, delay, fn){
