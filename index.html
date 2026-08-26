@@ -2448,10 +2448,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 17:01 WITA — v1.8.26.1701</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -4628,6 +4624,24 @@ function animateDiceRoll(cb){
     }
   }, 70);
 }
+const ROLL_DICE_URL = SUPABASE_URL + '/functions/v1/roll-dice';
+async function fetchOfficialDice(){
+  // Dadu "resmi" sekarang datang dari server, bukan Math.random() di HP
+  // masing-masing — supaya ke depannya (Fase C) server juga bisa jadi
+  // wasit soal sah/tidaknya sebuah lemparan. Kalau server tak terjangkau
+  // (mis. sinyal putus sesaat), kita jatuhkan ke acak lokal biasa supaya
+  // giliran tidak macet total.
+  try{
+    const resp = await fetch(ROLL_DICE_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({})
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.d1 && data.d2) return [data.d1, data.d2];
+  }catch(e){}
+  return [1+Math.floor(Math.random()*6), 1+Math.floor(Math.random()*6)];
+}
 function onRoll(){
   if(!myTurnOK()) return;
   if(state.turnPhase!=='canRoll') return;
@@ -4649,9 +4663,12 @@ function onRoll(){
   // berubah jadi 'rolling', bukan 'canRoll' lagi.
   state.turnPhase = 'rolling';
   document.getElementById('btnRoll').disabled = true;
-  animateDiceRoll(()=>{
-    const d1 = 1+Math.floor(Math.random()*6);
-    const d2 = 1+Math.floor(Math.random()*6);
+  // Minta dadu resmi ke server BERSAMAAN dengan animasi kocok dadu berjalan
+  // (bukan sesudahnya), supaya jawaban server biasanya sudah siap begitu
+  // animasi selesai — tidak ada jeda tambahan yang terasa oleh pemain.
+  const officialDicePromise = fetchOfficialDice();
+  animateDiceRoll(async ()=>{
+    const [d1, d2] = await officialDicePromise;
     state.lastRoll=[d1,d2];
     document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
     playSound('roll');
