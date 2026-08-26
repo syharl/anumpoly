@@ -2448,10 +2448,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 18:04 WITA — v1.8.26.1804</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -5279,6 +5275,7 @@ function endGameTimeAttack(){
 /* ============================================================
    BUY / CARDS / JAIL
    ============================================================ */
+const GAME_ACTION_URL = SUPABASE_URL + '/functions/v1/game-action';
 function decideBuy(buy){
   if(!myTurnOK()) return;
   const info = state.pendingBuy;
@@ -5295,16 +5292,56 @@ function decideBuy(buy){
       return;
     }
     if(p.money < t.price){ log(`${p.name} tidak cukup uang untuk membeli ${t.name}.`); playSound('error'); return; }
-    p.money -= t.price;
-    showMoneyFx(p.id, -t.price);
-    state.propStates[idx].owner = p.id;
-    p.properties = p.properties||[];
-    if(!p.properties.includes(idx)) p.properties.push(idx);
-    p.propsBought = (p.propsBought||0)+1;
-    log(`${p.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
-    playSound('buy');
-    state.pendingBuy = null;
-    finishLanding(p, info.wasDouble);
+    // Fase C1: keputusan "sah/tidaknya" pembelian ini sekarang divalidasi &
+    // dieksekusi di server (bukan cuma dihitung di HP ini lalu ditimpakan
+    // ke server lewat syncPush biasa) — supaya HP yang datanya sudah basi
+    // atau nyoba curang tidak bisa memaksakan pembelian yang sebenarnya
+    // sudah tidak sah lagi (mis. properti keburu dibeli device lain).
+    (async ()=>{
+      try{
+        const resp = await fetch(GAME_ACTION_URL, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+          body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'buyProperty', playerId: p.id, tileIdx: idx })
+        });
+        const data = await resp.json();
+        if(data && data.ok && data.newState){
+          const remote = data.newState;
+          state.rev = remote.rev;
+          state.players = remote.players;
+          state.propStates = remote.propStates;
+          const freshP = state.players.find(pl=>pl.id===p.id) || p;
+          state.pendingBuy = null;
+          log(`${freshP.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
+          playSound('buy');
+          finishLanding(freshP, info.wasDouble);
+          return;
+        }
+        if(data && data.conflict && data.currentValue){
+          // Server sudah lebih baru dari dugaan kita — tarik datanya, lalu
+          // cek ulang: mungkin properti ini sudah keburu dibeli/berubah.
+          mergeRemoteIntoLocal(JSON.parse(data.currentValue), null);
+        }
+        // Ditolak server (basi/uang kurang/sudah dimiliki/dll) — jangan
+        // paksa beli, cukup batalkan dan lanjutkan giliran seperti biasa.
+        log(`Pembelian ${t.name} tidak bisa diproses server, dibatalkan.`);
+        state.pendingBuy = null;
+        finishLanding(state.players.find(pl=>pl.id===p.id)||p, info.wasDouble);
+      }catch(e){
+        // Server benar-benar tak terjangkau (offline dsb) — jatuhkan ke cara
+        // lama (hitung lokal) supaya giliran tidak macet total.
+        p.money -= t.price;
+        showMoneyFx(p.id, -t.price);
+        state.propStates[idx].owner = p.id;
+        p.properties = p.properties||[];
+        if(!p.properties.includes(idx)) p.properties.push(idx);
+        p.propsBought = (p.propsBought||0)+1;
+        log(`${p.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
+        playSound('buy');
+        state.pendingBuy = null;
+        finishLanding(p, info.wasDouble);
+      }
+    })();
   } else {
     log(`${p.name} memilih tidak membeli ${t.name}, properti akan dilelang!`);
     state.pendingBuy = null;
