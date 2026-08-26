@@ -2448,10 +2448,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 11:56 WITA — v1.8.26.1156</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -3316,7 +3312,18 @@ function runNextRemoteAnim(){
   }
 
   const screenActive = document.getElementById('screen-game') && document.getElementById('screen-game').classList.contains('active');
-  const shouldAnimate = !appSettings.reducedMotion && screenActive && (movedEntries.length>0 || rolledNew);
+  // Kalau masih ada update LEBIH BARU yang sudah menunggu di antrean di
+  // belakang job ini, berarti HP ini sedang ketinggalan (mis. baru saja
+  // reconnect setelah lag, atau tab sempat di-background). Daripada
+  // memaksa nonton animasi jalan token utuh untuk SETIAP giliran yang
+  // terlewat satu-per-satu (bisa berpuluh detik kalau ketinggalan jauh),
+  // job yang BUKAN yang terbaru di-skip animasinya dan langsung diterapkan
+  // instan, supaya tampilan cepat "mengejar" ke keadaan sekarang — mirip
+  // reconnect di game FPS: yang penting akhirnya nyambung ke kondisi
+  // terkini secepat mungkin, giliran yang benar-benar terbaru saja yang
+  // tetap dianimasikan normal.
+  const isBacklog = remoteAnimQueue.length > 0;
+  const shouldAnimate = !appSettings.reducedMotion && screenActive && !isBacklog && (movedEntries.length>0 || rolledNew);
 
   if(!shouldAnimate){
     // Tetap tampilkan log terbaru (versi ringkas ala Riwayat) walau tanpa animasi jalan.
