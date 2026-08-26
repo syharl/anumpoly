@@ -2448,10 +2448,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">27 Agustus 2026, 06:41 WITA — v1.8.27.0641</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -4872,16 +4868,59 @@ function landOnTile(p, wasDouble, fromCard, forceDoubleRent){
       finishLanding(p, wasDouble); return;
     } else {
       const owner = state.players.find(pl=>pl.id===ps.owner);
-      const rentAmt = computeRent(idx, forceDoubleRent);
-      p.rentPaid = (p.rentPaid||0)+rentAmt;
-      owner.rentCollected = (owner.rentCollected||0)+rentAmt;
-      log(`${p.name} harus bayar sewa ${fmt(rentAmt)} ke ${owner.name}.`);
-      playSound('pay');
-      chargePlayer(p, rentAmt, owner.id, ()=>finishLanding(p, wasDouble));
+      payRentViaServer(p, owner, idx, forceDoubleRent, wasDouble);
       return;
     }
   }
   finishLanding(p, wasDouble);
+}
+function fallbackLocalRent(p, owner, idx, forceDoubleRent, wasDouble){
+  const t = BOARD[idx];
+  const rentAmt = computeRent(idx, forceDoubleRent);
+  p.rentPaid = (p.rentPaid||0)+rentAmt;
+  owner.rentCollected = (owner.rentCollected||0)+rentAmt;
+  log(`${p.name} harus bayar sewa ${fmt(rentAmt)} ke ${owner.name}.`);
+  playSound('pay');
+  chargePlayer(p, rentAmt, owner.id, ()=>finishLanding(p, wasDouble));
+}
+async function payRentViaServer(p, owner, idx, forceDoubleRent, wasDouble){
+  // Fase C2: kasus "uang cukup, bayar langsung" divalidasi & dieksekusi di
+  // server (sama seperti pembelian properti di Fase C1). Kasus "uang
+  // kurang" TIDAK dipindah ke server dulu — itu masih butuh alur
+  // negosiasi utang (gadai/jual rumah/bangkrut) yang rumit di kliennya,
+  // jadi sengaja dijatuhkan ke jalur lama yang memang sudah menangani
+  // itu dengan baik (lihat fallbackLocalRent).
+  const [d1,d2] = state.lastRoll || [0,0];
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'payRent', payerId:p.id, tileIdx: idx, forceDoubleRent: !!forceDoubleRent, diceSum: d1+d2 })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev;
+      state.players = remote.players;
+      state.propStates = remote.propStates;
+      const freshP = state.players.find(pl=>pl.id===p.id)||p;
+      const freshOwner = state.players.find(pl=>pl.id===owner.id)||owner;
+      log(`${freshP.name} bayar sewa ${fmt(data.rentAmount)} ke ${freshOwner.name}.`);
+      playSound('pay');
+      finishLanding(freshP, wasDouble);
+      return;
+    }
+    if(data && data.conflict && data.currentValue){
+      mergeRemoteIntoLocal(JSON.parse(data.currentValue), null);
+    }
+    // Server menolak (uang kurang / properti sudah beda kondisi / dll) ->
+    // pakai jalur lama yang sudah menangani negosiasi utang dengan benar.
+    const freshP2 = state.players.find(pl=>pl.id===p.id)||p;
+    const freshOwner2 = state.players.find(pl=>pl.id===owner.id)||owner;
+    fallbackLocalRent(freshP2, freshOwner2, idx, forceDoubleRent, wasDouble);
+  }catch(e){
+    fallbackLocalRent(p, owner, idx, forceDoubleRent, wasDouble);
+  }
 }
 
 function finishLanding(p, wasDouble){
