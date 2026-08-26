@@ -2448,10 +2448,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 18:56 WITA — v1.8.26.1856</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2827,11 +2823,32 @@ async function mmPollTick(){
     const res = await window.storage.get('mm_assign_'+currentUser.id, true);
     if(res){
       const assign = JSON.parse(res.value);
-      mmActive = false;
-      clearInterval(mmPollTimer);
       try{ await window.storage.delete('mm_assign_'+currentUser.id, true); }catch(e){}
-      await mmEnterMatchedGame(assign.roomCode);
-      return;
+      // PENTING (bug "matchmaking stuck di game lama"): tiket panggilan ini
+      // ditulis SEKALI saat ketemu lawan. Normalnya langsung dibaca & dibuang
+      // begitu ditemukan (baris di atas). Tapi kalau app sempat ditutup paksa
+      // SEBELUM sempat membaca tiketnya (mis. abis nyerah terus langsung
+      // keluar app), tiket itu nyangkut selamanya di server — dan tanpa
+      // pengecekan ini, setiap kali matchmaking dibuka lagi (bahkan hari
+      // lain, bahkan mode Rank/Santai yang beda), pemain langsung ditarik
+      // balik ke game LAMA itu, melewati layar cari-lawan-baru sama sekali.
+      // Jadi sebelum benar-benar masuk, cek dulu apa game tujuannya masih
+      // layak disambung (masih ada manusia hidup) — kalau ternyata sudah
+      // jadi room "zombie" isinya bot doang, buang tiketnya & lanjut proses
+      // matchmaking normal di bawah, bukan malah masuk ke game basi itu.
+      let stillAlive = false;
+      try{
+        const roomRes = await window.storage.get('mpstate_'+assign.roomCode, true);
+        if(roomRes) stillAlive = roomHasAliveHumanStake(JSON.parse(roomRes.value));
+      }catch(e){}
+      if(stillAlive){
+        mmActive = false;
+        clearInterval(mmPollTimer);
+        await mmEnterMatchedGame(assign.roomCode);
+        return;
+      }
+      // Tiket basi menuju room yang sudah zombie -> abaikan, lanjut ke
+      // pengecekan antrian seperti biasa (JANGAN return di sini).
     }
   }catch(e){ /* belum ada panggilan, lanjut cek antrian di bawah */ }
   if(!mmActive) return;
