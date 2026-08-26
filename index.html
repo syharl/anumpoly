@@ -668,6 +668,18 @@ details[open]>.fp-summary .fp-arrow{transform:rotate(180deg);}
 .fp-offer-row input{flex:1;min-width:0;padding:7px 8px;border-radius:6px;border:1px solid rgba(47,111,168,0.4);background:var(--modal-bg);color:var(--paper);font-size:12px;font-family:'Space Mono',monospace;}
 .fp-offer-row button{padding:7px 10px;border-radius:6px;border:none;background:var(--teal);color:#fff;font-weight:700;font-size:11px;white-space:nowrap;}
 .fp-tawar-btn{flex:none;padding:7px 10px;border-radius:6px;border:none;background:var(--teal);color:#fff;font-weight:700;font-size:11px;white-space:nowrap;margin-left:8px;}
+/* Kotak "Bayar jika berhenti" / status gadai di tampilan Properti Teman:
+   diberi lebar TETAP (bukan mengikuti panjang teks) supaya teks panjang
+   seperti status gadai tidak pernah mendorong tombol "Tawar" ke luar
+   layar. Untuk properti yang sedang digadai, isinya diganti jadi label
+   singkat "🔒 Digadai" (bukan kalimat panjang) supaya tetap muat rapi
+   di lebar yang sama seperti kotak harga normal. */
+.fp-rent-box{flex:none;width:62px;margin-left:6px;text-align:center;}
+.fp-rent-box .fp-rent-label{font-size:9px;color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.3px;line-height:1.25;}
+.fp-rent-box .fp-rent-value{font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:var(--gold);line-height:1.2;}
+.fp-rent-box .fp-rent-mortgaged{font-size:11px;font-weight:800;color:var(--paper-dim);line-height:1.25;}
+.fp-name-box{flex:1;min-width:0;padding-left:8px;}
+.fp-name-box .di-name{overflow-wrap:break-word;}
 .modal.fp-fixed{height:75vh;}
 
 .deed-details{
@@ -2425,16 +2437,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 06:34 WITA — v1.8.26.0634</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Delete dist.zip</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">25 Agustus 2026, 13:47 WITA — v1.8.25.1347</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2657,6 +2659,74 @@ async function leaveOnline(){
    - Entri antrian yang tidak "heartbeat" >90 detik (mis. app ditutup)
      otomatis dibuang oleh HP manapun yang membaca antrian itu.
    ============================================================ */
+/* ------------------------------------------------------------
+   Cek apakah sebuah room online masih punya "pemain manusia yang
+   masih hidup & belum keluar" di dalamnya. Kalau tidak (semua
+   manusia sudah bangkrut atau tercatat leftSlots), room itu cuma
+   dijalankan bot doang untuk diri sendiri -> tidak berguna lagi
+   diteruskan/disambung, aman untuk dihapus. */
+function roomHasAliveHumanStake(payload){
+  const leftSlots = payload.leftSlots||[];
+  return (payload.players||[]).some(p=>!p.isBot && !p.bankrupt && !leftSlots.includes(p.id));
+}
+async function cleanupAbandonedRoom(roomCode){
+  try{ await window.storage.delete('mpstate_'+roomCode, true); }catch(e){}
+  try{ await window.storage.delete('mproom_'+roomCode, true); }catch(e){}
+}
+/* ------------------------------------------------------------
+   GERBANG SEBELUM MULAI GAME BARU (Matchmaking Rank/Santai,
+   Custom Room Online: buat/gabung).
+   ------------------------------------------------------------
+   Masalah yang diperbaiki: kalau HP ini masih menyimpan sesi
+   game online sebelumnya (mis. pemain tidak sengaja keluar dari
+   Custom Room ber-kode tanpa menekan "Keluar ke Menu", lalu
+   langsung pencet Matchmaking Rank), dulu pemain bisa "kesedot"
+   balik ke room lama itu tanpa penjelasan, ATAU pemain lanjut ke
+   fitur baru sementara room lamanya jadi room "hantu" berisi bot
+   doang yang tidak pernah dihapus dari penyimpanan.
+   Sekarang, sebelum memulai alur baru:
+   1) Kalau tidak ada sesi tersimpan -> langsung lanjut seperti biasa.
+   2) Kalau room-nya sudah tidak ada / diri sendiri sudah tercatat
+      keluar -> sesi lokal sudah basi, hapus diam-diam & lanjut.
+   3) Kalau room-nya masih ada TAPI cuma tersisa bot (semua manusia
+      sudah bangkrut/keluar) -> hapus room itu diam-diam & lanjut,
+      tidak perlu tanya-tanya karena memang tidak ada apa-apa lagi
+      yang bisa disambung.
+   4) Kalau game itu MASIH benar-benar berjalan (ada pemain manusia
+      yang masih hidup & belum keluar) -> WAJIB tampilkan layar
+      konfirmasi dulu, dengan pilihan jelas: sambung ke situ, atau
+      tolak/tutup dulu dan lanjut ke yang baru. */
+async function guardBeforeStartingNewOnlineFlow(proceedFn){
+  const sess = (typeof readOnlineSession==='function') ? readOnlineSession() : null;
+  if(!sess){ await proceedFn(); return; }
+  let payload = null;
+  try{
+    const res = await window.storage.get('mpstate_'+sess.roomCode, true);
+    if(res) payload = JSON.parse(res.value);
+  }catch(e){ payload = null; }
+  if(!payload){
+    clearOnlineSession();
+    await proceedFn();
+    return;
+  }
+  const leftSlots = payload.leftSlots||[];
+  if(leftSlots.includes(sess.slot) || !roomHasAliveHumanStake(payload)){
+    await cleanupAbandonedRoom(sess.roomCode);
+    clearOnlineSession();
+    await proceedFn();
+    return;
+  }
+  showModal({
+    title:'Masih Ada Game Online Berjalan',
+    desc:`Kamu masih tercatat main di room ${sess.roomCode} dan game itu belum berakhir. Sambung lagi ke situ dulu, atau lanjut ke yang baru?`,
+    buttons:[
+      {label:'🔄 Sambung ke Game Itu', cls:'btn-yes', onClick:()=>{ closeModal(); attemptOnlineReconnect(); }},
+      {label:'Tidak, Lanjutkan', cls:'btn-no', onClick:()=>{ closeModal(); proceedFn(); }},
+      {label:'Tutup Dulu', cls:'btn-no', onClick:closeModal},
+    ],
+    vertical:true
+  });
+}
 const MM_GRACE_MS = 20000;
 const MM_STALE_MS = 90000;
 /* Khusus Matchmaking Santai (bukan Rank): kalau sudah menunggu selama
@@ -2682,20 +2752,22 @@ async function goToMatchmaking(rankMode){
     goToAccount();
     return;
   }
-  mmRankMode = !!rankMode;
-  mmQueueKey = mmQueueKeyFor(mmRankMode);
-  mmStartedAt = Date.now();
-  document.getElementById('mmIcon').textContent = mmRankMode ? '🏆' : '🎲';
-  document.getElementById('mmTitle').textContent = mmRankMode ? 'Matchmaking Rank' : 'Matchmaking Santai';
-  document.getElementById('mmSub').textContent = 'Mencari pemain lain...';
-  document.getElementById('mmTimer').textContent = '00:00';
-  document.getElementById('mmCountText').textContent = 'Bergabung ke antrian...';
-  showScreen('screen-matchmaking');
-  mmActive = true;
-  await mmJoinQueue();
-  clearInterval(mmPollTimer);
-  mmPollTimer = setInterval(mmPollTick, 2000);
-  mmPollTick();
+  await guardBeforeStartingNewOnlineFlow(async ()=>{
+    mmRankMode = !!rankMode;
+    mmQueueKey = mmQueueKeyFor(mmRankMode);
+    mmStartedAt = Date.now();
+    document.getElementById('mmIcon').textContent = mmRankMode ? '🏆' : '🎲';
+    document.getElementById('mmTitle').textContent = mmRankMode ? 'Matchmaking Rank' : 'Matchmaking Santai';
+    document.getElementById('mmSub').textContent = 'Mencari pemain lain...';
+    document.getElementById('mmTimer').textContent = '00:00';
+    document.getElementById('mmCountText').textContent = 'Bergabung ke antrian...';
+    showScreen('screen-matchmaking');
+    mmActive = true;
+    await mmJoinQueue();
+    clearInterval(mmPollTimer);
+    mmPollTimer = setInterval(mmPollTick, 2000);
+    mmPollTick();
+  });
 }
 async function leaveMatchmaking(){
   mmActive = false;
@@ -2894,44 +2966,54 @@ function randomRoomCode(){
 }
 async function createRoomFlow(){
   if(!ensureStorage()) return;
-  const name = (document.getElementById('createNameInput').value||'').trim() || 'Pemain 1';
-  const code = randomRoomCode();
-  lobby = { code, players:[{slot:0,name,userId: currentUser?currentUser.id:null}], started:false, hostSlot:0 };
-  myOnlineSlot = 0;
-  const ok = await saveLobby();
-  if(!ok) return;
-  enterLobbyScreen();
-  startLobbyPolling();
+  await guardBeforeStartingNewOnlineFlow(async ()=>{
+    const name = (document.getElementById('createNameInput').value||'').trim() || 'Pemain 1';
+    const code = randomRoomCode();
+    lobby = { code, players:[{slot:0,name,userId: currentUser?currentUser.id:null}], started:false, hostSlot:0 };
+    myOnlineSlot = 0;
+    const ok = await saveLobby();
+    if(!ok) return;
+    enterLobbyScreen();
+    startLobbyPolling();
+  });
 }
 async function joinRoomFlow(){
   if(!ensureStorage()) return;
   const code = (document.getElementById('joinCodeInput').value||'').trim().toUpperCase();
   const name = (document.getElementById('joinNameInput').value||'').trim() || 'Pemain';
   if(!code){ alertModal('Masukkan kode room dulu.'); return; }
-  let remote;
-  try{ const res = await window.storage.get('mproom_'+code, true); if(!res) throw 'no'; remote = JSON.parse(res.value); }
-  catch(e){ alertModal('Room tidak ditemukan. Cek kode lagi.'); return; }
-  if(remote.started){
-    // Kalau room ini sudah mulai TAPI kita punya sesi tersimpan persis untuk
-    // kode room yang sama, ini kemungkinan besar bukan "gabung baru" tapi
-    // pemain yang tadinya terputus dan mencoba masuk lagi lewat kode room
-    // (mis. di HP/instalasi lain) -> arahkan ke alur sambung-lagi alih-alih
-    // langsung menolak.
-    const sess = readOnlineSession();
-    if(sess && sess.roomCode===code){ await attemptOnlineReconnect(); return; }
-    alertModal('Permainan di room ini sudah dimulai. Kalau kamu salah satu pemainnya dan terputus, coba tombol "Sambung Lagi ke Game Online" di menu utama.');
-    return;
-  }
-  if(remote.players.length>=4){ alertModal('Room sudah penuh (4 pemain).'); return; }
-  lobby = remote;
-  const used = lobby.players.map(p=>p.slot);
-  let slot=0; while(used.includes(slot)) slot++;
-  lobby.players.push({slot,name,userId: currentUser?currentUser.id:null});
-  myOnlineSlot = slot;
-  const ok = await saveLobby();
-  if(!ok) return;
-  enterLobbyScreen();
-  startLobbyPolling();
+  const runJoin = async ()=>{
+    let remote;
+    try{ const res = await window.storage.get('mproom_'+code, true); if(!res) throw 'no'; remote = JSON.parse(res.value); }
+    catch(e){ alertModal('Room tidak ditemukan. Cek kode lagi.'); return; }
+    if(remote.started){
+      // Kalau room ini sudah mulai TAPI kita punya sesi tersimpan persis untuk
+      // kode room yang sama, ini kemungkinan besar bukan "gabung baru" tapi
+      // pemain yang tadinya terputus dan mencoba masuk lagi lewat kode room
+      // (mis. di HP/instalasi lain) -> arahkan ke alur sambung-lagi alih-alih
+      // langsung menolak.
+      const sess2 = readOnlineSession();
+      if(sess2 && sess2.roomCode===code){ await attemptOnlineReconnect(); return; }
+      alertModal('Permainan di room ini sudah dimulai. Kalau kamu salah satu pemainnya dan terputus, coba tombol "Sambung Lagi ke Game Online" di menu utama.');
+      return;
+    }
+    if(remote.players.length>=4){ alertModal('Room sudah penuh (4 pemain).'); return; }
+    lobby = remote;
+    const used = lobby.players.map(p=>p.slot);
+    let slot=0; while(used.includes(slot)) slot++;
+    lobby.players.push({slot,name,userId: currentUser?currentUser.id:null});
+    myOnlineSlot = slot;
+    const ok = await saveLobby();
+    if(!ok) return;
+    enterLobbyScreen();
+    startLobbyPolling();
+  };
+  // Kalau kode yang dituju PERSIS sama dengan room sesi tersimpan kita
+  // sendiri, ini murni upaya reconnect manual lewat kode -> tidak perlu
+  // ditanya-tanya lagi lewat gerbang konfirmasi umum, langsung proses saja.
+  const sess = readOnlineSession();
+  if(sess && sess.roomCode===code){ await runJoin(); return; }
+  await guardBeforeStartingNewOnlineFlow(runJoin);
 }
 function enterLobbyScreen(){
   showScreen('screen-online');
@@ -3644,6 +3726,20 @@ async function attemptOnlineReconnect(){
       if(leftSlots.includes(sess.slot)){
         alertModal('Kamu sudah keluar dari room ini sebelumnya, jadi tidak bisa disambung lagi.');
         clearOnlineSession();
+        return;
+      }
+      // Kalau ternyata SEMUA pemain manusia di room ini (termasuk diri
+      // sendiri) sudah bangkrut/keluar, yang tersisa cuma bot doang yang
+      // tidak akan pernah ada yang menonton hasilnya lagi -> daripada
+      // nyambungin ke game "zombie" begini, bersihkan saja room-nya dan
+      // kasih tahu, baru pemain lanjut seperti biasa. Cek ini SENGAJA
+      // cuma jalan di titik reconnect (bukan sambil pemain masih aktif
+      // menonton di layar game), jadi tidak akan pernah menghapus room
+      // yang masih benar-benar sedang ditonton orang.
+      if(!roomHasAliveHumanStake(payload)){
+        await cleanupAbandonedRoom(sess.roomCode);
+        clearOnlineSession();
+        alertModal('Game sebelumnya sudah tidak bisa disambung lagi — semua pemain manusia di dalamnya (termasuk kamu) sudah bangkrut/keluar, cuma tersisa bot yang jalan sendiri. Room itu sudah otomatis dibersihkan.');
         return;
       }
       const stillThere = (payload.players||[]).some(pl=>pl.id===sess.slot);
@@ -5857,9 +5953,12 @@ function openFriendProps(){
     return;
   }
   let html = '';
-  others.forEach((pl,pIdx)=>{
+  others.forEach((pl)=>{
     const props = Array.from(new Set(pl.properties||[])).sort((a,b)=>a-b);
-    html += `<details class="fp-details" style="margin-bottom:10px;"${pIdx===0?' open':''}>
+    // SEMUA lipatan pemain dibuka ("open") secara default begitu modal ini
+    // ditampilkan — pemain tinggal tap judulnya kalau mau menutup salah
+    // satu, bukan harus buka satu-satu dulu tiap kali modal ini dibuka.
+    html += `<details class="fp-details" style="margin-bottom:10px;" open>
       <summary class="fp-summary">
         <span style="color:var(--gold);font-weight:800;font-size:13px;">${pl.name} — ${fmt(pl.money)}</span>
         <span class="fp-count">${props.length} properti<span class="fp-arrow">▾</span></span>
@@ -5872,19 +5971,18 @@ function openFriendProps(){
         const t = BOARD[i]; const ps = state.propStates[i];
         const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
         const info = t.type==='property' ? (ps.houses===5?'Hotel':(ps.houses>0?ps.houses+' rumah':'Tanpa rumah')) : 'Aktif';
-        const rentTxt = rentPreviewText(i);
         const suggested = Math.round(estimatePropertyValue(i));
+        const rentBoxHtml = ps.mortgaged
+          ? `<div class="fp-rent-mortgaged">🔒 Digadai</div>`
+          : `<div class="fp-rent-label">Bayar jika berhenti</div><div class="fp-rent-value">${rentPreviewText(i)}</div>`;
         html += `<div class="deed-item">
           <div style="display:flex;align-items:center;">
             <div class="deed-swatch" style="background:${swatchColor}"></div>
-            <div style="flex:1;padding-left:8px;">
+            <div class="fp-name-box">
               <div class="di-name">${t.name}</div>
               <div class="di-info">${info}${ps.mortgaged?' • Digadai':''}</div>
             </div>
-            <div style="text-align:center;flex:none;padding-left:6px;">
-              <div style="font-size:9px;color:var(--paper-dim);text-transform:uppercase;letter-spacing:0.5px;">Bayar jika berhenti</div>
-              <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:800;color:${ps.mortgaged?'var(--paper-dim)':'var(--gold)'};">${rentTxt}</div>
-            </div>
+            <div class="fp-rent-box">${rentBoxHtml}</div>
             <button class="fp-tawar-btn" onclick="toggleFpOffer(${i})">🤝 Tawar</button>
           </div>
           <div class="fp-offer-row" id="fpOfferRow-${i}" style="display:none;">
@@ -6490,12 +6588,44 @@ function botEvaluateTradeOffer(cp, offer){
 }
 
 /* ============================================================
+   WAKE LOCK — layar tidak boleh tidur selama aplikasi ini dibuka
+   ------------------------------------------------------------
+   Banyak giliran di game ini cuma menonton lawan/bot jalan tanpa
+   ada sentuhan layar sama sekali, jadi kalau dibiarkan default
+   HP/WebView, layar bisa keburu tidur di tengah permainan. Dipakai
+   Screen Wake Lock API bawaan web (bukan plugin native tambahan,
+   supaya tidak perlu izin/permission Android baru ataupun rebuild
+   native) supaya layar tetap menyala selama app ini aktif di depan.
+   - Wake lock otomatis dilepas sendiri oleh sistem begitu app
+     diminimize/pindah ke belakang/dikunci, lalu diminta ULANG lagi
+     otomatis begitu app kembali terlihat di depan (visibilitychange).
+   - Kalau HP/WebView-nya terlalu lama sehingga API ini tidak
+     didukung sama sekali, permintaannya cukup gagal senyap
+     (try/catch) tanpa mengganggu jalannya game. */
+let wakeLockSentinel = null;
+async function requestScreenWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+      wakeLockSentinel.addEventListener('release', ()=>{ wakeLockSentinel = null; });
+    }
+  }catch(e){ wakeLockSentinel = null; }
+}
+function setupScreenWakeLock(){
+  requestScreenWakeLock();
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible' && !wakeLockSentinel) requestScreenWakeLock();
+  });
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 skipWelcomeIfAlreadySeen();
 refreshResumeButton();
 initCustomSelects();
 initAccountAuth();
+setupScreenWakeLock();
 </script>
 <script>
 /* ============================================================
