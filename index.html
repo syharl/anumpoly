@@ -2448,10 +2448,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 12:22 WITA — v1.8.26.1222</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -3433,6 +3429,85 @@ function serializeState(){
     turnStartedAt: state.turnStartedAt || Date.now(),
   };
 }
+function mergeRemoteIntoLocal(remote, myActingBotId){
+  state.log = mergeLogs(remote.log, state.log);
+  if(remote.rev > (state.rev||0)){
+    const myIds = new Set([myActingBotId, myOnlineSlot, watchdogActingId].filter(x=>x!=null));
+    const localPlayersSnap = {};
+    myIds.forEach(id=>{
+      const lp = (state.players||[]).find(pl=>pl.id===id);
+      if(lp) localPlayersSnap[id] = lp;
+    });
+    const localPropSnap = {};
+    Object.keys(state.propStates||{}).forEach(k=>{
+      const ps = state.propStates[k];
+      if(ps && myIds.has(ps.owner)) localPropSnap[k] = ps;
+    });
+    state.rev = remote.rev;
+    state.rules = remote.rules;
+    state.players = remote.players;
+    state.currentIndex = remote.currentIndex;
+    state.freeParkingPot = remote.freeParkingPot;
+    state.turnPhase = remote.turnPhase;
+    state.propStates = remote.propStates;
+    state.lastRoll = remote.lastRoll;
+    state.chanceDeckIds = remote.chanceDeckIds;
+    state.chestDeckIds = remote.chestDeckIds;
+    state.pendingTradeOffer = remote.pendingTradeOffer||null;
+    state.auction = remote.auction||null;
+    state.lastMoveMeta = remote.lastMoveMeta||null;
+    state.leftSlots = remote.leftSlots||[];
+    if(watchdogActingId!=null){
+      state.currentIndex = (typeof watchdogCurrentIndexOverride==='number') ? watchdogCurrentIndexOverride : state.currentIndex;
+      state.turnPhase = 'canRoll';
+      state.turnStartedAt = watchdogTurnStartedOverride || Date.now();
+    } else {
+      state.turnStartedAt = remote.turnStartedAt || Date.now();
+    }
+    myIds.forEach(id=>{
+      if(localPlayersSnap[id]){
+        const idx = state.players.findIndex(pl=>pl.id===id);
+        if(idx>=0) state.players[idx] = localPlayersSnap[id];
+      }
+    });
+    Object.keys(localPropSnap).forEach(k=>{ state.propStates[k] = localPropSnap[k]; });
+  }
+}
+const GAME_SYNC_URL = SUPABASE_URL + '/functions/v1/game-sync';
+async function pushStateToReferee(myActingBotId){
+  // "Wasit" server (Edge Function game-sync) menolak tulisan yang basi
+  // (HTTP 409) kalau ternyata server sudah lebih baru dari dugaan kita.
+  // Kalau itu terjadi, kita tarik data terbaru yang w dikirim balik oleh
+  // wasit itu sendiri (tidak perlu window.storage.get ekstra), gabung ulang
+  // pakai logic yang sama seperti biasa, lalu coba kirim lagi — maksimal
+  // 3 kali percobaan supaya tidak berputar selamanya kalau ada masalah lain.
+  for(let attempt=0; attempt<3; attempt++){
+    const payload = serializeState();
+    const expectedRev = state.rev||0;
+    let resp, data;
+    try{
+      resp = await fetch(GAME_SYNC_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ roomCode: state.roomCode, expectedRev, newState: payload })
+      });
+      data = await resp.json();
+    }catch(e){
+      // Wasit tidak terjangkau (mis. offline sesaat) — jatuhkan ke cara
+      // lama (tulis langsung) supaya game tidak macet total.
+      state.rev = payload.rev;
+      await window.storage.set('mpstate_'+state.roomCode, JSON.stringify(payload), true);
+      return;
+    }
+    if(data && data.ok){ state.rev = payload.rev; return; }
+    if(data && data.conflict && data.currentValue){
+      const remote = JSON.parse(data.currentValue);
+      mergeRemoteIntoLocal(remote, myActingBotId);
+      continue; // coba lagi dengan dasar data yang sudah digabung ulang
+    }
+    break; // error lain (bukan soal rev basi) — jangan diulang terus
+  }
+}
 async function syncPush(){
   try{
     // Tarik data terbaru dari server tepat sebelum menulis, supaya baris log
@@ -3487,57 +3562,10 @@ async function syncPush(){
       const res = await window.storage.get('mpstate_'+state.roomCode, true);
       if(res){
         const remote = JSON.parse(res.value);
-        state.log = mergeLogs(remote.log, state.log);
-        if(remote.rev > (state.rev||0)){
-          const myIds = new Set([myActingBotId, myOnlineSlot, watchdogActingId].filter(x=>x!=null));
-          const localPlayersSnap = {};
-          myIds.forEach(id=>{
-            const lp = (state.players||[]).find(pl=>pl.id===id);
-            if(lp) localPlayersSnap[id] = lp;
-          });
-          const localPropSnap = {};
-          Object.keys(state.propStates||{}).forEach(k=>{
-            const ps = state.propStates[k];
-            if(ps && myIds.has(ps.owner)) localPropSnap[k] = ps;
-          });
-          state.rev = remote.rev;
-          state.rules = remote.rules;
-          state.players = remote.players;
-          state.currentIndex = remote.currentIndex;
-          state.freeParkingPot = remote.freeParkingPot;
-          state.turnPhase = remote.turnPhase;
-          state.propStates = remote.propStates;
-          state.lastRoll = remote.lastRoll;
-          state.chanceDeckIds = remote.chanceDeckIds;
-          state.chestDeckIds = remote.chestDeckIds;
-          state.pendingTradeOffer = remote.pendingTradeOffer||null;
-          state.auction = remote.auction||null;
-          state.lastMoveMeta = remote.lastMoveMeta||null;
-          state.leftSlots = remote.leftSlots||[];
-          // watchdogActingId juga "melindungi" currentIndex/turnPhase/
-          // turnStartedAt kalau HP ini baru saja memindahkan giliran
-          // (skip/bangkrut otomatis) supaya tidak ketiban balik oleh
-          // remote yang sedikit lebih baru tapi belum tahu soal itu.
-          if(watchdogActingId!=null){
-            state.currentIndex = (typeof watchdogCurrentIndexOverride==='number') ? watchdogCurrentIndexOverride : state.currentIndex;
-            state.turnPhase = 'canRoll';
-            state.turnStartedAt = watchdogTurnStartedOverride || Date.now();
-          } else {
-            state.turnStartedAt = remote.turnStartedAt || Date.now();
-          }
-          myIds.forEach(id=>{
-            if(localPlayersSnap[id]){
-              const idx = state.players.findIndex(pl=>pl.id===id);
-              if(idx>=0) state.players[idx] = localPlayersSnap[id];
-            }
-          });
-          Object.keys(localPropSnap).forEach(k=>{ state.propStates[k] = localPropSnap[k]; });
-        }
+        mergeRemoteIntoLocal(remote, myActingBotId);
       }
     }catch(e){}
-    const payload = serializeState();
-    state.rev = payload.rev;
-    await window.storage.set('mpstate_'+state.roomCode, JSON.stringify(payload), true);
+    await pushStateToReferee(myActingBotId);
   }catch(e){ console.error('sync push failed', e); }
 }
 /* Tarik & terapkan state terbaru dari server jika ada yang lebih baru dari
