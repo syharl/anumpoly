@@ -2448,10 +2448,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 21:40 WITA — v1.8.26.2140</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -3496,6 +3492,16 @@ function mergeRemoteIntoLocal(remote, myActingBotId){
       }
     });
     Object.keys(localPropSnap).forEach(k=>{ state.propStates[k] = localPropSnap[k]; });
+    // BUG "giliran sendiri terus, nggak pernah menang" yang dilaporkan
+    // pemain: kabar lawan bangkrut/menyerah bisa masuk lewat 2 jalur —
+    // jalur polling biasa (yang SUDAH mengecek checkGameOver di afterApply)
+    // dan jalur ini (dipanggil dari syncPush() sendiri saat HP mau kirim
+    // data). Jalur ini sebelumnya TIDAK pernah mengecek ulang, dan karena
+    // ini sering jalan lebih dulu (menyerap rev terbaru duluan), jalur
+    // polling jadi tidak kebagian giliran ngecek (revnya sudah sama, jadi
+    // dianggap tidak ada yang baru) — akibatnya game tidak pernah dinyatakan
+    // selesai walau tinggal 1 pemain yang hidup. Cek di sini juga.
+    if(document.getElementById('winnerOverlay') && !document.getElementById('winnerOverlay').classList.contains('show')) checkGameOver();
   }
 }
 const GAME_SYNC_URL = SUPABASE_URL + '/functions/v1/game-sync';
