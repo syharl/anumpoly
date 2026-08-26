@@ -1185,8 +1185,10 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
 <!-- ================= GAME ================= -->
 <div id="screen-game" class="screen">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="room-badge" id="roomBadge" style="display:none;"></div>
+      <div class="room-badge" id="pingBadge" style="display:none;"></div>
+      <div class="room-badge" id="witaClockBadge">🕒 --:--:-- WITA</div>
       <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
       <button class="icon-btn" id="btnMute" onclick="toggleMute()">🔊</button>
       <button class="icon-btn" id="btnMusicGame" onclick="quickToggleMusic()">🎵</button>
@@ -2283,7 +2285,16 @@ let turnTimerInterval = null;
 let turnTimerRemaining = TURN_TIME_LIMIT;
 function beginPlayerTurn(){
   stopTurnTimer();
-  turnTimerRemaining = TURN_TIME_LIMIT;
+  // Hitung sisa waktu berdasarkan state.turnStartedAt, BUKAN selalu di-reset
+  // ke TURN_TIME_LIMIT penuh. Untuk giliran yang baru saja dimulai,
+  // turnStartedAt baru saja di-set ke Date.now() sesaat sebelumnya, jadi
+  // hasilnya tetap ~TURN_TIME_LIMIT seperti semula. Tapi untuk kasus
+  // reconnect, turnStartedAt dipulihkan dari waktu giliran itu MULAI
+  // (bukan waktu kita reconnect), sehingga timer melanjutkan hitungan
+  // mundur yang sebenarnya, bukan mulai lagi dari 3:00.
+  const startedAt = (state && state.turnStartedAt) || Date.now();
+  const elapsedSec = Math.floor((Date.now()-startedAt)/1000);
+  turnTimerRemaining = Math.max(0, TURN_TIME_LIMIT-elapsedSec);
   updateTimerDisplay();
   if(!state || currentPlayer().bankrupt) return;
   currentPlayer()._turnBuilds = 0;
@@ -2436,10 +2447,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">26 Agustus 2026, 11:13 WITA — v1.8.26.1113</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -3188,15 +3195,27 @@ function startGamePolling(){
   startOnlineExtras();
   saveOnlineSession();
 }
+let lastPingMs = null;
+function updatePingBadge(){
+  const el = document.getElementById('pingBadge');
+  if(!el) return;
+  if(!state || state.mode!=='online' || lastPingMs==null){ el.style.display='none'; return; }
+  el.style.display='inline-block';
+  const dot = lastPingMs<150 ? '🟢' : (lastPingMs<400 ? '🟡' : '🔴');
+  el.textContent = dot+' '+lastPingMs+'ms';
+}
 async function pollGameState(){
   if(!state || state.mode!=='online') return;
+  const t0 = performance.now();
   try{
     const res = await window.storage.get('mpstate_'+state.roomCode, true);
+    lastPingMs = Math.round(performance.now()-t0);
+    updatePingBadge();
     if(!res) return;
     const payload = JSON.parse(res.value);
     if(!payload.rev || payload.rev<=state.rev) return;
     applyRemoteState(payload);
-  }catch(e){}
+  }catch(e){ lastPingMs = null; updatePingBadge(); }
 }
 // Antrean animasi remote: dulu memakai "generation id" yang MEMBATALKAN
 // animasi lama begitu update baru datang (jadi kalau pemain berikutnya
@@ -3754,6 +3773,22 @@ async function attemptOnlineReconnect(){
       }
       myOnlineSlot = sess.slot;
       lobby = null;
+      // PENTING: amIBotDriver() untuk room Custom (non-matchmaking) menentukan
+      // siapa yang berhak menjalankan giliran bot lewat `lobby.hostSlot`.
+      // Kalau `lobby` dibiarkan null begini terus, HP manapun yang reconnect
+      // (termasuk si host sendiri) tidak akan pernah dianggap host lagi,
+      // sehingga handleBotAutomation() selalu langsung return di baris
+      // pertama dan bot diam permanen. Di sini kita pulihkan datanya dari
+      // room record (mproom_) yang memang masih tersimpan di server.
+      if(!payload.matchmaking){
+        try{
+          const roomRes2 = await window.storage.get('mproom_'+sess.roomCode, true);
+          if(roomRes2){
+            const remoteRoom = JSON.parse(roomRes2.value);
+            lobby = { code: sess.roomCode, players: remoteRoom.players, started:true, hostSlot: remoteRoom.hostSlot };
+          }
+        }catch(e){ console.error('gagal memulihkan info host saat reconnect', e); }
+      }
       state = {
         mode:'online', roomCode: sess.roomCode, rankMode: !!payload.rankMode, matchmaking: !!payload.matchmaking,
         rules: payload.rules, players: payload.players, currentIndex: payload.currentIndex,
@@ -4441,6 +4476,7 @@ function updateTurnBanner(){
     if(btnFriendPropsEl) btnFriendPropsEl.disabled = false;
   }
   const badge = document.getElementById('roomBadge');
+  updatePingBadge();
   if(state.mode==='online'){
     badge.style.display='inline-block';
     const who = myOnlineSlot!=null ? ' • Kamu: '+state.players[myOnlineSlot].name : '';
@@ -6393,6 +6429,14 @@ function handleBotAutomation(){
    pengecekan berkala ini akan tetap menemukan & menjalankan giliran bot
    yang macet, supaya bot TIDAK PERNAH diam terus tanpa batas waktu. */
 setInterval(()=>{ if(state) handleBotAutomation(); }, 2500);
+function updateWitaClock(){
+  const el = document.getElementById('witaClockBadge');
+  if(!el) return;
+  const t = new Date().toLocaleTimeString('id-ID', {timeZone:'Asia/Makassar', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+  el.textContent = '🕒 '+t+' WITA';
+}
+setInterval(updateWitaClock, 1000);
+updateWitaClock();
 setInterval(()=>{ if(state){ updateTimeAttackBadge(); checkTimeAttackExpiry(); } }, 1000);
 
 /* Keputusan penjara sederhana: pakai kartu bebas kalau ada, coba lempar
