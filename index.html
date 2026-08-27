@@ -2425,10 +2425,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">27 Agustus 2026, 11:38 WITA — v1.8.27.1138</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -3181,6 +3177,15 @@ async function beginOnlineGameFromLobby(){
   }catch(e){ setTimeout(beginOnlineGameFromLobby, 1200); }
 }
 let gameRealtimeChannel = null;
+function broadcastGameState(payload){
+  // Fase D: siarkan langsung isi data ke semua HP lain yang sedang di room
+  // yang sama lewat Realtime Broadcast — bukan cuma notifikasi kosong
+  // yang memaksa HP lain narik ulang datanya sendiri (2x bolak-balik ke
+  // server). Ini murni percepatan tambahan; kalau gagal terkirim (jaringan
+  // dsb), polling 400ms & postgres_changes di bawah tetap jalan sebagai
+  // jaring pengaman, jadi tidak ada data yang hilang, cuma lebih lambat.
+  try{ if(gameRealtimeChannel && payload) gameRealtimeChannel.send({type:'broadcast', event:'state', payload}); }catch(e){}
+}
 function startGamePolling(){
   clearInterval(gamePollTimer);
   // Interval polling dipercepat jauh (dari 1800ms ke 400ms) supaya delay
@@ -3192,6 +3197,13 @@ function startGamePolling(){
     if(gameRealtimeChannel) sbClient.removeChannel(gameRealtimeChannel);
     gameRealtimeChannel = sbClient.channel('game-'+state.roomCode)
       .on('postgres_changes', {event:'*', schema:'public', table:'kv_store', filter:'key=eq.mpstate_'+state.roomCode}, ()=>pollGameState())
+      .on('broadcast', {event:'state'}, ({payload})=>{
+        // Jalur CEPAT: data aksi (dadu, beli, sewa, dll) diterima langsung
+        // di sini tanpa perlu narik ulang ke server dulu. Pakai pipeline
+        // applyRemoteState yang sama persis dengan jalur polling biasa,
+        // supaya animasi/antrean/checkGameOver tetap konsisten.
+        if(payload && payload.rev > (state.rev||0)) applyRemoteState(payload);
+      })
       .subscribe();
   }catch(e){}
   startOnlineExtras();
@@ -3511,7 +3523,7 @@ async function pushStateToReferee(myActingBotId){
       await window.storage.set('mpstate_'+state.roomCode, JSON.stringify(payload), true);
       return;
     }
-    if(data && data.ok){ state.rev = payload.rev; return; }
+    if(data && data.ok){ state.rev = payload.rev; broadcastGameState(payload); return; }
     if(data && data.conflict && data.currentValue){
       const remote = JSON.parse(data.currentValue);
       mergeRemoteIntoLocal(remote, myActingBotId);
@@ -4884,6 +4896,7 @@ async function payRentViaServer(p, owner, idx, forceDoubleRent, wasDouble){
       state.rev = remote.rev;
       state.players = remote.players;
       state.propStates = remote.propStates;
+      broadcastGameState(remote);
       const freshP = state.players.find(pl=>pl.id===p.id)||p;
       const freshOwner = state.players.find(pl=>pl.id===owner.id)||owner;
       log(`${freshP.name} bayar sewa ${fmt(data.rentAmount)} ke ${freshOwner.name}.`);
@@ -5110,6 +5123,7 @@ async function declareBankruptViaServer(p, toId){
     if(data && data.ok && data.newState){
       const remote = data.newState;
       state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+      broadcastGameState(remote);
       const freshP = state.players.find(pl=>pl.id===p.id)||p;
       log(`${freshP.name} dinyatakan BANGKRUT.`);
       state.pendingDebt = null;
@@ -5387,6 +5401,7 @@ function decideBuy(buy){
           state.rev = remote.rev;
           state.players = remote.players;
           state.propStates = remote.propStates;
+          broadcastGameState(remote);
           const freshP = state.players.find(pl=>pl.id===p.id) || p;
           state.pendingBuy = null;
           log(`${freshP.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
@@ -5748,6 +5763,7 @@ async function payJailBailViaServer(p){
     if(data && data.ok && data.newState){
       const remote = data.newState;
       state.rev = remote.rev; state.players = remote.players;
+      broadcastGameState(remote);
       const freshP = state.players.find(pl=>pl.id===p.id)||p;
       log(`${freshP.name} membayar $50 dan bebas dari penjara.`);
       state.turnPhase='canRoll';
@@ -5780,6 +5796,7 @@ async function useJailCardViaServer(p){
     if(data && data.ok && data.newState){
       const remote = data.newState;
       state.rev = remote.rev; state.players = remote.players;
+      broadcastGameState(remote);
       const freshP = state.players.find(pl=>pl.id===p.id)||p;
       log(`${freshP.name} memakai kartu bebas penjara.`);
       state.turnPhase='canRoll';
@@ -6175,6 +6192,7 @@ async function buildHouseViaServer(p, i, cost){
       state.rev = remote.rev;
       state.players = remote.players;
       state.propStates = remote.propStates;
+      broadcastGameState(remote);
       const t = BOARD[i];
       const ps = state.propStates[i];
       log(`${p.name} membangun ${ps.houses===5?'Hotel':'rumah ke-'+ps.houses} di ${t.name}.`);
@@ -6217,6 +6235,7 @@ async function sellHouseViaServer(p, i){
     if(data && data.ok && data.newState){
       const remote = data.newState;
       state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+      broadcastGameState(remote);
       log(`${p.name} menjual rumah di ${BOARD[i].name}, dapat ${fmt(data.amount)}.`);
       renderDeedList(); renderAll();
       return;
@@ -6251,6 +6270,7 @@ async function mortgagePropViaServer(p, i){
     if(data && data.ok && data.newState){
       const remote = data.newState;
       state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+      broadcastGameState(remote);
       log(`${p.name} menggadaikan ${BOARD[i].name}, dapat ${fmt(data.amount)}.`);
       renderDeedList(); renderAll();
       return;
@@ -6287,6 +6307,7 @@ async function unmortgagePropViaServer(p, i, cost){
     if(data && data.ok && data.newState){
       const remote = data.newState;
       state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+      broadcastGameState(remote);
       log(`${p.name} menebus ${BOARD[i].name} seharga ${fmt(data.cost)}.`);
       renderDeedList(); renderAll();
       return;
