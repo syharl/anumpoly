@@ -2425,10 +2425,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">28 Agustus 2026, 06:15 WITA — v1.8.28.0615</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -4825,11 +4821,89 @@ function animateWalkBack(p, steps, callback){
   tick();
 }
 function moveSteps(p, steps, wasDouble){
+  resolveLandingViaServer(p, steps, wasDouble);
+}
+function fallbackLocalMoveSteps(p, steps, wasDouble){
   state.lastMoveMeta = {id:p.id, backward:false};
   animateWalk(p, steps, true, ()=>{
     state._wasDouble = wasDouble;
     landOnTile(p, wasDouble);
   });
+}
+async function resolveLandingViaServer(p, steps, wasDouble){
+  const fromPos = p.pos;
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'resolveLanding', playerId: p.id, steps })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      // Jalanin animasi jalan token DULU secara visual (dari posisi lama
+      // ke posisi baru yang sudah dipastikan server), baru sesudah
+      // animasinya sampai, timpa data lokal dengan yang resmi dari server
+      // (uang lewat MULAI/pajak/dll sudah sekalian dihitung server) dan
+      // lanjutkan sesuai jenis petaknya. Disiarkan SEKARANG (bukan nunggu
+      // proses beli/sewa/kartu kelar) supaya HP lain ikut jalan bareng.
+      broadcastGameState(remote);
+      const applyAndContinue = ()=>{
+        state.rev = remote.rev;
+        state.players = remote.players;
+        state.propStates = remote.propStates;
+        state.freeParkingPot = remote.freeParkingPot;
+        const freshP = state.players.find(pl=>pl.id===p.id)||p;
+        const idx = freshP.pos;
+        const t = BOARD[idx];
+        log(`${freshP.name} mendarat di <b>${t.name}</b>.`);
+        if(data.landingKind==='sentToJail'){
+          log(`${freshP.name} dikirim ke penjara!`);
+          state.turnPhase='canEndTurn';
+          renderAll();
+        } else if(data.landingKind==='tax'){
+          log(`${freshP.name} membayar pajak ${fmt(data.taxAmount)}.`);
+          playSound('pay');
+          finishLanding(freshP, wasDouble);
+        } else if(data.landingKind==='freeparking'){
+          if(data.bonusAmount>0){
+            showMoneyFx(freshP.id, data.bonusAmount);
+            log(`${freshP.name} mengambil ${fmt(data.bonusAmount)} di Parkir Bebas!`);
+            playSound('cash');
+          }
+          finishLanding(freshP, wasDouble);
+        } else if(data.landingKind==='card'){
+          playSound('card');
+          drawCard(freshP, t.type==='chance'?'chance':'chest', wasDouble);
+        } else if(data.landingKind==='property'){
+          if(data.owner==null){
+            if(state.rules.auctionOnly){
+              log(`${t.name} belum ada pemilik. Mode Lelang Saja aktif — langsung dilelang!`);
+              startAuction(idx, wasDouble, true);
+            } else {
+              state.pendingBuy = {idx, wasDouble};
+              renderAll();
+            }
+          } else if(data.owner===freshP.id){
+            finishLanding(freshP, wasDouble);
+          } else if(state.propStates[idx].mortgaged){
+            log(`${t.name} sedang digadai, tidak ada sewa.`);
+            finishLanding(freshP, wasDouble);
+          } else {
+            const owner = state.players.find(pl=>pl.id===data.owner);
+            payRentViaServer(freshP, owner, idx, false, wasDouble);
+          }
+        } else {
+          finishLanding(freshP, wasDouble);
+        }
+      };
+      state.lastMoveMeta = {id:p.id, backward:false};
+      animateWalk(p, steps, true, applyAndContinue);
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    fallbackLocalMoveSteps(p, steps, wasDouble);
+  }catch(e){ fallbackLocalMoveSteps(p, steps, wasDouble); }
 }
 function advanceTo(p, idx, paySalaryIfPass, wasDouble){
   let steps = mod(idx-p.pos,40);
