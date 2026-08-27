@@ -2425,10 +2425,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">28 Agustus 2026, 05:48 WITA — v1.8.28.0548</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -3221,6 +3217,12 @@ function startGamePolling(){
         if(!box) return;
         animateDiceRoll(()=>{
           box.innerHTML = diceHTML(payload.d1)+diceHTML(payload.d2);
+          // Lanjut animasi token jalan (preview visual, lihat penjelasan
+          // di previewWalkForOtherDevice) — dilewati kalau pemainnya
+          // baru saja keluar dari penjara (posisi belum tentu jalan).
+          if(!payload.wasInJail && typeof payload.fromPos==='number'){
+            previewWalkForOtherDevice(payload.playerId, payload.fromPos, payload.d1+payload.d2);
+          }
         });
       })
       .subscribe();
@@ -4685,6 +4687,30 @@ async function fetchOfficialDice(){
   }catch(e){}
   return [1+Math.floor(Math.random()*6), 1+Math.floor(Math.random()*6)];
 }
+function previewWalkForOtherDevice(playerId, fromPos, steps){
+  // Fase E1: ini MURNI animasi kosmetik di HP yang BUKAN sedang giliran.
+  // Tujuannya cuma biar token kelihatan jalan di layar hampir bersamaan
+  // dengan HP yang sedang giliran, tanpa nunggu proses mendarat/beli/dll
+  // di HP itu selesai dulu. Sengaja TIDAK memanggil landOnTile ataupun
+  // logic mendarat apa pun di sini — cukup gerakkan tokennya di layar.
+  // Begitu data ASLI datang sesaat kemudian lewat broadcast 'state' biasa
+  // (yang menimpa seluruh state.players), posisi/uang otomatis dikoreksi
+  // ke nilai yang benar-benar sah, jadi preview ini aman walau meleset.
+  if(appSettings.reducedMotion) return;
+  const p = state.players.find(pl=>pl.id===playerId);
+  if(!p) return;
+  p.pos = fromPos;
+  let left = steps;
+  function tick(){
+    if(left<=0) return;
+    p.pos = mod(p.pos+1,40);
+    renderTokensAndHouses(p.id);
+    playSound('step');
+    left--;
+    setTimeout(tick, 150);
+  }
+  tick();
+}
 function onRoll(){
   if(!myTurnOK()) return;
   if(state.turnPhase!=='canRoll') return;
@@ -4718,7 +4744,7 @@ function onRoll(){
     // menunggu seluruh proses jalan/mendarat/beli/dll selesai dulu baru
     // tahu. Ini broadcast ringan, terpisah dari data giliran yang
     // sebenarnya (yang tetap menyusul lewat jalur biasa).
-    try{ if(gameRealtimeChannel) gameRealtimeChannel.send({type:'broadcast', event:'diceEarly', payload:{ playerId:p.id, d1, d2 }}); }catch(e){}
+    try{ if(gameRealtimeChannel) gameRealtimeChannel.send({type:'broadcast', event:'diceEarly', payload:{ playerId:p.id, d1, d2, fromPos: p.pos, wasInJail: !!p.inJail }}); }catch(e){}
     state.lastRoll=[d1,d2];
     document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
     playSound('roll');
