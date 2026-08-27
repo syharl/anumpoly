@@ -2245,31 +2245,8 @@ function confirmSurrender(){
 function surrenderPlayer(playerId){
   if(!state) { closeModal(); return; }
   const p = state.players.find(pl=>pl.id===playerId) || localPlayer();
-  p.bankrupt = true;
-  p.bankruptAt = Date.now();
-  log(`${p.name} menyerah dan dinyatakan bangkrut.`);
-  (p.properties||[]).forEach(i=>{
-    const ps = state.propStates[i];
-    ps.houses = 0;
-    ps.owner = null;
-    ps.mortgaged = false;
-  });
-  p.money = 0;
-  p.properties = [];
   closeModal();
-  checkGameOver();
-  if(document.getElementById('winnerOverlay').classList.contains('show')){
-    commit();
-  } else if(p.id===currentPlayer().id){
-    // Yang menyerah kebetulan memang lagi giliran jalan -> lanjut ke
-    // pemain berikutnya seperti biasa.
-    forceEndTurn();
-  } else {
-    // Yang menyerah BUKAN pemain yang lagi giliran jalan -> jangan
-    // sentuh giliran yang sedang berjalan, cukup sinkronkan status
-    // bangkrutnya saja.
-    commit();
-  }
+  declareBankruptViaServer(p, 'bank');
 }
 
 /* ============================================================
@@ -2447,14 +2424,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">27 Agustus 2026, 11:16 WITA — v1.8.27.1116</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Delete capacitor_config.json</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">27 Agustus 2026, 07:39 WITA — v1.8.27.0739</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -5088,15 +5057,18 @@ function declareBankrupt(){
   if(!myTurnOK()) return;
   const debt = state.pendingDebt;
   const p = debt ? (state.players.find(pl=>pl.id===debt.playerId) || currentPlayer()) : currentPlayer();
+  declareBankruptViaServer(p, debt ? debt.toId : 'bank');
+}
+function fallbackLocalDeclareBankrupt(p, toId){
   p.bankrupt = true;
   p.bankruptAt = Date.now();
   log(`${p.name} dinyatakan BANGKRUT.`);
   (p.properties||[]).forEach(i=>{
     const ps = state.propStates[i];
     ps.houses = 0;
-    if(debt && debt.toId!=='bank'){
-      ps.owner = debt.toId;
-      const creditor = state.players.find(pl=>pl.id===debt.toId);
+    if(toId!=='bank'){
+      ps.owner = toId;
+      const creditor = state.players.find(pl=>pl.id===toId);
       creditor.properties = creditor.properties||[];
       creditor.properties.push(i);
     } else {
@@ -5104,8 +5076,8 @@ function declareBankrupt(){
       ps.mortgaged = false;
     }
   });
-  if(debt && debt.toId!=='bank'){
-    const creditor = state.players.find(pl=>pl.id===debt.toId);
+  if(toId!=='bank'){
+    const creditor = state.players.find(pl=>pl.id===toId);
     if(creditor && p.money>0) showMoneyFx(creditor.id, p.money);
     if(creditor) creditor.money += p.money;
   }
@@ -5118,21 +5090,40 @@ function declareBankrupt(){
   if(document.getElementById('winnerOverlay').classList.contains('show')){
     commit();
   } else if(p.id===currentPlayer().id){
-    // Yang baru dinyatakan bangkrut BIASANYA memang lagi giliran jalan
-    // (utang muncul saat sedang mendarat/bayar sewa/pajak) -> giliran
-    // HARUS otomatis lanjut ke pemain berikutnya yang belum bangkrut,
-    // sama seperti saat menyerah lewat menu ☰. Sebelumnya di sini
-    // giliran tidak pernah dipindahkan (cuma set turnPhase='canEndTurn'
-    // lalu diam), jadi permainan macet menunggu pemain yang sudah
-    // bangkrut itu sendiri "menyelesaikan giliran" padahal dia sudah
-    // tidak bisa berbuat apa-apa lagi.
     forceEndTurn();
   } else {
-    // Kasus jarang: pemain yang bangkrut BUKAN yang sedang giliran jalan
-    // (mis. lewat proses lain di luar giliran) -> jangan sentuh giliran
-    // yang sedang berjalan, cukup sinkronkan status bangkrutnya saja.
     commit();
   }
+}
+async function declareBankruptViaServer(p, toId){
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'declareBankrupt', playerId: p.id, toId: toId||'bank' })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+      const freshP = state.players.find(pl=>pl.id===p.id)||p;
+      log(`${freshP.name} dinyatakan BANGKRUT.`);
+      state.pendingDebt = null;
+      closeModal();
+      closeManage();
+      checkGameOver();
+      if(document.getElementById('winnerOverlay').classList.contains('show')){
+        commit();
+      } else if(freshP.id===currentPlayer().id){
+        forceEndTurn();
+      } else {
+        commit();
+      }
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    fallbackLocalDeclareBankrupt(p, toId);
+  }catch(e){ fallbackLocalDeclareBankrupt(p, toId); }
 }
 function checkGameOver(){
   if(state.timeAttackEndedShown) return; // permainan sudah selesai lewat Time Attack
@@ -5732,6 +5723,9 @@ function jailTryDouble(p){
   });
 }
 function jailPayBail(p){
+  payJailBailViaServer(p);
+}
+function fallbackLocalJailPayBail(p){
   chargePlayer(p, 50, 'bank', ()=>{
     p.inJail=false; p.jailTurns=0;
     log(`${p.name} membayar $50 dan bebas dari penjara.`);
@@ -5739,12 +5733,59 @@ function jailPayBail(p){
     commit();
   });
 }
+async function payJailBailViaServer(p){
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'payJailBail', playerId: p.id })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev; state.players = remote.players;
+      const freshP = state.players.find(pl=>pl.id===p.id)||p;
+      log(`${freshP.name} membayar $50 dan bebas dari penjara.`);
+      state.turnPhase='canRoll';
+      renderAll();
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    log(`Pembayaran jaminan tidak bisa diproses server, dibatalkan.`);
+    renderAll();
+  }catch(e){ fallbackLocalJailPayBail(p); }
+}
 function jailUseCard(p){
+  useJailCardViaServer(p);
+}
+function fallbackLocalJailUseCard(p){
   p.jailCards--;
   p.inJail=false; p.jailTurns=0;
   log(`${p.name} memakai kartu bebas penjara.`);
   state.turnPhase='canRoll';
   commit();
+}
+async function useJailCardViaServer(p){
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'useJailCard', playerId: p.id })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev; state.players = remote.players;
+      const freshP = state.players.find(pl=>pl.id===p.id)||p;
+      log(`${freshP.name} memakai kartu bebas penjara.`);
+      state.turnPhase='canRoll';
+      renderAll();
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    log(`Pemakaian kartu tidak bisa diproses server, dibatalkan.`);
+    renderAll();
+  }catch(e){ fallbackLocalJailUseCard(p); }
 }
 
 function endTurn(){
@@ -6149,12 +6190,37 @@ function sellHouse(i, pOverride){
   const p = pOverride || localPlayer();
   const t = BOARD[i]; const ps = state.propStates[i];
   if(ps.owner!==p.id) return;
+  if(ps.houses<=0) return;
+  sellHouseViaServer(p, i);
+}
+function fallbackLocalSellHouse(p, i){
+  const t = BOARD[i]; const ps = state.propStates[i];
   const cost = HC(t.group);
   ps.houses -= 1;
   p.money += Math.round(cost/2);
   showMoneyFx(p.id, Math.round(cost/2));
   log(`${p.name} menjual rumah di ${t.name}, dapat ${fmt(Math.round(cost/2))}.`);
   commit(); renderDeedList();
+}
+async function sellHouseViaServer(p, i){
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'sellHouse', playerId: p.id, tileIdx: i })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+      log(`${p.name} menjual rumah di ${BOARD[i].name}, dapat ${fmt(data.amount)}.`);
+      renderDeedList(); renderAll();
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    log(`Penjualan rumah di ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
+    renderDeedList();
+  }catch(e){ fallbackLocalSellHouse(p, i); }
 }
 function mortgageProp(i, pOverride){
   const p = pOverride || localPlayer();
