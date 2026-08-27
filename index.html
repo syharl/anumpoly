@@ -2425,10 +2425,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">27 Agustus 2026, 12:20 WITA — v1.8.27.1220</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -3207,6 +3203,21 @@ function startGamePolling(){
         // applyRemoteState yang sama persis dengan jalur polling biasa,
         // supaya animasi/antrean/checkGameOver tetap konsisten.
         if(payload && payload.rev > (state.rev||0)) applyRemoteState(payload);
+      })
+      .on('broadcast', {event:'diceEarly'}, ({payload})=>{
+        // Preview visual doang: begitu HP lain melempar dadu, kita ikut
+        // menampilkan animasi dadunya SAAT ITU JUGA (bukan nunggu seluruh
+        // data giliran, yang baru menyusul lewat 'state' broadcast di
+        // atas beberapa saat kemudian). Ini TIDAK mengubah state apa pun,
+        // murni supaya dadu di kedua HP kelihatan jalan hampir bersamaan.
+        if(!payload || appSettings.reducedMotion) return;
+        const notMyTurn = state && state.mode==='online' && myOnlineSlot!==state.currentIndex;
+        if(!notMyTurn) return; // ini giliran kita sendiri, animasi asli sudah jalan lokal
+        const box = document.getElementById('diceBox');
+        if(!box) return;
+        animateDiceRoll(()=>{
+          box.innerHTML = diceHTML(payload.d1)+diceHTML(payload.d2);
+        });
       })
       .subscribe();
   }catch(e){}
@@ -4697,6 +4708,13 @@ function onRoll(){
   const officialDicePromise = fetchOfficialDice();
   animateDiceRoll(async ()=>{
     const [d1, d2] = await officialDicePromise;
+    // Siarkan angka dadu SEKARANG JUGA (bukan nanti di akhir giliran lewat
+    // commit()/broadcastGameState) — supaya HP lain bisa mulai animasi
+    // dadunya sendiri di momen yang hampir bersamaan dengan HP ini, bukan
+    // menunggu seluruh proses jalan/mendarat/beli/dll selesai dulu baru
+    // tahu. Ini broadcast ringan, terpisah dari data giliran yang
+    // sebenarnya (yang tetap menyusul lewat jalur biasa).
+    try{ if(gameRealtimeChannel) gameRealtimeChannel.send({type:'broadcast', event:'diceEarly', payload:{ playerId:p.id, d1, d2 }}); }catch(e){}
     state.lastRoll=[d1,d2];
     document.getElementById('diceBox').innerHTML = diceHTML(d1)+diceHTML(d2);
     playSound('roll');
