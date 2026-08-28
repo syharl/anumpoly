@@ -2425,10 +2425,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">28 Agustus 2026, 12:13 WITA — v1.8.28.1213</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -5580,15 +5576,11 @@ function decideBuy(buy){
    ============================================================ */
 let auctionShownSig = null;
 function startAuction(idx, wasDouble, includeMover){
+  startAuctionViaServer(idx, wasDouble, includeMover);
+}
+function fallbackLocalStartAuction(idx, wasDouble, includeMover){
   const activeIds = [];
   const n = state.players.length;
-  // Pemain yang baru saja MEMILIH LEWAT beli (bukan mode Lelang Saja)
-  // sudah menyatakan tidak mau, jadi TIDAK ikut menawar lagi — lelang
-  // dimulai dari pemain setelahnya.
-  // TAPI di mode Lelang Saja (auctionOnly), pemain yang jalan/mendarat
-  // belum pernah diberi kesempatan memilih beli atau tidak (langsung
-  // dilelang), jadi dia HARUS ikut sebagai penawar juga, dan gilirannya
-  // menawar duluan (dirinya sendiri dulu, baru pemain berikutnya).
   const startI = includeMover ? 0 : 1;
   for(let i=startI;i<n;i++){
     const pidx = mod(state.currentIndex+i, n);
@@ -5600,14 +5592,38 @@ function startAuction(idx, wasDouble, includeMover){
     return;
   }
   const t = BOARD[idx];
-  // Lelang dimulai dari harga beli aslinya (bukan dipotong 10% seperti
-  // sebelumnya) — permintaan pemain: harga awal lelang = harga normal
-  // properti itu di papan, bukan nominal rendah.
   const startPrice = t.price;
   state.auction = { idx, remaining: activeIds, pos:0, highBid:0, highBidderId:null, highBidderName:null, wasDouble, startPrice, increment: 5 };
   log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(startPrice)} (harga normalnya).`);
   auctionShownSig = null;
   commit();
+}
+async function startAuctionViaServer(idx, wasDouble, includeMover){
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'startAuction', tileIdx: idx, wasDouble: !!wasDouble, includeMover: !!includeMover })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
+      broadcastGameState(remote);
+      auctionShownSig = null;
+      if(data.noBidders){
+        log(`Tidak ada pemain lain untuk melelang ${BOARD[idx].name}, tetap milik bank.`);
+        finishLanding(currentPlayer(), wasDouble);
+      } else {
+        const t = BOARD[idx];
+        log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(t.price)} (harga normalnya).`);
+        renderAll();
+      }
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    fallbackLocalStartAuction(idx, wasDouble, includeMover);
+  }catch(e){ fallbackLocalStartAuction(idx, wasDouble, includeMover); }
 }
 function auctionTurnOK(){
   if(!state.auction) return false;
@@ -5683,44 +5699,98 @@ function auctionBid(amount){
   const a = state.auction; if(!a) return;
   const bidderId = a.remaining[a.pos % a.remaining.length];
   const bidder = state.players.find(p=>p.id===bidderId);
-  const t = BOARD[a.idx];
-  const minBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||t.price);
+  const minBid = a.highBid>0 ? a.highBid + (a.increment||5) : (a.startPrice||BOARD[a.idx].price);
   amount = Math.round(amount);
-  // Jaga-jaga: tawaran custom dari input tidak boleh di bawah minimum
-  // sah atau melebihi saldo pemain, meski UI sudah membatasi lewat
-  // atribut min/max pada input number.
   if(amount < minBid) amount = minBid;
   if(bidder.money < amount) return;
-  a.highBid = amount; a.highBidderId = bidderId; a.highBidderName = bidder.name;
-  log(`${bidder.name} menawar ${fmt(amount)} untuk ${BOARD[a.idx].name}.`);
   closeModal();
   auctionShownSig = null;
-  // Kalau cuma tersisa 1 penawar (mis. main berdua, jadi hanya lawan
-  // 1 orang yang boleh ikut lelang), tidak ada lawan lagi untuk menawar
-  // lebih tinggi -> properti langsung jadi milik dia, tidak perlu
-  // menawar melawan dirinya sendiri berulang-ulang.
-  if(a.remaining.length<=1){
-    finishAuction();
-    return;
-  }
+  auctionBidViaServer(bidderId, amount);
+}
+function fallbackLocalAuctionBid(bidderId, amount){
+  const a = state.auction; if(!a) return;
+  const bidder = state.players.find(p=>p.id===bidderId);
+  a.highBid = amount; a.highBidderId = bidderId; a.highBidderName = bidder.name;
+  log(`${bidder.name} menawar ${fmt(amount)} untuk ${BOARD[a.idx].name}.`);
+  if(a.remaining.length<=1){ finishAuction(); return; }
   a.pos = (a.pos+1) % a.remaining.length;
   commit();
+}
+async function auctionBidViaServer(bidderId, amount){
+  const tileName = BOARD[state.auction.idx].name;
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'auctionBid', playerId: bidderId, amount })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
+      broadcastGameState(remote);
+      const bidder = remote.players.find(p=>p.id===bidderId);
+      log(`${bidder.name} menawar ${fmt(amount)} untuk ${tileName}.`);
+      handleAuctionResolvedIfAny(data.auctionResolved);
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    fallbackLocalAuctionBid(bidderId, amount);
+  }catch(e){ fallbackLocalAuctionBid(bidderId, amount); }
+}
+function handleAuctionResolvedIfAny(resolved){
+  if(resolved){
+    const t = BOARD[resolved.tileIdx];
+    if(resolved.winnerId){
+      const winner = state.players.find(p=>p.id===resolved.winnerId);
+      log(`${winner.name} memenangkan lelang <b>${t.name}</b> seharga ${fmt(resolved.price)}.`);
+      playSound('buy');
+    } else {
+      log(`Tidak ada tawaran untuk ${t.name}, tetap milik bank.`);
+    }
+    finishLanding(currentPlayer(), resolved.wasDouble);
+  } else {
+    renderAll();
+  }
 }
 function auctionPass(){
   if(!auctionTurnOK()) return;
   const a = state.auction; if(!a) return;
   const bidderId = a.remaining[a.pos % a.remaining.length];
+  closeModal();
+  auctionShownSig = null;
+  auctionPassViaServer(bidderId);
+}
+function fallbackLocalAuctionPass(bidderId){
+  const a = state.auction; if(!a) return;
   const bidder = state.players.find(p=>p.id===bidderId);
   a.remaining = a.remaining.filter(id=>id!==bidderId);
   log(`${bidder.name} melewati lelang ${BOARD[a.idx].name}.`);
-  closeModal();
-  auctionShownSig = null;
-  if(a.remaining.length<=1){
-    finishAuction();
-    return;
-  }
+  if(a.remaining.length<=1){ finishAuction(); return; }
   a.pos = a.pos % a.remaining.length;
   commit();
+}
+async function auctionPassViaServer(bidderId){
+  const bidderName = (state.players.find(p=>p.id===bidderId)||{}).name||'';
+  const tileName = BOARD[state.auction.idx].name;
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'auctionPass', playerId: bidderId })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
+      broadcastGameState(remote);
+      log(`${bidderName} melewati lelang ${tileName}.`);
+      handleAuctionResolvedIfAny(data.auctionResolved);
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    fallbackLocalAuctionPass(bidderId);
+  }catch(e){ fallbackLocalAuctionPass(bidderId); }
 }
 function finishAuction(){
   const a = state.auction; if(!a) return;
