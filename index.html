@@ -2425,10 +2425,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">28 Agustus 2026, 06:34 WITA — v1.8.28.0634</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -4878,7 +4874,7 @@ async function resolveLandingViaServer(p, steps, wasDouble){
           finishLanding(freshP, wasDouble);
         } else if(data.landingKind==='card'){
           playSound('card');
-          drawCard(freshP, t.type==='chance'?'chance':'chest', wasDouble);
+          drawCardViaServer(freshP, t.type==='chance'?'chance':'chest', wasDouble);
         } else if(data.landingKind==='property'){
           if(data.owner==null){
             if(state.rules.auctionOnly){
@@ -5744,6 +5740,92 @@ function finishAuction(){
   finishLanding(currentPlayer(), wasDouble);
 }
 
+function fallbackLocalDrawCard(p, deckType, wasDouble){
+  drawCard(p, deckType, wasDouble);
+}
+async function drawCardViaServer(p, deckType, wasDouble){
+  // Fase E3: kartu Dana Umum/Kesempatan (termasuk yang efeknya pindah
+  // posisi) sekarang diundi & diproses SEKALI JALAN di server (mendukung
+  // kasus kartu yang bisa memicu kartu lain lagi), lalu hasilnya
+  // disiarkan ke semua HP — jalur negosiasi utang (kalau uang kurang
+  // buat bayar efek kartu) tetap jatuh ke fallback lokal seperti biasa.
+  try{
+    const resp = await fetch(GAME_ACTION_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'drawCard', playerId: p.id, deckType })
+    });
+    const data = await resp.json();
+    if(data && data.ok && data.newState){
+      const remote = data.newState;
+      broadcastGameState(remote);
+      const applyAndContinue = ()=>{
+        state.rev = remote.rev;
+        state.players = remote.players;
+        state.propStates = remote.propStates;
+        state.freeParkingPot = remote.freeParkingPot;
+        const freshP = state.players.find(pl=>pl.id===p.id)||p;
+        (data.cardTexts||[]).forEach(txt=>log(`${freshP.name} mengambil kartu: "${txt}"`));
+        if(data.landingKind==='sentToJail'){
+          log(`${freshP.name} dikirim ke penjara!`);
+          state.turnPhase='canEndTurn';
+          renderAll();
+        } else if(data.landingKind==='tax'){
+          log(`${freshP.name} membayar pajak ${fmt(data.taxAmount)}.`);
+          playSound('pay');
+          finishLanding(freshP, wasDouble);
+        } else if(data.landingKind==='freeparking'){
+          if(data.bonusAmount>0){
+            showMoneyFx(freshP.id, data.bonusAmount);
+            log(`${freshP.name} mengambil ${fmt(data.bonusAmount)} di Parkir Bebas!`);
+            playSound('cash');
+          }
+          finishLanding(freshP, wasDouble);
+        } else if(data.landingKind==='property'){
+          const idx = freshP.pos;
+          const t = BOARD[idx];
+          if(data.owner==null){
+            if(state.rules.auctionOnly){
+              log(`${t.name} belum ada pemilik. Mode Lelang Saja aktif — langsung dilelang!`);
+              startAuction(idx, wasDouble, true);
+            } else {
+              state.pendingBuy = {idx, wasDouble};
+              renderAll();
+            }
+          } else if(data.owner===freshP.id){
+            finishLanding(freshP, wasDouble);
+          } else if(state.propStates[idx].mortgaged){
+            log(`${t.name} sedang digadai, tidak ada sewa.`);
+            finishLanding(freshP, wasDouble);
+          } else {
+            const owner = state.players.find(pl=>pl.id===data.owner);
+            payRentViaServer(freshP, owner, idx, !!data.forceDoubleRent, wasDouble);
+          }
+        } else {
+          finishLanding(freshP, wasDouble);
+        }
+      };
+      const beforeP = state.players.find(pl=>pl.id===p.id);
+      const oldPos = beforeP ? beforeP.pos : p.pos;
+      const afterP = remote.players.find(pl=>pl.id===p.id);
+      const newPos = afterP ? afterP.pos : oldPos;
+      if(data.landingKind!=='sentToJail' && newPos!==oldPos){
+        // Kartu ini memindahkan posisi -> animasikan jalannya secara
+        // visual dulu (dari posisi lama ke yang baru), baru terapkan
+        // data resmi. Kartu "Masuk Penjara" TIDAK dianimasikan jalan
+        // (teleport langsung), sama seperti goToJail() biasa.
+        const steps = mod(newPos-oldPos,40);
+        state.lastMoveMeta = {id:p.id, backward:false};
+        animateWalk(p, steps, false, applyAndContinue);
+      } else {
+        applyAndContinue();
+      }
+      return;
+    }
+    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
+    fallbackLocalDrawCard(p, deckType, wasDouble);
+  }catch(e){ fallbackLocalDrawCard(p, deckType, wasDouble); }
+}
 function drawCard(p, type, wasDouble){
   const idsKey = type==='chance' ? 'chanceDeckIds' : 'chestDeckIds';
   const staticArr = type==='chance' ? CHANCE_CARDS : CHEST_CARDS;
