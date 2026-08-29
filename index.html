@@ -1185,13 +1185,12 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
 <!-- ================= GAME ================= -->
 <div id="screen-game" class="screen">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <div class="room-badge" id="roomBadge" style="display:none;"></div>
-      <div class="room-badge" id="pingBadge" style="display:none;"></div>
-      <div class="room-badge" id="witaClockBadge">🕒 --:--:-- WITA</div>
-      <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
-      <button class="icon-btn" id="btnMute" onclick="toggleMute()">🔊</button>
-      <button class="icon-btn" id="btnMusicGame" onclick="quickToggleMusic()">🎵</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="room-badge" id="pingBadge" style="display:none;"></div>
+        <div class="room-badge" id="witaClockBadge">🕒 --:--:--</div>
+        <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
+      </div>
       <button class="icon-btn" onclick="openSettingsMenu()">☰ Menu</button>
     </div>
   </div>
@@ -1216,12 +1215,10 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
 
     <div class="actions-row">
       <button id="btnPassTurn" class="pass-turn-btn" style="display:none;" onclick="confirmPass()">▶️ Lanjutkan Giliran</button>
-      <button id="btnRoll" onclick="onRoll()">🎲 Lempar Dadu</button>
-      <button id="btnManage" class="secondary" onclick="openManage()">Kelola Properti</button>
-      <button id="btnEndTurn" class="secondary" onclick="endTurn()" disabled>Selesai Giliran</button>
+      <button id="btnRollEndTurn" onclick="onRollOrEndTurn()">🎲 Lempar Dadu</button>
     </div>
     <div class="actions-row">
-      <button id="btnFriendProps" class="secondary" onclick="openFriendProps()">👀 Properti Teman</button>
+      <button id="btnFriendProps" class="secondary" onclick="openFriendProps()">👀 Properti</button>
       <button id="btnHistory" class="secondary" onclick="openHistory()">📜 Riwayat</button>
     </div>
 
@@ -1767,7 +1764,8 @@ function ensureAudio(){
 }
 function toggleMute(){
   soundMuted = !soundMuted;
-  document.getElementById('btnMute').textContent = soundMuted ? '🔇' : '🔊';
+  const el = document.getElementById('btnMute');
+  if(el) el.textContent = soundMuted ? '🔇' : '🔊';
   saveSettings();
 }
 function beep(freq, dur, type, vol, delay){
@@ -2206,11 +2204,12 @@ function resumeSavedGame(){
 /* ============================================================
    MENU (☰) — pengaturan, riwayat, menyerah, keluar
    ============================================================ */
+function resumeGame(){ closeModal(); }
 function openSettingsMenu(){
   showModal({
     title:'☰ Menu Permainan',
     buttons:[
-      {label:'▶️ Lanjut Game', cls:'btn-yes', onClick:closeModal},
+      {label:'▶️ Lanjutkan', cls:'btn-yes', onClick:resumeGame},
       {label:'⚙️ Pengaturan', cls:'btn-no', onClick:openInGameSettingsPanel},
       {label:'🏳️ Menyerah', cls:'btn-danger', onClick:confirmSurrender},
       {label:'🚪 Keluar ke Menu', cls:'btn-no', onClick:confirmQuit},
@@ -2428,10 +2427,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">29 Agustus 2026, 21:57 WITA — v1.8.29.2157</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -4549,40 +4544,37 @@ function updateTurnBanner(){
   document.getElementById('tbName').textContent = p.name+"'s turn";
   document.getElementById('tbMoney').textContent = fmt(p.money);
   document.getElementById('tbJail').textContent = p.inJail ? 'DI PENJARA' : (notMyTurn ? 'Menunggu giliran...' : '');
-  document.getElementById('btnRoll').disabled = state.turnPhase!=='canRoll' || notMyTurn || !!state.pendingDebt || !!state.auction;
-  document.getElementById('btnEndTurn').disabled = state.turnPhase!=='canEndTurn' || notMyTurn || !!state.pendingDebt || !!state.auction;
-  document.getElementById('btnManage').disabled = false; // Kelola Properti: bisa dibuka kapan saja
+  const canRoll = state.turnPhase==='canRoll';
+  const canEndTurn = state.turnPhase==='canEndTurn';
+  const btnRE = document.getElementById('btnRollEndTurn');
+  btnRE.disabled = (!canRoll && !canEndTurn) || notMyTurn || !!state.pendingDebt || !!state.auction;
+  btnRE.textContent = canEndTurn ? '✅ Selesai Giliran' : '🎲 Lempar Dadu';
   const btnPass = document.getElementById('btnPassTurn');
-  const btnRollEl = document.getElementById('btnRoll');
-  const btnManageEl = document.getElementById('btnManage');
-  const btnEndTurnEl = document.getElementById('btnEndTurn');
   const btnFriendPropsEl = document.getElementById('btnFriendProps');
   if(awaitingPass){
     btnPass.style.display='';
     btnPass.textContent = `▶️ Lanjutkan Giliran ${p.name}`;
-    btnRollEl.style.display='none';
-    btnManageEl.style.display='none';
-    btnEndTurnEl.style.display='none';
+    btnRE.style.display='none';
     if(btnFriendPropsEl) btnFriendPropsEl.disabled = true;
   } else {
     btnPass.style.display='none';
-    btnRollEl.style.display='';
-    btnManageEl.style.display='';
-    btnEndTurnEl.style.display='';
+    btnRE.style.display='';
     if(btnFriendPropsEl) btnFriendPropsEl.disabled = false;
   }
   const badge = document.getElementById('roomBadge');
   updatePingBadge();
-  if(state.mode==='online'){
-    badge.style.display='inline-block';
-    const who = myOnlineSlot!=null ? ' • Kamu: '+state.players[myOnlineSlot].name : '';
-    if(state.matchmaking){
-      badge.textContent = (state.rankMode ? '🏆 Rank Match' : '🎲 Match Santai') + who;
+  if(badge){
+    if(state.mode==='online'){
+      badge.style.display='inline-block';
+      const who = myOnlineSlot!=null ? ' • Kamu: '+state.players[myOnlineSlot].name : '';
+      if(state.matchmaking){
+        badge.textContent = (state.rankMode ? '🏆 Rank Match' : '🎲 Match Santai') + who;
+      } else {
+        badge.textContent = 'Room '+state.roomCode+who;
+      }
     } else {
-      badge.textContent = 'Room '+state.roomCode+who;
+      badge.style.display='none';
     }
-  } else {
-    badge.style.display='none';
   }
   updateTimerDisplay();
 }
@@ -4719,6 +4711,10 @@ function previewWalkForOtherDevice(playerId, fromPos, steps){
   }
   tick();
 }
+function onRollOrEndTurn(){
+  if(state.turnPhase==='canEndTurn') endTurn();
+  else onRoll();
+}
 function onRoll(){
   if(!myTurnOK()) return;
   if(state.turnPhase!=='canRoll') return;
@@ -4739,7 +4735,7 @@ function onRoll(){
   // sekarang otomatis menolak percobaan kedua itu karena fase sudah
   // berubah jadi 'rolling', bukan 'canRoll' lagi.
   state.turnPhase = 'rolling';
-  document.getElementById('btnRoll').disabled = true;
+  document.getElementById('btnRollEndTurn').disabled = true;
   // Minta dadu resmi ke server BERSAMAAN dengan animasi kocok dadu berjalan
   // (bukan sesudahnya), supaya jawaban server biasanya sudah siap begitu
   // animasi selesai — tidak ada jeda tambahan yang terasa oleh pemain.
@@ -6619,12 +6615,36 @@ function rentPreviewText(idx){
 }
 function openFriendProps(){
   const me = localPlayer();
-  const others = state.players.filter(p=>p.id!==me.id && !p.bankrupt);
-  if(others.length===0){
-    showModal({title:'👀 Properti Teman', desc:'Tidak ada pemain lain untuk dilihat.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}]});
-    return;
+  const myProps = Array.from(new Set(me.properties||[])).sort((a,b)=>a-b)
+    .filter(i=>state.propStates[i] && state.propStates[i].owner===me.id);
+  let html = `<details class="fp-details" style="margin-bottom:10px;" open>
+    <summary class="fp-summary">
+      <span style="color:var(--gold);font-weight:800;font-size:13px;">${me.name} (Kamu) — ${fmt(me.money)}</span>
+      <span class="fp-count">${myProps.length} properti<span class="fp-arrow">▾</span></span>
+    </summary>`;
+  if(myProps.length===0){
+    html += `<div style="color:var(--paper-dim);font-size:12px;padding:8px 2px;">Belum punya properti.</div>`;
+  } else {
+    html += `<div class="deed-list" style="max-height:260px;margin-top:8px;">`;
+    myProps.forEach(i=>{
+      const t = BOARD[i]; const ps = state.propStates[i];
+      const swatchColor = t.type==='property' ? GROUP_COLORS[t.group] : (t.type==='railroad' ? '#999' : '#666');
+      const info = t.type==='property' ? (ps.houses===5?'Hotel':(ps.houses>0?ps.houses+' rumah':'Tanpa rumah')) : (ps.mortgaged?'Digadai':'Aktif');
+      html += `<div class="deed-item">
+        <div style="display:flex;align-items:center;">
+          <div class="deed-swatch" style="background:${swatchColor}"></div>
+          <div class="fp-name-box">
+            <div class="di-name">${t.name}</div>
+            <div class="di-info">${info}${ps.mortgaged?' • Digadai':''}</div>
+          </div>
+          <button class="fp-tawar-btn" onclick="openPropertyActionMenu(${i})">☰ Kelola</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
   }
-  let html = '';
+  html += `</details>`;
+  const others = state.players.filter(p=>p.id!==me.id && !p.bankrupt);
   others.forEach((pl)=>{
     const props = Array.from(new Set(pl.properties||[])).sort((a,b)=>a-b);
     // SEMUA lipatan pemain dibuka ("open") secara default begitu modal ini
@@ -6667,7 +6687,40 @@ function openFriendProps(){
     }
     html += `</details>`;
   });
-  showModal({title:'👀 Properti Teman', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}], fixedHeight:true});
+  showModal({title:'👀 Properti', desc: html, buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModal}], fixedHeight:true});
+}
+function openPropertyActionMenu(i){
+  const p = localPlayer();
+  const t = BOARD[i]; const ps = state.propStates[i];
+  if(!ps || ps.owner!==p.id){ openFriendProps(); return; }
+  const canBuild = t.type==='property' && !ps.mortgaged && ps.houses<5 &&
+    (state.rules.houseFreeBuild ? state.pendingHouseBuild===i : ownsFullGroup(p, t.group));
+  const canSellHouse = t.type==='property' && ps.houses>0;
+  const canMortgage = !ps.mortgaged && ps.houses===0;
+  const canUnmortgage = ps.mortgaged;
+  const sellHouseGain = t.type==='property' ? Math.round(HC(t.group)/2) : 0;
+  const buttons = [];
+  if(t.type==='property' && canBuild){
+    buttons.push({label:`🏗️ Bangun Rumah (${fmt(HC(t.group))})`, cls:'btn-yes', onClick:()=>{ closeModal(); buildHouse(i); }});
+  }
+  if(canSellHouse){
+    buttons.push({label:`🏚️ Jual Rumah (+${fmt(sellHouseGain)})`, cls:'btn-no', onClick:()=>{ closeModal(); confirmSellHouse(i); }});
+  }
+  if(canUnmortgage){
+    buttons.push({label:`💰 Tebus (${fmt(Math.round(t.mortgage*1.1))})`, cls:'btn-no', onClick:()=>{ closeModal(); confirmUnmortgage(i); }});
+  } else if(canMortgage){
+    buttons.push({label:`🏦 Gadai (+${fmt(t.mortgage)})`, cls:'btn-no', onClick:()=>{ closeModal(); confirmMortgage(i); }});
+  }
+  // Tawarkan sengaja langsung bawa properti ini (tidak perlu pilih lagi) —
+  // di dalam openSellOffer, cuma tinggal pilih pemain tujuan & harga.
+  buttons.push({label:'🤝 Tawarkan', cls:'btn-no', onClick:()=>{ closeModal(); openSellOffer(i); }});
+  buttons.push({label:'← Kembali', cls:'btn-no', onClick:openFriendProps});
+  showModal({
+    title: t.name,
+    desc: propertyDetailsHTML(t, ps),
+    buttons,
+    vertical:true
+  });
 }
 /* Tampilkan/sembunyikan kolom input tawaran untuk satu properti; kolom
    ini sengaja disembunyikan sampai tombol "Tawar" ditekan supaya kartu
@@ -6740,15 +6793,22 @@ function openSellOffer(presetIdx){
     showModal({title:'🤝 Tawarkan Properti', desc:'Tidak ada pemain lain untuk ditawarkan.', buttons:[{label:'Tutup', cls:'btn-no', onClick:closeModalMaybeReturnToDebt}]});
     return;
   }
-  const initialIdx = presetIdx!=null ? presetIdx : myProps[0];
+  const locked = presetIdx!=null;
+  const initialIdx = locked ? presetIdx : myProps[0];
   const fieldStyle = 'width:100%;margin-top:4px;padding:9px;border-radius:8px;border:1px solid rgba(47,111,168,0.4);background:var(--modal-bg);color:var(--paper);font-size:13px;';
   const propOpts = myProps.map(i=>`<option value="${i}" ${presetIdx===i?'selected':''}>${BOARD[i].name}</option>`).join('');
   const buyerOpts = buyers.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+  const propField = locked
+    ? `<div style="font-size:12px;color:var(--paper-dim);">Properti yang ditawarkan
+        <div style="font-weight:700;color:var(--paper);margin-top:4px;font-size:14px;">${BOARD[initialIdx].name}</div>
+        <input type="hidden" id="sellOfferProp" value="${initialIdx}">
+      </div>`
+    : `<label style="font-size:12px;color:var(--paper-dim);">Properti yang ditawarkan
+        <select id="sellOfferProp" style="${fieldStyle}" onchange="document.getElementById('sellOfferAmount').placeholder = investedValue(Number(this.value))">${propOpts}</select>
+      </label>`;
   const html = `
     <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
-      <label style="font-size:12px;color:var(--paper-dim);">Properti yang ditawarkan
-        <select id="sellOfferProp" style="${fieldStyle}" onchange="document.getElementById('sellOfferAmount').placeholder = investedValue(Number(this.value))">${propOpts}</select>
-      </label>
+      ${propField}
       <label style="font-size:12px;color:var(--paper-dim);">Tawarkan ke
         <select id="sellOfferTo" style="${fieldStyle}">${buyerOpts}</select>
       </label>
@@ -7065,7 +7125,7 @@ function updateWitaClock(){
   const el = document.getElementById('witaClockBadge');
   if(!el) return;
   const t = new Date().toLocaleTimeString('id-ID', {timeZone:'Asia/Makassar', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
-  el.textContent = '🕒 '+t+' WITA';
+  el.textContent = '🕒 '+t;
 }
 setInterval(updateWitaClock, 1000);
 updateWitaClock();
