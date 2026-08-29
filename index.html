@@ -2425,10 +2425,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">28 Agustus 2026, 19:10 WITA — v1.8.28.1910</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -4836,15 +4832,10 @@ function fallbackLocalMoveSteps(p, steps, wasDouble){
 }
 async function resolveLandingViaServer(p, steps, wasDouble){
   const fromPos = p.pos;
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'resolveLanding', playerId: p.id, steps })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
+  const data = await fetchGameAction({ action:'resolveLanding', playerId: p.id, steps });
+  if(!data){ fallbackLocalMoveSteps(p, steps, wasDouble); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
       // Jalanin animasi jalan token DULU secara visual (dari posisi lama
       // ke posisi baru yang sudah dipastikan server), baru sesudah
       // animasinya sampai, timpa data lokal dengan yang resmi dari server
@@ -4889,6 +4880,11 @@ async function resolveLandingViaServer(p, steps, wasDouble){
               renderAll();
             }
           } else if(data.owner===freshP.id){
+            const ps2 = state.propStates[idx];
+            if(state.rules.houseFreeBuild && t.type==='property' && !ps2.mortgaged && ps2.houses<5){
+              state.pendingHouseBuild = idx;
+              log(`${freshP.name} boleh membangun di ${t.name} sekarang.`);
+            }
             finishLanding(freshP, wasDouble);
           } else if(state.propStates[idx].mortgaged){
             log(`${t.name} sedang digadai, tidak ada sewa.`);
@@ -4904,10 +4900,8 @@ async function resolveLandingViaServer(p, steps, wasDouble){
       state.lastMoveMeta = {id:p.id, backward:false};
       animateWalk(p, steps, true, applyAndContinue);
       return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    fallbackLocalMoveSteps(p, steps, wasDouble);
-  }catch(e){ fallbackLocalMoveSteps(p, steps, wasDouble); }
+  }
+  fallbackLocalMoveSteps(p, steps, wasDouble);
 }
 function advanceTo(p, idx, paySalaryIfPass, wasDouble){
   let steps = mod(idx-p.pos,40);
@@ -5018,37 +5012,26 @@ async function payRentViaServer(p, owner, idx, forceDoubleRent, wasDouble){
   // jadi sengaja dijatuhkan ke jalur lama yang memang sudah menangani
   // itu dengan baik (lihat fallbackLocalRent).
   const [d1,d2] = state.lastRoll || [0,0];
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'payRent', payerId:p.id, tileIdx: idx, forceDoubleRent: !!forceDoubleRent, diceSum: d1+d2 })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev;
-      state.players = remote.players;
-      state.propStates = remote.propStates;
-      broadcastGameState(remote);
-      const freshP = state.players.find(pl=>pl.id===p.id)||p;
-      const freshOwner = state.players.find(pl=>pl.id===owner.id)||owner;
-      log(`${freshP.name} bayar sewa ${fmt(data.rentAmount)} ke ${freshOwner.name}.`);
-      playSound('pay');
-      finishLanding(freshP, wasDouble);
-      return;
-    }
-    if(data && data.conflict && data.currentValue){
-      mergeRemoteIntoLocal(JSON.parse(data.currentValue), null);
-    }
-    // Server menolak (uang kurang / properti sudah beda kondisi / dll) ->
-    // pakai jalur lama yang sudah menangani negosiasi utang dengan benar.
-    const freshP2 = state.players.find(pl=>pl.id===p.id)||p;
-    const freshOwner2 = state.players.find(pl=>pl.id===owner.id)||owner;
-    fallbackLocalRent(freshP2, freshOwner2, idx, forceDoubleRent, wasDouble);
-  }catch(e){
-    fallbackLocalRent(p, owner, idx, forceDoubleRent, wasDouble);
+  const data = await fetchGameAction({ action:'payRent', payerId:p.id, tileIdx: idx, forceDoubleRent: !!forceDoubleRent, diceSum: d1+d2 });
+  if(!data){ fallbackLocalRent(p, owner, idx, forceDoubleRent, wasDouble); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev;
+    state.players = remote.players;
+    state.propStates = remote.propStates;
+    broadcastGameState(remote);
+    const freshP = state.players.find(pl=>pl.id===p.id)||p;
+    const freshOwner = state.players.find(pl=>pl.id===owner.id)||owner;
+    log(`${freshP.name} bayar sewa ${fmt(data.rentAmount)} ke ${freshOwner.name}.`);
+    playSound('pay');
+    finishLanding(freshP, wasDouble);
+    return;
   }
+  // Server menolak (uang kurang / properti sudah beda kondisi / dll) ->
+  // pakai jalur lama yang sudah menangani negosiasi utang dengan benar.
+  const freshP2 = state.players.find(pl=>pl.id===p.id)||p;
+  const freshOwner2 = state.players.find(pl=>pl.id===owner.id)||owner;
+  fallbackLocalRent(freshP2, freshOwner2, idx, forceDoubleRent, wasDouble);
 }
 
 function finishLanding(p, wasDouble){
@@ -5155,7 +5138,7 @@ function payRepairs(p, perHouse, perHotel){
   });
   const total = houses*perHouse + hotels*perHotel;
   if(total===0){ log(`${p.name} tidak punya rumah/hotel, tidak ada biaya perbaikan.`); renderAll(); return; }
-  chargePlayer(p, total, 'bank', ()=>renderAll());
+  chargePlayer(p, total, 'bank', ()=>{ state.turnPhase='canEndTurn'; renderAll(); });
 }
 
 function openDebtModal(){
@@ -5247,35 +5230,28 @@ function fallbackLocalDeclareBankrupt(p, toId){
   }
 }
 async function declareBankruptViaServer(p, toId){
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'declareBankrupt', playerId: p.id, toId: toId||'bank' })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
-      broadcastGameState(remote);
-      const freshP = state.players.find(pl=>pl.id===p.id)||p;
-      log(`${freshP.name} dinyatakan BANGKRUT.`);
-      state.pendingDebt = null;
-      closeModal();
-      closeManage();
-      checkGameOver();
-      if(document.getElementById('winnerOverlay').classList.contains('show')){
-        commit();
-      } else if(freshP.id===currentPlayer().id){
-        forceEndTurn();
-      } else {
-        commit();
-      }
-      return;
+  const data = await fetchGameAction({ action:'declareBankrupt', playerId: p.id, toId: toId||'bank' });
+  if(!data){ fallbackLocalDeclareBankrupt(p, toId); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+    broadcastGameState(remote);
+    const freshP = state.players.find(pl=>pl.id===p.id)||p;
+    log(`${freshP.name} dinyatakan BANGKRUT.`);
+    state.pendingDebt = null;
+    closeModal();
+    closeManage();
+    checkGameOver();
+    if(document.getElementById('winnerOverlay').classList.contains('show')){
+      commit();
+    } else if(freshP.id===currentPlayer().id){
+      forceEndTurn();
+    } else {
+      commit();
     }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    fallbackLocalDeclareBankrupt(p, toId);
-  }catch(e){ fallbackLocalDeclareBankrupt(p, toId); }
+    return;
+  }
+  fallbackLocalDeclareBankrupt(p, toId);
 }
 function checkGameOver(){
   if(state.timeAttackEndedShown) return; // permainan sudah selesai lewat Time Attack
@@ -5501,6 +5477,33 @@ function endGameTimeAttack(){
    BUY / CARDS / JAIL
    ============================================================ */
 const GAME_ACTION_URL = SUPABASE_URL + '/functions/v1/game-action';
+async function fetchGameAction(bodyExtra){
+  // FIX bug "harus coba berkali-kali baru berhasil": sebelumnya kalau
+  // server bilang 'conflict' (data kita basi karena ada pemain lain yang
+  // baru saja menulis duluan — makin sering terjadi kalau pemainnya makin
+  // banyak/rame), kita cuma nyerah dan minta pemain pencet ulang tombolnya
+  // sendiri secara manual. Sekarang otomatis dicoba lagi (maks 3x) dengan
+  // data terbaru, tanpa pemain perlu tahu/pencet apa-apa.
+  let lastData = null;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      const resp = await fetch(GAME_ACTION_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, ...bodyExtra })
+      });
+      lastData = await resp.json();
+    }catch(e){
+      return null; // gagal total (offline dsb) -> sinyal ke pemanggil buat fallback lokal
+    }
+    if(lastData && lastData.conflict && lastData.currentValue){
+      mergeRemoteIntoLocal(JSON.parse(lastData.currentValue), null);
+      continue; // coba lagi otomatis pakai expectedRev yang sudah diperbarui
+    }
+    return lastData;
+  }
+  return lastData; // sudah dicoba 3x tetap conflict -> kembalikan apa adanya
+}
 function decideBuy(buy){
   if(!myTurnOK()) return;
   const info = state.pendingBuy;
@@ -5523,37 +5526,8 @@ function decideBuy(buy){
     // atau nyoba curang tidak bisa memaksakan pembelian yang sebenarnya
     // sudah tidak sah lagi (mis. properti keburu dibeli device lain).
     (async ()=>{
-      try{
-        const resp = await fetch(GAME_ACTION_URL, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-          body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'buyProperty', playerId: p.id, tileIdx: idx })
-        });
-        const data = await resp.json();
-        if(data && data.ok && data.newState){
-          const remote = data.newState;
-          state.rev = remote.rev;
-          state.players = remote.players;
-          state.propStates = remote.propStates;
-          broadcastGameState(remote);
-          const freshP = state.players.find(pl=>pl.id===p.id) || p;
-          state.pendingBuy = null;
-          log(`${freshP.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
-          playSound('buy');
-          finishLanding(freshP, info.wasDouble);
-          return;
-        }
-        if(data && data.conflict && data.currentValue){
-          // Server sudah lebih baru dari dugaan kita — tarik datanya, lalu
-          // cek ulang: mungkin properti ini sudah keburu dibeli/berubah.
-          mergeRemoteIntoLocal(JSON.parse(data.currentValue), null);
-        }
-        // Ditolak server (basi/uang kurang/sudah dimiliki/dll) — jangan
-        // paksa beli, cukup batalkan dan lanjutkan giliran seperti biasa.
-        log(`Pembelian ${t.name} tidak bisa diproses server, dibatalkan.`);
-        state.pendingBuy = null;
-        finishLanding(state.players.find(pl=>pl.id===p.id)||p, info.wasDouble);
-      }catch(e){
+      const data = await fetchGameAction({ action:'buyProperty', playerId: p.id, tileIdx: idx });
+      if(!data){
         // Server benar-benar tak terjangkau (offline dsb) — jatuhkan ke cara
         // lama (hitung lokal) supaya giliran tidak macet total.
         p.money -= t.price;
@@ -5566,7 +5540,26 @@ function decideBuy(buy){
         playSound('buy');
         state.pendingBuy = null;
         finishLanding(p, info.wasDouble);
+        return;
       }
+      if(data.ok && data.newState){
+        const remote = data.newState;
+        state.rev = remote.rev;
+        state.players = remote.players;
+        state.propStates = remote.propStates;
+        broadcastGameState(remote);
+        const freshP = state.players.find(pl=>pl.id===p.id) || p;
+        state.pendingBuy = null;
+        log(`${freshP.name} membeli ${t.name} seharga ${fmt(t.price)}.`);
+        playSound('buy');
+        finishLanding(freshP, info.wasDouble);
+        return;
+      }
+      // Ditolak server (basi/uang kurang/sudah dimiliki/dll) — jangan
+      // paksa beli, cukup batalkan dan lanjutkan giliran seperti biasa.
+      log(`Pembelian ${t.name} tidak bisa diproses server, dibatalkan.`);
+      state.pendingBuy = null;
+      finishLanding(state.players.find(pl=>pl.id===p.id)||p, info.wasDouble);
     })();
   } else {
     log(`${p.name} memilih tidak membeli ${t.name}, properti akan dilelang!`);
@@ -5603,31 +5596,24 @@ function fallbackLocalStartAuction(idx, wasDouble, includeMover){
   commit();
 }
 async function startAuctionViaServer(idx, wasDouble, includeMover){
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'startAuction', tileIdx: idx, wasDouble: !!wasDouble, includeMover: !!includeMover })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
-      broadcastGameState(remote);
-      auctionShownSig = null;
-      if(data.noBidders){
-        log(`Tidak ada pemain lain untuk melelang ${BOARD[idx].name}, tetap milik bank.`);
-        finishLanding(currentPlayer(), wasDouble);
-      } else {
-        const t = BOARD[idx];
-        log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(t.price)} (harga normalnya).`);
-        renderAll();
-      }
-      return;
+  const data = await fetchGameAction({ action:'startAuction', tileIdx: idx, wasDouble: !!wasDouble, includeMover: !!includeMover });
+  if(!data){ fallbackLocalStartAuction(idx, wasDouble, includeMover); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
+    broadcastGameState(remote);
+    auctionShownSig = null;
+    if(data.noBidders){
+      log(`Tidak ada pemain lain untuk melelang ${BOARD[idx].name}, tetap milik bank.`);
+      finishLanding(currentPlayer(), wasDouble);
+    } else {
+      const t = BOARD[idx];
+      log(`<b>${t.name}</b> dilelang! Penawaran dimulai dari ${fmt(t.price)} (harga normalnya).`);
+      renderAll();
     }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    fallbackLocalStartAuction(idx, wasDouble, includeMover);
-  }catch(e){ fallbackLocalStartAuction(idx, wasDouble, includeMover); }
+    return;
+  }
+  fallbackLocalStartAuction(idx, wasDouble, includeMover);
 }
 function auctionTurnOK(){
   if(!state.auction) return false;
@@ -5722,25 +5708,18 @@ function fallbackLocalAuctionBid(bidderId, amount){
 }
 async function auctionBidViaServer(bidderId, amount){
   const tileName = BOARD[state.auction.idx].name;
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'auctionBid', playerId: bidderId, amount })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
-      broadcastGameState(remote);
-      const bidder = remote.players.find(p=>p.id===bidderId);
-      log(`${bidder.name} menawar ${fmt(amount)} untuk ${tileName}.`);
-      handleAuctionResolvedIfAny(data.auctionResolved);
-      return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    fallbackLocalAuctionBid(bidderId, amount);
-  }catch(e){ fallbackLocalAuctionBid(bidderId, amount); }
+  const data = await fetchGameAction({ action:'auctionBid', playerId: bidderId, amount });
+  if(!data){ fallbackLocalAuctionBid(bidderId, amount); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
+    broadcastGameState(remote);
+    const bidder = remote.players.find(p=>p.id===bidderId);
+    log(`${bidder.name} menawar ${fmt(amount)} untuk ${tileName}.`);
+    handleAuctionResolvedIfAny(data.auctionResolved);
+    return;
+  }
+  fallbackLocalAuctionBid(bidderId, amount);
 }
 function handleAuctionResolvedIfAny(resolved){
   if(resolved){
@@ -5770,31 +5749,30 @@ function fallbackLocalAuctionPass(bidderId){
   const bidder = state.players.find(p=>p.id===bidderId);
   a.remaining = a.remaining.filter(id=>id!==bidderId);
   log(`${bidder.name} melewati lelang ${BOARD[a.idx].name}.`);
-  if(a.remaining.length<=1){ finishAuction(); return; }
+  // PENTING: kalau tinggal 1 orang tersisa (bukan 0), dia BELUM tentu
+  // sudah dapat kesempatan menawar — jangan langsung tutup lelang di
+  // sini. Cuma tutup kalau semua orang benar-benar sudah lewat (0
+  // tersisa). Kalau masih ada 1 orang, kasih dia giliran menawar dulu;
+  // baru kalau DIA JUGA lewat, sisa jadi 0 dan lelang baru berakhir
+  // (properti tetap milik bank kalau belum ada tawaran sama sekali).
+  if(a.remaining.length===0){ finishAuction(); return; }
   a.pos = a.pos % a.remaining.length;
   commit();
 }
 async function auctionPassViaServer(bidderId){
   const bidderName = (state.players.find(p=>p.id===bidderId)||{}).name||'';
   const tileName = BOARD[state.auction.idx].name;
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'auctionPass', playerId: bidderId })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
-      broadcastGameState(remote);
-      log(`${bidderName} melewati lelang ${tileName}.`);
-      handleAuctionResolvedIfAny(data.auctionResolved);
-      return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    fallbackLocalAuctionPass(bidderId);
-  }catch(e){ fallbackLocalAuctionPass(bidderId); }
+  const data = await fetchGameAction({ action:'auctionPass', playerId: bidderId });
+  if(!data){ fallbackLocalAuctionPass(bidderId); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
+    broadcastGameState(remote);
+    log(`${bidderName} melewati lelang ${tileName}.`);
+    handleAuctionResolvedIfAny(data.auctionResolved);
+    return;
+  }
+  fallbackLocalAuctionPass(bidderId);
 }
 function finishAuction(){
   const a = state.auction; if(!a) return;
@@ -5827,82 +5805,80 @@ async function drawCardViaServer(p, deckType, wasDouble){
   // kasus kartu yang bisa memicu kartu lain lagi), lalu hasilnya
   // disiarkan ke semua HP — jalur negosiasi utang (kalau uang kurang
   // buat bayar efek kartu) tetap jatuh ke fallback lokal seperti biasa.
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'drawCard', playerId: p.id, deckType })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      broadcastGameState(remote);
-      const applyAndContinue = ()=>{
-        state.rev = remote.rev;
-        state.players = remote.players;
-        state.propStates = remote.propStates;
-        state.freeParkingPot = remote.freeParkingPot;
-        const freshP = state.players.find(pl=>pl.id===p.id)||p;
-        (data.cardTexts||[]).forEach(txt=>log(`${freshP.name} mengambil kartu: "${txt}"`));
-        if(data.landingKind==='sentToJail'){
-          log(`${freshP.name} dikirim ke penjara!`);
-          state.turnPhase='canEndTurn';
-          renderAll();
-        } else if(data.landingKind==='tax'){
-          log(`${freshP.name} membayar pajak ${fmt(data.taxAmount)}.`);
-          playSound('pay');
-          finishLanding(freshP, wasDouble);
-        } else if(data.landingKind==='freeparking'){
-          if(data.bonusAmount>0){
-            showMoneyFx(freshP.id, data.bonusAmount);
-            log(`${freshP.name} mengambil ${fmt(data.bonusAmount)} di Parkir Bebas!`);
-            playSound('cash');
-          }
-          finishLanding(freshP, wasDouble);
-        } else if(data.landingKind==='property'){
-          const idx = freshP.pos;
-          const t = BOARD[idx];
-          if(data.owner==null){
-            if(state.rules.auctionOnly){
-              log(`${t.name} belum ada pemilik. Mode Lelang Saja aktif — langsung dilelang!`);
-              startAuction(idx, wasDouble, true);
-            } else {
-              state.pendingBuy = {idx, wasDouble};
-              renderAll();
-            }
-          } else if(data.owner===freshP.id){
-            finishLanding(freshP, wasDouble);
-          } else if(state.propStates[idx].mortgaged){
-            log(`${t.name} sedang digadai, tidak ada sewa.`);
-            finishLanding(freshP, wasDouble);
-          } else {
-            const owner = state.players.find(pl=>pl.id===data.owner);
-            payRentViaServer(freshP, owner, idx, !!data.forceDoubleRent, wasDouble);
-          }
-        } else {
-          finishLanding(freshP, wasDouble);
+  const data = await fetchGameAction({ action:'drawCard', playerId: p.id, deckType });
+  if(!data){ fallbackLocalDrawCard(p, deckType, wasDouble); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    broadcastGameState(remote);
+    const applyAndContinue = ()=>{
+      state.rev = remote.rev;
+      state.players = remote.players;
+      state.propStates = remote.propStates;
+      state.freeParkingPot = remote.freeParkingPot;
+      const freshP = state.players.find(pl=>pl.id===p.id)||p;
+      (data.cardTexts||[]).forEach(txt=>log(`${freshP.name} mengambil kartu: "${txt}"`));
+      if(data.landingKind==='sentToJail'){
+        log(`${freshP.name} dikirim ke penjara!`);
+        state.turnPhase='canEndTurn';
+        renderAll();
+      } else if(data.landingKind==='tax'){
+        log(`${freshP.name} membayar pajak ${fmt(data.taxAmount)}.`);
+        playSound('pay');
+        finishLanding(freshP, wasDouble);
+      } else if(data.landingKind==='freeparking'){
+        if(data.bonusAmount>0){
+          showMoneyFx(freshP.id, data.bonusAmount);
+          log(`${freshP.name} mengambil ${fmt(data.bonusAmount)} di Parkir Bebas!`);
+          playSound('cash');
         }
-      };
-      const beforeP = state.players.find(pl=>pl.id===p.id);
-      const oldPos = beforeP ? beforeP.pos : p.pos;
-      const afterP = remote.players.find(pl=>pl.id===p.id);
-      const newPos = afterP ? afterP.pos : oldPos;
-      if(data.landingKind!=='sentToJail' && newPos!==oldPos){
-        // Kartu ini memindahkan posisi -> animasikan jalannya secara
-        // visual dulu (dari posisi lama ke yang baru), baru terapkan
-        // data resmi. Kartu "Masuk Penjara" TIDAK dianimasikan jalan
-        // (teleport langsung), sama seperti goToJail() biasa.
-        const steps = mod(newPos-oldPos,40);
-        state.lastMoveMeta = {id:p.id, backward:false};
-        animateWalk(p, steps, false, applyAndContinue);
+        finishLanding(freshP, wasDouble);
+      } else if(data.landingKind==='property'){
+        const idx = freshP.pos;
+        const t = BOARD[idx];
+        if(data.owner==null){
+          if(state.rules.auctionOnly){
+            log(`${t.name} belum ada pemilik. Mode Lelang Saja aktif — langsung dilelang!`);
+            startAuction(idx, wasDouble, true);
+          } else {
+            state.pendingBuy = {idx, wasDouble};
+            renderAll();
+          }
+        } else if(data.owner===freshP.id){
+          const ps2 = state.propStates[idx];
+          if(state.rules.houseFreeBuild && t.type==='property' && !ps2.mortgaged && ps2.houses<5){
+            state.pendingHouseBuild = idx;
+            log(`${freshP.name} boleh membangun di ${t.name} sekarang.`);
+          }
+          finishLanding(freshP, wasDouble);
+        } else if(state.propStates[idx].mortgaged){
+          log(`${t.name} sedang digadai, tidak ada sewa.`);
+          finishLanding(freshP, wasDouble);
+        } else {
+          const owner = state.players.find(pl=>pl.id===data.owner);
+          payRentViaServer(freshP, owner, idx, !!data.forceDoubleRent, wasDouble);
+        }
       } else {
-        applyAndContinue();
+        finishLanding(freshP, wasDouble);
       }
-      return;
+    };
+    const beforeP = state.players.find(pl=>pl.id===p.id);
+    const oldPos = beforeP ? beforeP.pos : p.pos;
+    const afterP = remote.players.find(pl=>pl.id===p.id);
+    const newPos = afterP ? afterP.pos : oldPos;
+    if(data.landingKind!=='sentToJail' && newPos!==oldPos){
+      // Kartu ini memindahkan posisi -> animasikan jalannya secara
+      // visual dulu (dari posisi lama ke yang baru), baru terapkan
+      // data resmi. Kartu "Masuk Penjara" TIDAK dianimasikan jalan
+      // (teleport langsung), sama seperti goToJail() biasa.
+      const steps = mod(newPos-oldPos,40);
+      state.lastMoveMeta = {id:p.id, backward:false};
+      animateWalk(p, steps, false, applyAndContinue);
+    } else {
+      applyAndContinue();
     }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    fallbackLocalDrawCard(p, deckType, wasDouble);
-  }catch(e){ fallbackLocalDrawCard(p, deckType, wasDouble); }
+    return;
+  }
+  fallbackLocalDrawCard(p, deckType, wasDouble);
 }
 function drawCard(p, type, wasDouble){
   const idsKey = type==='chance' ? 'chanceDeckIds' : 'chestDeckIds';
@@ -6047,27 +6023,21 @@ function fallbackLocalJailPayBail(p){
   });
 }
 async function payJailBailViaServer(p){
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'payJailBail', playerId: p.id })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players;
-      broadcastGameState(remote);
-      const freshP = state.players.find(pl=>pl.id===p.id)||p;
-      log(`${freshP.name} membayar $50 dan bebas dari penjara.`);
-      state.turnPhase='canRoll';
-      renderAll();
-      return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    log(`Pembayaran jaminan tidak bisa diproses server, dibatalkan.`);
+  const data = await fetchGameAction({ action:'payJailBail', playerId: p.id });
+  if(!data){ fallbackLocalJailPayBail(p); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players;
+    broadcastGameState(remote);
+    const freshP = state.players.find(pl=>pl.id===p.id)||p;
+    log(`${freshP.name} membayar $50 dan bebas dari penjara.`);
+    state.turnPhase='canRoll';
     renderAll();
-  }catch(e){ fallbackLocalJailPayBail(p); }
+    return;
+  }
+  // Ditolak server (mis. uang kurang) -> tetap kasih jalur negosiasi
+  // utang (gadai/jual) lewat fallback, jangan cuma dibatalkan diam-diam.
+  fallbackLocalJailPayBail(p);
 }
 function jailUseCard(p){
   useJailCardViaServer(p);
@@ -6080,27 +6050,20 @@ function fallbackLocalJailUseCard(p){
   commit();
 }
 async function useJailCardViaServer(p){
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'useJailCard', playerId: p.id })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players;
-      broadcastGameState(remote);
-      const freshP = state.players.find(pl=>pl.id===p.id)||p;
-      log(`${freshP.name} memakai kartu bebas penjara.`);
-      state.turnPhase='canRoll';
-      renderAll();
-      return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    log(`Pemakaian kartu tidak bisa diproses server, dibatalkan.`);
+  const data = await fetchGameAction({ action:'useJailCard', playerId: p.id });
+  if(!data){ fallbackLocalJailUseCard(p); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players;
+    broadcastGameState(remote);
+    const freshP = state.players.find(pl=>pl.id===p.id)||p;
+    log(`${freshP.name} memakai kartu bebas penjara.`);
+    state.turnPhase='canRoll';
     renderAll();
-  }catch(e){ fallbackLocalJailUseCard(p); }
+    return;
+  }
+  log(`Pemakaian kartu tidak bisa diproses server, dibatalkan.`);
+  renderAll();
 }
 
 function endTurn(){
@@ -6474,33 +6437,22 @@ async function buildHouseViaServer(p, i, cost){
   // Fase C3: sama seperti beli properti/bayar sewa — divalidasi & ditulis
   // di server dulu, biar tidak bisa "curang" bangun rumah yang sudah tidak
   // sah lagi (mis. properti keburu digadai/dijual di device lain).
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'buildHouse', playerId: p.id, tileIdx: i })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev;
-      state.players = remote.players;
-      state.propStates = remote.propStates;
-      broadcastGameState(remote);
-      const t = BOARD[i];
-      const ps = state.propStates[i];
-      log(`${p.name} membangun ${ps.houses===5?'Hotel':'rumah ke-'+ps.houses} di ${t.name}.`);
-      renderDeedList(); renderAll();
-      return;
-    }
-    if(data && data.conflict && data.currentValue){
-      mergeRemoteIntoLocal(JSON.parse(data.currentValue), null);
-    }
-    log(`Pembangunan di ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
-    renderDeedList();
-  }catch(e){
-    fallbackLocalBuildHouse(p, i, cost);
+  const data = await fetchGameAction({ action:'buildHouse', playerId: p.id, tileIdx: i });
+  if(!data){ fallbackLocalBuildHouse(p, i, cost); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev;
+    state.players = remote.players;
+    state.propStates = remote.propStates;
+    broadcastGameState(remote);
+    const t = BOARD[i];
+    const ps = state.propStates[i];
+    log(`${p.name} membangun ${ps.houses===5?'Hotel':'rumah ke-'+ps.houses} di ${t.name}.`);
+    renderDeedList(); renderAll();
+    return;
   }
+  log(`Pembangunan di ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
+  renderDeedList();
 }
 function sellHouse(i, pOverride){
   const p = pOverride || localPlayer();
@@ -6519,25 +6471,18 @@ function fallbackLocalSellHouse(p, i){
   commit(); renderDeedList();
 }
 async function sellHouseViaServer(p, i){
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'sellHouse', playerId: p.id, tileIdx: i })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
-      broadcastGameState(remote);
-      log(`${p.name} menjual rumah di ${BOARD[i].name}, dapat ${fmt(data.amount)}.`);
-      renderDeedList(); renderAll();
-      return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    log(`Penjualan rumah di ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
-    renderDeedList();
-  }catch(e){ fallbackLocalSellHouse(p, i); }
+  const data = await fetchGameAction({ action:'sellHouse', playerId: p.id, tileIdx: i });
+  if(!data){ fallbackLocalSellHouse(p, i); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+    broadcastGameState(remote);
+    log(`${p.name} menjual rumah di ${BOARD[i].name}, dapat ${fmt(data.amount)}.`);
+    renderDeedList(); renderAll();
+    return;
+  }
+  log(`Penjualan rumah di ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
+  renderDeedList();
 }
 function mortgageProp(i, pOverride){
   const p = pOverride || localPlayer();
@@ -6554,25 +6499,18 @@ function fallbackLocalMortgage(p, i){
   commit(); renderDeedList();
 }
 async function mortgagePropViaServer(p, i){
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'mortgageProperty', playerId: p.id, tileIdx: i })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
-      broadcastGameState(remote);
-      log(`${p.name} menggadaikan ${BOARD[i].name}, dapat ${fmt(data.amount)}.`);
-      renderDeedList(); renderAll();
-      return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    log(`Penggadaian ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
-    renderDeedList();
-  }catch(e){ fallbackLocalMortgage(p, i); }
+  const data = await fetchGameAction({ action:'mortgageProperty', playerId: p.id, tileIdx: i });
+  if(!data){ fallbackLocalMortgage(p, i); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+    broadcastGameState(remote);
+    log(`${p.name} menggadaikan ${BOARD[i].name}, dapat ${fmt(data.amount)}.`);
+    renderDeedList(); renderAll();
+    return;
+  }
+  log(`Penggadaian ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
+  renderDeedList();
 }
 function unmortgageProp(i, pOverride){
   const p = pOverride || localPlayer();
@@ -6591,25 +6529,18 @@ function fallbackLocalUnmortgage(p, i, cost){
   commit(); renderDeedList();
 }
 async function unmortgagePropViaServer(p, i, cost){
-  try{
-    const resp = await fetch(GAME_ACTION_URL, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+SUPABASE_ANON_KEY, 'apikey': SUPABASE_ANON_KEY },
-      body: JSON.stringify({ roomCode: state.roomCode, expectedRev: state.rev||0, action:'unmortgageProperty', playerId: p.id, tileIdx: i })
-    });
-    const data = await resp.json();
-    if(data && data.ok && data.newState){
-      const remote = data.newState;
-      state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
-      broadcastGameState(remote);
-      log(`${p.name} menebus ${BOARD[i].name} seharga ${fmt(data.cost)}.`);
-      renderDeedList(); renderAll();
-      return;
-    }
-    if(data && data.conflict && data.currentValue){ mergeRemoteIntoLocal(JSON.parse(data.currentValue), null); }
-    log(`Penebusan ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
-    renderDeedList();
-  }catch(e){ fallbackLocalUnmortgage(p, i, cost); }
+  const data = await fetchGameAction({ action:'unmortgageProperty', playerId: p.id, tileIdx: i });
+  if(!data){ fallbackLocalUnmortgage(p, i, cost); return; }
+  if(data.ok && data.newState){
+    const remote = data.newState;
+    state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates;
+    broadcastGameState(remote);
+    log(`${p.name} menebus ${BOARD[i].name} seharga ${fmt(data.cost)}.`);
+    renderDeedList(); renderAll();
+    return;
+  }
+  log(`Penebusan ${BOARD[i].name} tidak bisa diproses server, dibatalkan.`);
+  renderDeedList();
 }
 
 /* ============================================================
