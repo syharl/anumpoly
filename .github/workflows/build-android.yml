@@ -331,7 +331,7 @@ jobs:
       - name: Upload APK sebagai artifact
         uses: actions/upload-artifact@v4
         with:
-          name: monopoli-dunia-apk
+          name: anumpoly-apk
           path: android/app/build/outputs/apk/release/app-release.apk
 
       - name: Terbitkan/perbarui GitHub Release untuk versi ini
@@ -346,7 +346,7 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk anumpoly.apk
           gh release delete "v${{ steps.rilis.outputs.terbaru }}" --yes --cleanup-tag || true
           gh release create "v${{ steps.rilis.outputs.terbaru }}" anumpoly.apk \
-            --title "Monopoli Dunia v${{ steps.rilis.outputs.terbaru }}" \
+            --title "Anumpoly v${{ steps.rilis.outputs.terbaru }}" \
             --notes "Update otomatis dari CI (build #${{ steps.versi.outputs.build }}). Lihat riwayat commit untuk detail perubahan."
 
       - name: Bersihkan GitHub Release lama (cuma simpan 5 terbaru)
