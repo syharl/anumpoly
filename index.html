@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3">
-<title>Monopoli Dunia — Mabar 1 HP</title>
+<title>Anumpoly — Mabar 1 HP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -784,7 +784,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
   <div class="stamp">
     <span class="top">Selamat Datang</span>
     <span class="mid">ANUMPOLY</span>
-    <span class="bot">Monopoli Dunia Edition</span>
+    <span class="bot">Anumpoly Edition</span>
   </div>
   <div class="welcome-tag">Mabar offline maupun online, 2–4 pemain</div>
 
@@ -811,7 +811,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
   </div>
 
   <div class="mc-logo">🎩</div>
-  <h1 class="mc-title">Monopoli Dunia</h1>
+  <h1 class="mc-title">Anumpoly</h1>
   <div class="mc-tag">Mabar offline 2–4 pemain, gantian di 1 HP</div>
 
   <button class="mc-btn-resume" id="btnResumeSaved" style="display:none;" onclick="resumeSavedGame()">↩️ Lanjutkan Permainan Tersimpan</button>
@@ -916,7 +916,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
     <h2 class="ph-title">Akun</h2>
   </div>
   <div style="text-align:center;padding:8px 20px 4px;">
-    <div class="display" style="font-weight:800;font-size:15px;letter-spacing:2px;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px;">♟ Monopoli Dunia</div>
+    <div class="display" style="font-weight:800;font-size:15px;letter-spacing:2px;color:var(--gold-dim);text-transform:uppercase;margin-bottom:22px;">♟ Anumpoly</div>
     <h2 id="accountScreenTitle" style="color:var(--gold);font-family:'Playfair Display',serif;font-weight:800;font-size:28px;margin:0 0 22px;">Hubungkan Akun</h2>
   </div>
 
@@ -2051,7 +2051,7 @@ function syncGameMusicIcon(){
 function confirmExitApp(){
   showModal({
     title:'Keluar dari Aplikasi?',
-    desc:'Kamu akan keluar dari Monopoli Dunia.',
+    desc:'Kamu akan keluar dari Anumpoly.',
     buttons:[
       {label:'Batal', cls:'btn-no', onClick:closeModal},
       {label:'Ya, Keluar', cls:'btn-danger', onClick:()=>{
@@ -2424,18 +2424,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">29 Agustus 2026, 12:18 WITA — v1.8.29.1218</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">29 Agustus 2026, 12:07 WITA — v1.8.29.1207</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
-      <div class="cl-date">29 Agustus 2026, 11:48 WITA — v1.8.29.1148</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>

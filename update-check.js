@@ -164,7 +164,7 @@ window.cekUpdateManual = async function(){
       if(overlayLama) overlayLama.remove();
       showUpdateCard(data);
     } else if(typeof window.alertModal === 'function'){
-      window.alertModal('Kamu sudah pakai versi terbaru Monopoli Dunia. 👍');
+      window.alertModal('Kamu sudah pakai versi terbaru Anumpoly. 👍');
     }
   }catch(e){
     if(typeof window.alertModal === 'function'){
@@ -181,7 +181,7 @@ function showUpdateCard(data){
       ${TOMBOL_ABAIKAN_HTML}
       <div class="upd-icon">🔔</div>
       <h2>Update Tersedia</h2>
-      <p>Ada versi baru Monopoli Dunia${data.terbaru?(' (v'+data.terbaru+')'):''}. Update dulu ya biar bisa main bareng teman.</p>
+      <p>Ada versi baru Anumpoly${data.terbaru?(' (v'+data.terbaru+')'):''}. Update dulu ya biar bisa main bareng teman.</p>
       <div id="updProgressWrap" style="display:none;">
         <div class="upd-bar-track"><div id="updProgressBar" class="upd-bar-fill"></div></div>
         <div class="upd-meta-row"><span id="updSpeedLabel"></span><span id="updSizeLabel"></span></div>
@@ -219,7 +219,7 @@ async function startUpdateFlow(data){
     // 1) Pastikan izin "Pasang aplikasi tidak dikenal" sudah aktif (Android 8+)
     const permCheck = await CapPlugins.ApkInstaller.checkInstallPermission();
     if(!permCheck.granted){
-      status.textContent = 'Aktifkan dulu izin "Pasang aplikasi tidak dikenal" untuk Monopoli Dunia di layar Pengaturan yang terbuka, lalu kembali ke sini dan tekan tombolnya lagi.';
+      status.textContent = 'Aktifkan dulu izin "Pasang aplikasi tidak dikenal" untuk Anumpoly di layar Pengaturan yang terbuka, lalu kembali ke sini dan tekan tombolnya lagi.';
       await CapPlugins.ApkInstaller.requestInstallPermission();
       btn.textContent = '🔁 Sudah Diizinkan? Coba Lagi';
       btn.dataset.busy = '0';
@@ -250,7 +250,7 @@ async function startUpdateFlow(data){
     // ke potongan berikutnya. Jadi berapa pun besar APK-nya, yang
     // menumpuk di memori pada satu waktu cuma beberapa MB saja, bukan
     // seluruh ukuran file.
-    const CACHE_APK_PATH = 'monopoli-dunia-update.apk';
+    const CACHE_APK_PATH = 'anumpoly-update.apk';
     const FLUSH_THRESHOLD_BYTES = 2 * 1024 * 1024; // tulis ke disk tiap ~2MB terkumpul
 
     // Hapus sisa file dari percobaan sebelumnya (kalau ada) SEBELUM mulai
