@@ -1,6 +1,6 @@
 {
-  "appId": "com.anumpoly.monopolidunia",
-  "appName": "Monopoli Dunia",
+  "appId": "com.syharl.anumpoly",
+  "appName": "Anumpoly",
   "webDir": "www",
   "bundledWebRuntime": false,
   "android": {
