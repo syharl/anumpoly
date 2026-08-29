@@ -2257,7 +2257,8 @@ function surrenderPlayer(playerId){
    properti / cari uang. Timer baru berjalan lagi begitu utang
    selesai atau giliran baru dimulai.
    ============================================================ */
-const TURN_TIME_LIMIT = 180;
+const TURN_TIME_LIMIT = 60;
+const DEBT_TIME_LIMIT = 180; // batas waktu (detik) khusus saat modal utang/gadai terbuka
 let turnTimerInterval = null;
 let turnTimerRemaining = TURN_TIME_LIMIT;
 function beginPlayerTurn(){
@@ -2276,13 +2277,17 @@ function beginPlayerTurn(){
   if(!state || currentPlayer().bankrupt) return;
   currentPlayer()._turnBuilds = 0;
   handleBotAutomation();
-  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
-  if(notMyTurn) return;
   if(state.pendingDebt) return; // jangan mulai timer selama masih ada utang tertunda
+  // Permintaan pemain: timer giliran kelihatan buat SEMUA pemain (bukan
+  // cuma yang lagi giliran) — jadi interval-nya tetap dijalankan di semua
+  // HP. Tapi yang boleh MEMICU auto-timeout (paksa pindah giliran) kalau
+  // waktu habis cuma HP pemilik giliran sendiri, biar tidak dobel/rebutan.
+  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
   turnTimerInterval = setInterval(()=>{
     if(state.pendingDebt){ stopTurnTimer(); updateTimerDisplay(); return; }
     turnTimerRemaining = Math.max(0, turnTimerRemaining-1);
     updateTimerDisplay();
+    if(notMyTurn) return;
     if(turnTimerRemaining<=3 && turnTimerRemaining>0) playSound('tick');
     if(turnTimerRemaining<=0){
       const modalOpen = document.getElementById('modalOverlay').classList.contains('show')
@@ -2298,8 +2303,7 @@ function stopTurnTimer(){
 function updateTimerDisplay(){
   const el = document.getElementById('turnTimerBadge');
   if(!el || !state) return;
-  const notMyTurn = state.mode==='online' && myOnlineSlot!==state.currentIndex;
-  el.classList.toggle('hidden', notMyTurn || !!state.pendingDebt);
+  el.classList.toggle('hidden', !!state.pendingDebt);
   const m = Math.floor(turnTimerRemaining/60);
   const s = turnTimerRemaining%60;
   el.textContent = m+':'+(s<10?'0':'')+s;
@@ -2424,11 +2428,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">29 Agustus 2026, 12:37 WITA — v1.8.29.1237</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -3739,7 +3738,7 @@ async function afkWatchdogTick(){
   // batas sama sekali) selama masih pendingDebt, supaya tetap ada jalan
   // keluar kalau ternyata pemain itu sungguh sudah tidak ada di sana.
   const threshold = state.pendingDebt
-    ? (TURN_TIME_LIMIT*1000*2 + AFK_GRACE_MS)
+    ? (DEBT_TIME_LIMIT*1000 + AFK_GRACE_MS)
     : (TURN_TIME_LIMIT*1000 + AFK_GRACE_MS);
   if(Date.now()-state.turnStartedAt < threshold) return;
   const arbiter = afkWatchdogArbiterSlot(curId);
@@ -4849,10 +4848,19 @@ async function resolveLandingViaServer(p, steps, wasDouble){
       // proses beli/sewa/kartu kelar) supaya HP lain ikut jalan bareng.
       broadcastGameState(remote);
       const applyAndContinue = ()=>{
-        state.rev = remote.rev;
-        state.players = remote.players;
-        state.propStates = remote.propStates;
-        state.freeParkingPot = remote.freeParkingPot;
+        // PENTING (fix bug "status giliran kacau/macet"): kalau selagi
+        // animasi jalan token ini berlangsung (bisa hampir 1 detik) ada
+        // aksi LAIN yang lebih baru sudah masuk & diterapkan duluan lewat
+        // polling/siaran (state.rev sudah lebih besar dari rev bawaan
+        // kita), JANGAN timpa balik dengan snapshot basi ini — itu bisa
+        // bikin data "mundur waktu" (termasuk giliran siapa sekarang jadi
+        // salah lagi). Cukup lanjutkan pakai data pemain yang PALING BARU.
+        if(remote.rev >= (state.rev||0)){
+          state.rev = remote.rev;
+          state.players = remote.players;
+          state.propStates = remote.propStates;
+          state.freeParkingPot = remote.freeParkingPot;
+        }
         const freshP = state.players.find(pl=>pl.id===p.id)||p;
         const idx = freshP.pos;
         const t = BOARD[idx];
@@ -5146,6 +5154,7 @@ function payRepairs(p, perHouse, perHotel){
   chargePlayer(p, total, 'bank', ()=>{ state.turnPhase='canEndTurn'; renderAll(); });
 }
 
+let debtModalTimerInterval = null;
 function openDebtModal(){
   stopTurnTimer();
   const debt = state.pendingDebt;
@@ -5154,7 +5163,7 @@ function openDebtModal(){
   const toName = debt.toId==='bank' ? 'Bank' : (state.players.find(pl=>pl.id===debt.toId)||{name:'?'}).name;
   showModal({
     title:'Uang Tidak Cukup!',
-    desc:`${player.name} harus membayar ${fmt(debt.amount)} ke ${toName} tapi hanya punya ${fmt(player.money)}. Gadai atau jual rumah/hotel dari menu "Kelola Properti", lalu bayar. Atau nyatakan bangkrut. Tidak ada batas waktu — timer giliran berhenti sampai utang ini selesai.`,
+    desc:`${player.name} harus membayar ${fmt(debt.amount)} ke ${toName} tapi hanya punya ${fmt(player.money)}. Gadai atau jual rumah/hotel dari menu "Kelola Properti", lalu bayar. Atau nyatakan bangkrut. Timer giliran biasa berhenti sampai ini selesai, tapi kalau lewat <span id="debtTimerText">3:00</span> lagi belum selesai, pemain lain boleh melewati giliranmu.`,
     priceTag: fmt(debt.amount)+' dibutuhkan',
     buttons:[
       {label:'Kelola Properti', cls:'btn-no', onClick:()=>{ closeModal(); openManage(); }},
@@ -5164,6 +5173,17 @@ function openDebtModal(){
     ]
   });
   handleBotAutomation();
+  clearInterval(debtModalTimerInterval);
+  const updateDebtTimer = ()=>{
+    const el = document.getElementById('debtTimerText');
+    if(!el || !state || !state.pendingDebt){ clearInterval(debtModalTimerInterval); return; }
+    const elapsed = Math.floor((Date.now()-(state.turnStartedAt||Date.now()))/1000);
+    const remaining = Math.max(0, DEBT_TIME_LIMIT-elapsed);
+    const m = Math.floor(remaining/60), s = remaining%60;
+    el.textContent = m+':'+(s<10?'0':'')+s;
+  };
+  updateDebtTimer();
+  debtModalTimerInterval = setInterval(updateDebtTimer, 1000);
 }
 function tryPayDebt(){
   if(!myTurnOK()) return;
@@ -5633,6 +5653,13 @@ function maybeShowAuctionModal(){
   const a = state.auction;
   const bidderId = a.remaining[a.pos % a.remaining.length];
   if(state.mode==='online' && myOnlineSlot!==bidderId) return;
+  // Kalau pemain lagi sibuk baca Riwayat atau buka panel Kelola Properti,
+  // JANGAN timpa itu dengan kartu lelang dulu — mereka lagi sibuk, biarkan
+  // selesai dulu. auctionShownSig SENGAJA tidak ditandai supaya kartu
+  // lelang ini otomatis muncul begitu mereka menutup sendiri (lihat
+  // closeManage() dan closeModal() yang memicu ulang fungsi ini).
+  const manageOpen = document.getElementById('manageOverlay') && document.getElementById('manageOverlay').classList.contains('show');
+  if(historyModalOpen || manageOpen) return;
   const sig = a.idx+':'+a.pos+':'+a.remaining.join(',')+':'+a.highBid;
   if(auctionShownSig===sig) return;
   auctionShownSig = sig;
@@ -5816,10 +5843,13 @@ async function drawCardViaServer(p, deckType, wasDouble){
     const remote = data.newState;
     broadcastGameState(remote);
     const applyAndContinue = ()=>{
-      state.rev = remote.rev;
-      state.players = remote.players;
-      state.propStates = remote.propStates;
-      state.freeParkingPot = remote.freeParkingPot;
+      // Lihat penjelasan fix yang sama di resolveLandingViaServer di atas.
+      if(remote.rev >= (state.rev||0)){
+        state.rev = remote.rev;
+        state.players = remote.players;
+        state.propStates = remote.propStates;
+        state.freeParkingPot = remote.freeParkingPot;
+      }
       const freshP = state.players.find(pl=>pl.id===p.id)||p;
       (data.cardTexts||[]).forEach(txt=>log(`${freshP.name} mengambil kartu: "${txt}"`));
       if(data.landingKind==='sentToJail'){
@@ -6145,7 +6175,14 @@ function showModal({title, desc, priceTag, buttons, vertical, fixedHeight, histo
   }
   document.getElementById('modalOverlay').classList.add('show');
 }
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); historyModalOpen=false; }
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  historyModalOpen=false;
+  clearInterval(debtModalTimerInterval);
+  // Kalau tadi ada giliran lelang yang tertunda karena kita lagi baca
+  // Riwayat (lihat guard di maybeShowAuctionModal), munculkan sekarang.
+  if(state && state.auction && auctionTurnOK()) maybeShowAuctionModal();
+}
 
 /* ============================================================
    RIWAYAT LENGKAP
