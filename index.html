@@ -2428,10 +2428,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">30 Agustus 2026, 11:16 WITA — v1.8.30.1116</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -5641,7 +5637,25 @@ let auctionShownSig = null;
 function startAuction(idx, wasDouble, includeMover){
   startAuctionViaServer(idx, wasDouble, includeMover);
 }
-function fallbackLocalStartAuction(idx, wasDouble, includeMover){
+async function fallbackLocalStartAuction(idx, wasDouble, includeMover){
+  // PENTING (fix bug "lelang kejadian 2x, tawaran jadi turun lagi"):
+  // sebelum bikin lelang baru dari nol di HP ini, cek dulu ke server —
+  // barangkali permintaan yang tadi SEBENARNYA sudah berhasil diproses
+  // di server (lelang sudah resmi dibuat di sana), cuma jawabannya yang
+  // gagal sampai balik ke HP ini (mis. jaringan putus sesaat). Tanpa
+  // pengecekan ini, HP ini bisa bikin lelang KEDUA yang menimpa lelang
+  // pertama yang sudah benar jalan duluan di HP lain.
+  try{
+    const res = await window.storage.get('mpstate_'+state.roomCode, true);
+    if(res){
+      const remote = JSON.parse(res.value);
+      if(remote.auction && remote.auction.idx===idx && remote.rev>(state.rev||0)){
+        mergeRemoteIntoLocal(remote, null);
+        renderAll();
+        return; // lelang aslinya sudah ada di server, jangan bikin duplikat
+      }
+    }
+  }catch(e){}
   const activeIds = [];
   const n = state.players.length;
   const startI = includeMover ? 0 : 1;
@@ -5663,7 +5677,7 @@ function fallbackLocalStartAuction(idx, wasDouble, includeMover){
 }
 async function startAuctionViaServer(idx, wasDouble, includeMover){
   const data = await fetchGameAction({ action:'startAuction', tileIdx: idx, wasDouble: !!wasDouble, includeMover: !!includeMover });
-  if(!data){ fallbackLocalStartAuction(idx, wasDouble, includeMover); return; }
+  if(!data){ await fallbackLocalStartAuction(idx, wasDouble, includeMover); return; }
   if(data.ok && data.newState){
     const remote = data.newState;
     state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
@@ -5679,7 +5693,7 @@ async function startAuctionViaServer(idx, wasDouble, includeMover){
     }
     return;
   }
-  fallbackLocalStartAuction(idx, wasDouble, includeMover);
+  await fallbackLocalStartAuction(idx, wasDouble, includeMover);
 }
 function auctionTurnOK(){
   if(!state.auction) return false;
@@ -5770,7 +5784,24 @@ function auctionBid(amount){
   auctionShownSig = null;
   auctionBidViaServer(bidderId, amount);
 }
-function fallbackLocalAuctionBid(bidderId, amount){
+async function fallbackLocalAuctionBid(bidderId, amount){
+  // Sama seperti fix di fallbackLocalStartAuction: cek dulu ke server,
+  // barangkali tawaran ini SEBENARNYA sudah berhasil tercatat di server
+  // (cuma jawabannya gagal balik), atau ada perubahan lain yang lebih
+  // baru — supaya tidak menimpa data yang sudah lebih baru dengan data
+  // basi dari HP ini.
+  try{
+    const res = await window.storage.get('mpstate_'+state.roomCode, true);
+    if(res){
+      const remote = JSON.parse(res.value);
+      if(remote.rev>(state.rev||0)){
+        mergeRemoteIntoLocal(remote, null);
+        if(!remote.auction) checkGameOver();
+        renderAll();
+        return;
+      }
+    }
+  }catch(e){}
   const a = state.auction; if(!a) return;
   const bidder = state.players.find(p=>p.id===bidderId);
   a.highBid = amount; a.highBidderId = bidderId; a.highBidderName = bidder.name;
@@ -5782,7 +5813,7 @@ function fallbackLocalAuctionBid(bidderId, amount){
 async function auctionBidViaServer(bidderId, amount){
   const tileName = BOARD[state.auction.idx].name;
   const data = await fetchGameAction({ action:'auctionBid', playerId: bidderId, amount });
-  if(!data){ fallbackLocalAuctionBid(bidderId, amount); return; }
+  if(!data){ await fallbackLocalAuctionBid(bidderId, amount); return; }
   if(data.ok && data.newState){
     const remote = data.newState;
     state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
@@ -5792,7 +5823,7 @@ async function auctionBidViaServer(bidderId, amount){
     handleAuctionResolvedIfAny(data.auctionResolved);
     return;
   }
-  fallbackLocalAuctionBid(bidderId, amount);
+  await fallbackLocalAuctionBid(bidderId, amount);
 }
 function handleAuctionResolvedIfAny(resolved){
   if(resolved){
@@ -5817,7 +5848,19 @@ function auctionPass(){
   auctionShownSig = null;
   auctionPassViaServer(bidderId);
 }
-function fallbackLocalAuctionPass(bidderId){
+async function fallbackLocalAuctionPass(bidderId){
+  try{
+    const res = await window.storage.get('mpstate_'+state.roomCode, true);
+    if(res){
+      const remote = JSON.parse(res.value);
+      if(remote.rev>(state.rev||0)){
+        mergeRemoteIntoLocal(remote, null);
+        if(!remote.auction) checkGameOver();
+        renderAll();
+        return;
+      }
+    }
+  }catch(e){}
   const a = state.auction; if(!a) return;
   const bidder = state.players.find(p=>p.id===bidderId);
   a.remaining = a.remaining.filter(id=>id!==bidderId);
@@ -5836,7 +5879,7 @@ async function auctionPassViaServer(bidderId){
   const bidderName = (state.players.find(p=>p.id===bidderId)||{}).name||'';
   const tileName = BOARD[state.auction.idx].name;
   const data = await fetchGameAction({ action:'auctionPass', playerId: bidderId });
-  if(!data){ fallbackLocalAuctionPass(bidderId); return; }
+  if(!data){ await fallbackLocalAuctionPass(bidderId); return; }
   if(data.ok && data.newState){
     const remote = data.newState;
     state.rev = remote.rev; state.players = remote.players; state.propStates = remote.propStates; state.auction = remote.auction||null;
@@ -5845,7 +5888,7 @@ async function auctionPassViaServer(bidderId){
     handleAuctionResolvedIfAny(data.auctionResolved);
     return;
   }
-  fallbackLocalAuctionPass(bidderId);
+  await fallbackLocalAuctionPass(bidderId);
 }
 function finishAuction(){
   const a = state.auction; if(!a) return;
