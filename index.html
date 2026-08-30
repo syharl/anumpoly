@@ -1271,10 +1271,10 @@ const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 window.storage = {
   async get(key, shared){
-    const { data, error } = await sbClient.from('kv_store').select('value').eq('key', key).maybeSingle();
+    const { data, error } = await sbClient.from('kv_store').select('value, updated_at').eq('key', key).maybeSingle();
     if(error) throw error;
     if(!data) return null;
-    return { key, value: data.value, shared: !!shared };
+    return { key, value: data.value, updated_at: data.updated_at, shared: !!shared };
   },
   async set(key, value, shared){
     const { error } = await sbClient.from('kv_store').upsert({ key, value, updated_at: new Date().toISOString() });
@@ -2428,10 +2428,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">30 Agustus 2026, 06:41 WITA — v1.8.30.0641</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2581,7 +2577,7 @@ function onClickCekUpdateManual(){
     if(judul) judul.textContent = 'Cek Update';
   });
 }
-function goToOnline(){
+async function goToOnline(){
   if(!ensureStorage()) return;
   showScreen('screen-online');
   document.getElementById('onlineChooseView').style.display='block';
@@ -2589,12 +2585,28 @@ function goToOnline(){
   const sess = (typeof readOnlineSession==='function') ? readOnlineSession() : null;
   const reconnectCard = document.getElementById('reconnectCard');
   if(reconnectCard){
+    reconnectCard.style.display='none';
     if(sess){
-      reconnectCard.style.display='block';
-      const descEl = document.getElementById('reconnectDesc');
-      if(descEl) descEl.textContent = `Kamu masih punya game online di room ${sess.roomCode} yang belum selesai. Sambung lagi untuk lanjut main.`;
-    } else {
-      reconnectCard.style.display='none';
+      // Cek dulu ke server apa room ini masih beneran layak disambung
+      // (bukan cuma modal lokal yang bisa basi) — kalau ternyata sudah
+      // ditinggalkan (nggak ada aktivitas lama, atau semua manusia sudah
+      // bangkrut/keluar), hapus diam-diam & JANGAN tampilkan kartunya
+      // sama sekali, biar pemain nggak ketawarin "sambung" ke room mati.
+      let payload = null, updatedAt = null;
+      try{
+        const res = await window.storage.get('mpstate_'+sess.roomCode, true);
+        if(res){ payload = JSON.parse(res.value); updatedAt = res.updated_at; }
+      }catch(e){}
+      const leftSlots = payload ? (payload.leftSlots||[]) : [];
+      const abandoned = !payload || leftSlots.includes(sess.slot) || isRoomAbandoned(payload, updatedAt);
+      if(abandoned){
+        await cleanupAbandonedRoom(sess.roomCode);
+        clearOnlineSession();
+      } else {
+        reconnectCard.style.display='block';
+        const descEl = document.getElementById('reconnectDesc');
+        if(descEl) descEl.textContent = `Kamu masih punya game online di room ${sess.roomCode} yang belum selesai. Sambung lagi untuk lanjut main.`;
+      }
     }
   }
   if(currentProfile && currentProfile.display_name){
@@ -2664,6 +2676,21 @@ function roomHasAliveHumanStake(payload){
   const leftSlots = payload.leftSlots||[];
   return (payload.players||[]).some(p=>!p.isBot && !p.bankrupt && !leftSlots.includes(p.id));
 }
+// Permintaan pemain: room yang DITINGGALKAN (nggak ada aktivitas sekian
+// lama) harus dianggap basi & dihapus, TERLEPAS dari status bangkrut
+// pemainnya — sebelumnya cuma dicek "masih ada manusia hidup atau
+// tidak", jadi room yang ditinggal tidur semalaman (semua pemain masih
+// "hidup" di data, cuma nggak ada yang main lagi) nggak pernah kedeteksi
+// basi. Sekarang keduanya dicek: kalau salah satu bilang basi, ya basi.
+const ROOM_STALE_MS = 3*60*60*1000; // 3 jam tanpa aktivitas -> dianggap ditinggalkan
+function isTimestampStale(updatedAtIso){
+  if(!updatedAtIso) return true;
+  const age = Date.now() - new Date(updatedAtIso).getTime();
+  return !(age>=0) || age > ROOM_STALE_MS;
+}
+function isRoomAbandoned(payload, updatedAtIso){
+  return isTimestampStale(updatedAtIso) || !roomHasAliveHumanStake(payload);
+}
 async function cleanupAbandonedRoom(roomCode){
   try{ await window.storage.delete('mpstate_'+roomCode, true); }catch(e){}
   try{ await window.storage.delete('mproom_'+roomCode, true); }catch(e){}
@@ -2695,9 +2722,10 @@ async function guardBeforeStartingNewOnlineFlow(proceedFn){
   const sess = (typeof readOnlineSession==='function') ? readOnlineSession() : null;
   if(!sess){ await proceedFn(); return; }
   let payload = null;
+  let updatedAt = null;
   try{
     const res = await window.storage.get('mpstate_'+sess.roomCode, true);
-    if(res) payload = JSON.parse(res.value);
+    if(res){ payload = JSON.parse(res.value); updatedAt = res.updated_at; }
   }catch(e){ payload = null; }
   if(!payload){
     clearOnlineSession();
@@ -2705,7 +2733,7 @@ async function guardBeforeStartingNewOnlineFlow(proceedFn){
     return;
   }
   const leftSlots = payload.leftSlots||[];
-  if(leftSlots.includes(sess.slot) || !roomHasAliveHumanStake(payload)){
+  if(leftSlots.includes(sess.slot) || isRoomAbandoned(payload, updatedAt)){
     await cleanupAbandonedRoom(sess.roomCode);
     clearOnlineSession();
     await proceedFn();
@@ -2823,7 +2851,11 @@ async function mmPollTick(){
       let stillAlive = false;
       try{
         const roomRes = await window.storage.get('mpstate_'+assign.roomCode, true);
-        if(roomRes) stillAlive = roomHasAliveHumanStake(JSON.parse(roomRes.value));
+        if(roomRes){
+          const roomPayload = JSON.parse(roomRes.value);
+          stillAlive = !isRoomAbandoned(roomPayload, roomRes.updated_at);
+          if(!stillAlive) await cleanupAbandonedRoom(assign.roomCode);
+        }
       }catch(e){}
       if(stillAlive){
         mmActive = false;
@@ -2831,8 +2863,9 @@ async function mmPollTick(){
         await mmEnterMatchedGame(assign.roomCode);
         return;
       }
-      // Tiket basi menuju room yang sudah zombie -> abaikan, lanjut ke
-      // pengecekan antrian seperti biasa (JANGAN return di sini).
+      // Tiket basi menuju room yang sudah ditinggalkan -> room-nya sudah
+      // dihapus di atas, lanjut ke pengecekan antrian seperti biasa
+      // (JANGAN return di sini).
     }
   }catch(e){ /* belum ada panggilan, lanjut cek antrian di bawah */ }
   if(!mmActive) return;
@@ -3854,10 +3887,10 @@ async function attemptOnlineReconnect(){
       // cuma jalan di titik reconnect (bukan sambil pemain masih aktif
       // menonton di layar game), jadi tidak akan pernah menghapus room
       // yang masih benar-benar sedang ditonton orang.
-      if(!roomHasAliveHumanStake(payload)){
+      if(isRoomAbandoned(payload, res.updated_at)){
         await cleanupAbandonedRoom(sess.roomCode);
         clearOnlineSession();
-        alertModal('Game sebelumnya sudah tidak bisa disambung lagi — semua pemain manusia di dalamnya (termasuk kamu) sudah bangkrut/keluar, cuma tersisa bot yang jalan sendiri. Room itu sudah otomatis dibersihkan.');
+        alertModal('Game sebelumnya sudah tidak bisa disambung lagi — sudah lama ditinggalkan (atau semua pemain manusia di dalamnya sudah bangkrut/keluar). Room itu sudah otomatis dibersihkan.');
         return;
       }
       const stillThere = (payload.players||[]).some(pl=>pl.id===sess.slot);
