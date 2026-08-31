@@ -607,6 +607,53 @@ html[data-theme="dark"] input:checked + .slider:before{background:var(--ink2);}
 .toast.show{opacity:1;transform:translateY(0);}
 .hl{color:var(--gold);font-weight:700;}
 
+/* ============================================================
+   MODE LANDSCAPE (papan permainan)
+   ------------------------------------------------------------
+   Diaktifkan lewat class body.landscape-ui, yang di-toggle oleh
+   JS (updateLandscapeUI()) berdasarkan: (1) orientasi fisik HP
+   sekarang (matchMedia orientation:landscape), DAN (2) toggle
+   "Mode Landscape" di Pengaturan (appSettings.landscapeMode).
+   Kalau togglenya dimatikan, layar tetap pakai layout portrait
+   biasa (di-stack ke bawah) walau HP-nya dimiringkan.
+   Cuma menata ULANG elemen yang sudah ada (topbar/board-wrap/
+   panel) pakai CSS Grid — tidak ada HTML baru yang perlu dibuat,
+   jadi berlaku juga buat game yang lagi jalan (mid-game) tanpa
+   perlu reload apa pun.
+   ============================================================ */
+body.landscape-ui #screen-game.active{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(260px,336px);
+  grid-template-rows:auto 1fr;
+  grid-template-areas:"top top" "board panel";
+  align-items:start;
+  justify-items:center;
+  width:100%;
+  max-width:920px;
+  gap:6px 16px;
+  padding:8px calc(12px + env(safe-area-inset-right)) 10px calc(12px + env(safe-area-inset-left));
+}
+body.landscape-ui #screen-game .topbar{grid-area:top;max-width:none;padding-top:calc(8px + env(safe-area-inset-top));}
+body.landscape-ui #screen-game .board-wrap{
+  grid-area:board;max-width:min(76vh,520px);width:100%;justify-self:center;align-self:start;
+}
+body.landscape-ui #screen-game .panel{
+  grid-area:panel;width:100%;max-width:none;margin-top:0;
+  max-height:calc(100vh - 70px);max-height:calc(100dvh - 70px);
+  overflow-y:auto;overflow-x:hidden;padding-right:2px;justify-self:stretch;
+}
+body.landscape-ui #screen-game .players-strip{
+  flex-direction:column;overflow-x:visible;overflow-y:visible;max-height:none;
+}
+body.landscape-ui #screen-game .player-chip{flex:none;width:100%;}
+body.landscape-ui #screen-game .actions-row button{min-width:0;}
+/* Kalau HP kelewat pendek waktu landscape (mis. HP kecil), biar
+   papan tidak "mendorong" panel sampai kepotong — panel boleh
+   scroll sendiri (sudah diatur overflow-y di atas). */
+@media (orientation:landscape) and (max-height:420px){
+  body.landscape-ui #screen-game .board-wrap{max-width:min(70vh,420px);}
+}
+
 /* modal */
 .overlay{
   position:fixed;inset:0;background:rgba(6,10,20,0.82);backdrop-filter:blur(3px);
@@ -1933,7 +1980,7 @@ document.addEventListener('click', (e)=>{
 /* ============================================================
    PENGATURAN (SUARA / GETAR / GRAFIK) + SAVE-RESUME LOKAL
    ============================================================ */
-let appSettings = { vibration:true, reducedMotion:false, themeMode:'light', muteMusicInGame:false };
+let appSettings = { vibration:true, reducedMotion:false, themeMode:'light', muteMusicInGame:false, landscapeMode:true };
 (function loadSettings(){
   try{
     const raw = localStorage.getItem('anumpoly_settings');
@@ -1943,6 +1990,7 @@ let appSettings = { vibration:true, reducedMotion:false, themeMode:'light', mute
       if(typeof s.reducedMotion==='boolean') appSettings.reducedMotion = s.reducedMotion;
       if(typeof s.themeMode==='string') appSettings.themeMode = s.themeMode;
       if(typeof s.muteMusicInGame==='boolean') appSettings.muteMusicInGame = s.muteMusicInGame;
+      if(typeof s.landscapeMode==='boolean') appSettings.landscapeMode = s.landscapeMode;
       if(typeof s.sound==='boolean') soundMuted = !s.sound;
       if(typeof s.music==='boolean') musicMuted = !s.music;
       if(typeof s.sfxVolume==='number') sfxVolume = Math.max(1, Math.min(10, s.sfxVolume));
@@ -1950,6 +1998,7 @@ let appSettings = { vibration:true, reducedMotion:false, themeMode:'light', mute
     }
   }catch(e){}
   applyThemeMode(appSettings.themeMode);
+  updateLandscapeUI();
 })();
 // Kalau mode "Bawaan Sistem" dipakai, ikuti perubahan tema OS secara langsung
 // (mis. HP masuk mode gelap otomatis malam hari) tanpa perlu buka app lagi.
@@ -1969,7 +2018,35 @@ if(window.matchMedia){
 // interaksi pertama.
 refreshBgmPlayback();
 function saveSettings(){
-  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion, themeMode:appSettings.themeMode, muteMusicInGame:appSettings.muteMusicInGame, sfxVolume, musicVolume })); }catch(e){}
+  try{ localStorage.setItem('anumpoly_settings', JSON.stringify({ sound:!soundMuted, music:!musicMuted, vibration:appSettings.vibration, reducedMotion:appSettings.reducedMotion, themeMode:appSettings.themeMode, muteMusicInGame:appSettings.muteMusicInGame, landscapeMode:appSettings.landscapeMode, sfxVolume, musicVolume })); }catch(e){}
+}
+/* ------------------------------------------------------------
+   MODE LANDSCAPE
+   ------------------------------------------------------------
+   body.landscape-ui aktif kalau: (a) HP secara fisik lagi dalam
+   posisi landscape (matchMedia), DAN (b) toggle "Mode Landscape"
+   di Pengaturan lagi nyala. CSS di atas (lihat "MODE LANDSCAPE
+   (papan permainan)") yang menata ulang papan+panel jadi
+   berdampingan begitu class ini aktif. Dipanggil ulang tiap kali
+   orientasi berubah supaya papan langsung reflow live, termasuk
+   di tengah-tengah permainan. */
+function updateLandscapeUI(){
+  let isLandscape = false;
+  try{ isLandscape = window.matchMedia('(orientation: landscape)').matches; }catch(e){ isLandscape = window.innerWidth > window.innerHeight; }
+  document.body.classList.toggle('landscape-ui', isLandscape && !!appSettings.landscapeMode);
+}
+if(window.matchMedia){
+  try{
+    window.matchMedia('(orientation: landscape)').addEventListener('change', updateLandscapeUI);
+  }catch(e){
+    window.addEventListener('resize', updateLandscapeUI);
+  }
+}
+window.addEventListener('orientationchange', updateLandscapeUI);
+function onToggleLandscapeMode(checked){
+  appSettings.landscapeMode = checked;
+  saveSettings();
+  updateLandscapeUI();
 }
 /* ------------------------------------------------------------
    TEMA (Terang / Gelap / Bawaan Sistem) — Pengaturan > Tema.
@@ -2150,6 +2227,14 @@ function settingsPanelHTML(){
         <span class="str-icon">🔇</span>
         <span class="str-text"><span class="str-title">Matikan musik saat main</span><span class="str-sub">Musik tetap nyala di menu &amp; lobi, tapi mati begitu masuk ke papan permainan</span></span>
         <label class="switch"><input type="checkbox" id="setMuteMusicInGame" ${appSettings.muteMusicInGame?'checked':''} onchange="onToggleMuteMusicInGame(this.checked)"><span class="slider"></span></label>
+      </div>
+
+      <div class="settings-section-label">Tampilan</div>
+      <div class="settings-divider"></div>
+      <div class="settings-toggle-row">
+        <span class="str-icon">🔄</span>
+        <span class="str-text"><span class="str-title">Mode Landscape</span><span class="str-sub">Papan &amp; panel otomatis menata ulang berdampingan saat HP diputar ke mendatar</span></span>
+        <label class="switch"><input type="checkbox" id="setLandscapeMode" ${appSettings.landscapeMode?'checked':''} onchange="onToggleLandscapeMode(this.checked)"><span class="slider"></span></label>
       </div>
 
       <div class="settings-section-label">Lainnya</div>
@@ -2427,10 +2512,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">31 Agustus 2026, 08:19 WITA — v1.8.31.0819</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
