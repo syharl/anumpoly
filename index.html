@@ -842,7 +842,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
   <div class="page-header">
     <button type="button" class="ph-back" onclick="goToMenu()">←</button>
     <span class="ph-icon">🎮</span>
-    <div><h2 class="ph-title">Pilih Mode Main</h2><p class="ph-sub">Dicariin lawan otomatis, atau main bareng teman sendiri?</p></div>
+    <div><h2 class="ph-title">Pilih Mode Main</h2><p class="ph-sub">Cari lawan otomatis, atau ajak teman sendiri?</p></div>
   </div>
   <div class="page-body">
     <div class="card" style="cursor:pointer" onclick="goToMatchmaking(true)">
@@ -851,7 +851,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
     </div>
     <div class="card" style="cursor:pointer" onclick="goToMatchmaking(false)">
       <h3>🎲 Matchmaking Santai</h3>
-      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Sama seperti Matchmaking Rank — dicarikan lawan otomatis — tapi hasilnya TIDAK memengaruhi Rank. Cocok buat pemanasan atau coba-coba aturan baru.</p>
+      <p style="font-size:13px;color:var(--paper-dim);margin:0;line-height:1.5;">Sama seperti Rank, dicarikan lawan otomatis, tapi tidak memengaruhi Rank. Cocok buat pemanasan.</p>
     </div>
     <div class="card" style="cursor:pointer" onclick="goToCustomRoom()">
       <h3>🎛️ Custom Room</h3>
@@ -2428,10 +2428,6 @@ function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
     <div class="changelog-entry">
-      <div class="cl-date">30 Agustus 2026, 16:58 WITA — v1.8.30.1658</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
-    <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
     </div>
@@ -2765,6 +2761,7 @@ const MM_STALE_MS = 90000;
    lewat keberuntungan dadu yang tetap fair/acak untuk semua pemain. */
 const MM_BOT_FILL_MS = 45000;
 let mmPollTimer = null;
+let mmTimerDisplayInterval = null;
 let mmActive = false;
 let mmRankMode = false;
 let mmQueueKey = null;
@@ -2794,11 +2791,21 @@ async function goToMatchmaking(rankMode){
     clearInterval(mmPollTimer);
     mmPollTimer = setInterval(mmPollTick, 2000);
     mmPollTick();
+    // Timer besar di tengah layar sengaja dipisah jadi interval sendiri
+    // (1 detik) supaya tetap jalan mulus tiap detik, tidak ikut lambat
+    // mengikuti siklus polling server yang cuma tiap 2 detik.
+    clearInterval(mmTimerDisplayInterval);
+    mmTimerDisplayInterval = setInterval(()=>{
+      const elapsed = Math.floor((Date.now()-mmStartedAt)/1000);
+      const timerEl = document.getElementById('mmTimer');
+      if(timerEl) timerEl.textContent = String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');
+    }, 1000);
   });
 }
 async function leaveMatchmaking(){
   mmActive = false;
   clearInterval(mmPollTimer);
+  clearInterval(mmTimerDisplayInterval);
   if(currentUser && mmQueueKey){
     try{
       const q = await mmReadQueue();
@@ -2864,6 +2871,7 @@ async function mmPollTick(){
       if(stillAlive){
         mmActive = false;
         clearInterval(mmPollTimer);
+        clearInterval(mmTimerDisplayInterval);
         await mmEnterMatchedGame(assign.roomCode);
         return;
       }
@@ -2885,9 +2893,6 @@ async function mmPollTick(){
 
   const countEl = document.getElementById('mmCountText');
   if(countEl) countEl.textContent = q.players.length+' pemain di antrian';
-  const elapsed = Math.floor((now-mmStartedAt)/1000);
-  const timerEl = document.getElementById('mmTimer');
-  if(timerEl) timerEl.textContent = String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(elapsed%60).padStart(2,'0');
 
   // 3) Leader = pemain paling awal gabung (tie-break by userId) -> dialah
   //    yang bertugas membuat game kalau syarat sudah terpenuhi. Semua HP
@@ -2914,15 +2919,17 @@ async function mmPollTick(){
     if(!q.graceStartedAt){
       q.graceStartedAt = now;
       const subEl = document.getElementById('mmSub');
-      if(subEl) subEl.textContent = 'Ada '+q.players.length+' pemain — menunggu sebentar siapa tahu ada tambahan...';
+      if(subEl) subEl.textContent = 'Ada '+q.players.length+' pemain, menunggu tambahan...';
     } else if(now - q.graceStartedAt >= MM_GRACE_MS){
       await mmStartMatch(q, sorted.slice(0, Math.min(4,q.players.length)));
       return;
     }
   } else if(!mmRankMode && q.players.length===1){
     const subEl = document.getElementById('mmSub');
-    const sisaDetik = Math.max(0, Math.ceil((MM_BOT_FILL_MS-waitedMs)/1000));
-    if(subEl) subEl.textContent = 'Belum ada pemain lain — isi bot dalam '+sisaDetik+' detik kalau masih sendirian...';
+    // Sengaja TIDAK menampilkan hitungan detik yang terus berubah di sini
+    // (bikin teksnya kepanjangan & berubah-ubah terus) — cukup pesan
+    // statis, waktu pastinya sudah kelihatan di timer tengah layar.
+    if(subEl) subEl.textContent = 'Belum ada pemain lain, isi bot otomatis kalau lama...';
   }
   await mmWriteQueue(q);
 }
@@ -5869,13 +5876,19 @@ async function fallbackLocalAuctionPass(bidderId){
   const bidder = state.players.find(p=>p.id===bidderId);
   a.remaining = a.remaining.filter(id=>id!==bidderId);
   log(`${bidder.name} melewati lelang ${BOARD[a.idx].name}.`);
-  // PENTING: kalau tinggal 1 orang tersisa (bukan 0), dia BELUM tentu
-  // sudah dapat kesempatan menawar — jangan langsung tutup lelang di
-  // sini. Cuma tutup kalau semua orang benar-benar sudah lewat (0
-  // tersisa). Kalau masih ada 1 orang, kasih dia giliran menawar dulu;
-  // baru kalau DIA JUGA lewat, sisa jadi 0 dan lelang baru berakhir
-  // (properti tetap milik bank kalau belum ada tawaran sama sekali).
-  if(a.remaining.length===0){ finishAuction(); return; }
+  // FIX bug "menang tapi dianggap nggak dapat apa-apa": kalau tinggal 1
+  // orang tersisa DAN dia sudah pegang tawaran tertinggi (highBid>0),
+  // itu artinya SEMUA lawan sudah lewat dan dia otomatis menang — jangan
+  // minta dia bertindak lagi (apalagi kalau dia sendiri yang akhirnya
+  // pencet Lewati, itu tadinya malah menghapus kemenangannya sendiri).
+  // Cuma kasih 1 kesempatan lagi menawar kalau BELUM ada tawaran sama
+  // sekali (highBid masih 0, remaining tinggal 1 orang yang belum pernah
+  // nawar) — supaya properti nggak langsung balik ke bank tanpa dikasih
+  // kesempatan menawar dulu.
+  if(a.remaining.length===0 || (a.remaining.length===1 && a.remaining[0]===a.highBidderId)){
+    finishAuction();
+    return;
+  }
   a.pos = a.pos % a.remaining.length;
   commit();
 }
