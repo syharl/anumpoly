@@ -585,26 +585,56 @@ html[data-theme="dark"] input:checked + .slider:before{background:var(--ink2);}
    Cuma menata ULANG posisi 3 elemen yang sudah ada (topbar/board-wrap/
    panel) lewat CSS Grid — HTML-nya sendiri tidak diubah sama sekali,
    jadi risikonya kecil kalau ada yang perlu disesuaikan lagi nanti. */
-body.landscape-mode #screen-game{
+/* PENTING: kunci ".active" WAJIB ada di semua selector mode lanskap
+   di bawah ini. Tanpa ".active", selector ID (#screen-game) otomatis
+   MENGALAHKAN aturan ".screen{display:none}" karena selector ID lebih
+   spesifik dari selector class — akibatnya layar game malah tetap
+   kelihatan (nongol di bawah menu manapun yang lagi aktif) walau
+   harusnya disembunyikan. Ini bug yang sempat kejadian & sudah
+   dibetulkan di sini. */
+body.landscape-mode #screen-game.active{
   display:grid;
   grid-template-columns:minmax(240px,48%) 1fr;
   grid-template-rows:auto 1fr;
   grid-template-areas:"topbar topbar" "board panel";
   align-items:start;
   gap:8px 14px;
-  max-width:920px;
+  max-width:none;
   width:100%;
   padding:8px calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left));
-  min-height:100vh;
+  height:100vh;
+  overflow:hidden;
 }
-body.landscape-mode .topbar{grid-area:topbar;max-width:none;padding-top:calc(8px + env(safe-area-inset-top));}
-body.landscape-mode .board-wrap{grid-area:board;max-width:100%;width:100%;margin:0;align-self:start;}
-body.landscape-mode .panel{
+body.landscape-mode #screen-game.active .topbar{grid-area:topbar;max-width:none;padding-top:calc(6px + env(safe-area-inset-top));flex:none;}
+body.landscape-mode #screen-game.active .board-wrap{
+  grid-area:board;margin:0;align-self:start;
+  /* FIX bug "board kepotong/harus digeser": di lanskap, tinggi layar
+     jauh lebih sempit daripada lebarnya — kalau board dibatasi lewat
+     LEBAR kolomnya (seperti mode potret) dia jadi lebih tinggi dari
+     layar dan terpotong (muncul scrollbar). Jadi di sini batasannya
+     dibalik: TINGGI dulu yang ditentukan (sisa tinggi layar setelah
+     topbar), lebar mengikuti lewat aspect-ratio 13/9 punya .board
+     sendiri, bukan lebar kolom grid. */
+  height:calc(100vh - 60px);
+  width:auto;
+  max-width:100%;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  overflow:hidden;
+}
+body.landscape-mode #screen-game.active .board{
+  width:min(100%, calc((100vh - 60px) * 13 / 9));
+  height:auto;aspect-ratio:13/9;
+  grid-template-columns:repeat(13,1fr);grid-template-rows:repeat(9,1fr);
+}
+body.landscape-mode #screen-game.active .center-area{grid-column:2 / span 11;grid-row:2 / span 7;}
+body.landscape-mode #screen-game.active .panel{
   grid-area:panel;max-width:none;margin-top:0;width:100%;
-  max-height:calc(100vh - 90px);overflow-y:auto;padding-right:2px;
+  height:calc(100vh - 60px);overflow-y:auto;padding-right:2px;
 }
-body.landscape-mode .players-strip{flex-wrap:wrap;overflow-x:visible;}
-body.landscape-mode .player-chip{flex:1 1 45%;min-width:120px;}
+body.landscape-mode #screen-game.active .players-strip{flex-wrap:wrap;overflow-x:visible;}
+body.landscape-mode #screen-game.active .player-chip{flex:1 1 45%;min-width:120px;}
 /* Layar-layar lain (menu, lobi, dsb) sengaja TIDAK ditata ulang di sini
    — kartu-kartu menu yang sudah dibatasi max-width tetap rapi di tengah
    walau layarnya lebar, jadi tidak perlu perlakuan khusus. Kalau ada
@@ -1219,14 +1249,7 @@ details[open]>.dd-toggle .dd-arrow{transform:rotate(180deg);}
 <!-- ================= GAME ================= -->
 <div id="screen-game" class="screen">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div class="room-badge" id="pingBadge" style="display:none;"></div>
-        <div class="room-badge" id="witaClockBadge">🕒 --:--:--</div>
-        <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
-      </div>
-      <button class="icon-btn" onclick="openSettingsMenu()">☰ Menu</button>
-    </div>
+    <div class="room-badge" id="timeAttackBadge" style="display:none;">⏱ 0:00</div>
   </div>
 
   <div class="board-wrap">
@@ -2029,6 +2052,10 @@ function onToggleLandscapeMode(checked){
   appSettings.landscapeMode = checked;
   applyLandscapeMode(checked);
   saveSettings();
+  // Bentuk papan (11×11 potret vs 13×9 lanskap) beda total, jadi kalau
+  // lagi di tengah game, DOM papannya harus dibangun ulang biar posisi
+  // tiap petak pindah ke tempat yang benar untuk bentuk yang baru.
+  if(state){ buildBoardDOM(); renderAll(); }
 }
 function selectThemeMode(mode){
   appSettings.themeMode = mode;
@@ -2476,10 +2503,6 @@ function renderReferenceModal(){
 function openWhatsNewModal(){
   const html = `
     <!-- __ANUMPOLY_CHANGELOG_AUTO__ -->
-    <div class="changelog-entry">
-      <div class="cl-date">01 September 2026, 16:13 WITA — v1.9.01.1613</div>
-      <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Add files via upload</div>
-    </div>
     <div class="changelog-entry">
       <div class="cl-date">23 Agustus 2026 — Membersihkan Log Apa yang Baru</div>
       <div style="font-size:12.5px;color:var(--paper-dim);line-height:1.6;margin-bottom:6px;"><span class="cl-tag new">Baru</span>Membersihkan log "Apa yang Baru" — entri-entri lama dihapus, dimulai lagi dari sini.</div>
@@ -4352,6 +4375,10 @@ function confirmQuit(){
    BOARD RENDER
    ============================================================ */
 function tilePos(i){
+  if(document.body.classList.contains('landscape-mode')) return tilePos13x9(i);
+  return tilePos11x11(i);
+}
+function tilePos11x11(i){
   if(i===0) return {col:11,row:11};
   if(i>=1&&i<=9) return {col:11-i, row:11};
   if(i===10) return {col:1,row:11};
@@ -4360,6 +4387,22 @@ function tilePos(i){
   if(i>=21&&i<=29) return {col:i-19, row:1};
   if(i===30) return {col:11,row:1};
   if(i>=31&&i<=39) return {col:11, row:i-29};
+}
+// Bentuk khusus Mode Lanskap: 13 kolom × 9 baris (bukan 11×11 bujur
+// sangkar standar) — lebih lebar & lebih pendek, supaya papan muat
+// penuh dalam 1 layar HP yang diputar ke samping tanpa perlu digeser.
+// Kelilingnya tetap pas 40 sel (13+13+7+7-4=40), jadi 40 petak yang
+// sama persis (indeks & urutan logikanya TIDAK berubah sama sekali,
+// cuma posisi visualnya saja yang beda) tetap muat semua.
+function tilePos13x9(i){
+  if(i===0) return {col:13,row:9};
+  if(i>=1&&i<=11) return {col:13-i, row:9};
+  if(i===12) return {col:1,row:9};
+  if(i>=13&&i<=19) return {col:1, row:21-i};
+  if(i===20) return {col:1,row:1};
+  if(i>=21&&i<=31) return {col:i-19, row:1};
+  if(i===32) return {col:13,row:1};
+  if(i>=33&&i<=39) return {col:13, row:i-31};
 }
 const TILE_ICON = {go:'➡', chance:'❓', chest:'💰', tax:'💵', jail:'🔒', freeparking:'🅿', gotojail:'👮', railroad:'🚂', utility:'💡'};
 
